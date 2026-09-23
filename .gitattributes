@@ -1,0 +1,7 @@
+# Fins de ligne LF dans le dépôt, quel que soit le système.
+* text=auto eol=lf
+
+# Fichiers binaires
+*.png binary
+*.ico binary
+*.icns binary

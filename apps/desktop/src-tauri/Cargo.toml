@@ -1,0 +1,29 @@
+[package]
+name = "etabli"
+version = "0.1.0"
+description = "Établi : boîte à outils de bureau extensible par plugins"
+edition = "2021"
+rust-version = "1.85"
+
+# Bibliothèque Rust simple : les formats staticlib/cdylib ne servent qu'au mobile.
+[lib]
+name = "etabli_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.6", features = [] }
+tauri-plugin-log = "2"
+
+# Binaire de production plus petit et plus rapide.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
