@@ -3,6 +3,7 @@
   import { system, type AppInfo } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
   import ShortcutRecorder from "$lib/components/ShortcutRecorder.svelte";
+  import SuppliersEditor from "$lib/components/SuppliersEditor.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
   import { PLUGINS, getMiniAppByKey } from "$lib/plugins/registry";
@@ -23,6 +24,7 @@
   const SECTIONS: { id: SettingsSection; label: string }[] = [
     { id: "general", label: "Général" },
     { id: "apparence", label: "Apparence" },
+    { id: "bibliotheques", label: "Bibliothèques" },
     { id: "plugins", label: "Plugins" },
     { id: "apercu", label: "Aperçu rapide" },
     { id: "raccourcis", label: "Raccourcis clavier" },
@@ -180,7 +182,7 @@
       {/each}
     </nav>
 
-    <div class="body">
+    <div class="body" class:wide={section === "bibliotheques"}>
       {#if section === "general"}
         <div class="box">
           <h3>Fenêtre</h3>
@@ -197,6 +199,21 @@
               "Établi démarre discrètement dans la zone de notification, prêt pour l'aperçu rapide.",
             )}
             <Switch checked={autostart} label="Lancer au démarrage de Windows" onchange={setAutostart} />
+          </div>
+        </div>
+
+        <div class="box">
+          <h3>Fiches d'atelier</h3>
+          <div class="setting">
+            {@render row("Votre nom", "Écrit dans le cartouche des fiches imprimées (« Préparé : … »). Laissez vide pour ne rien écrire.")}
+            <input
+              class="text-input"
+              value={settings.author}
+              onchange={(e) => settings.set("author", e.currentTarget.value.trim())}
+              placeholder="Prénom Nom"
+              aria-label="Votre nom"
+              spellcheck="false"
+            />
           </div>
         </div>
 
@@ -267,6 +284,16 @@
             {@render row("Réduire les animations", "Supprime les fondus et glissements (activé d'office si Windows le demande).")}
             <Switch checked={settings.reduceMotion} label="Réduire les animations" onchange={(v) => settings.set("reduceMotion", v)} />
           </div>
+        </div>
+      {:else if section === "bibliotheques"}
+        <div class="box">
+          <h3>Fournisseurs</h3>
+          <p class="hint">
+            La matière que vend chaque fournisseur : longueur des barres, format des tôles, tolérance. Les plugins
+            s'en servent pour préremplir leurs calculs ; ils fonctionnent aussi sans. Le prix est facultatif :
+            il ne sert qu'au chiffrage.
+          </p>
+          <SuppliersEditor />
         </div>
       {:else if section === "plugins"}
         <div class="box">
@@ -411,8 +438,26 @@
     max-width: 760px;
     min-width: 0;
   }
+  .body.wide {
+    max-width: 1000px;
+  }
   .body p {
     margin: 0;
+  }
+  .text-input {
+    width: 220px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    background: var(--field);
+    font: 500 14px var(--font);
+    color: var(--text);
+    outline: none;
+  }
+  .text-input:focus {
+    border-color: var(--accent);
+    background: var(--surface);
   }
   .box-head {
     display: flex;

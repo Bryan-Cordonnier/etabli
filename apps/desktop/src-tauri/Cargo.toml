@@ -24,6 +24,7 @@ tauri-plugin-global-shortcut = "2.3.2"
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-opener = "2.5.5"
 tauri-plugin-single-instance = "2.4.5"
+tauri-plugin-dialog = "2.7.3"
 
 # Binaire de production plus petit et plus rapide.
 [profile.release]

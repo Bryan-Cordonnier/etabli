@@ -140,6 +140,7 @@
           {pluginId}
           {appId}
           initial={session.initial}
+          docTitle={session.title}
           {onmessage}
         />
       {/if}

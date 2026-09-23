@@ -121,6 +121,12 @@ export const api = {
   storeLoad: (): Promise<Record<string, unknown>> => invoke("store_load"),
 
   storeSave: (value: Record<string, unknown>): Promise<void> => invoke("store_save", { value }),
+
+  /** Bibliothèques et réglages de plugin : `null` si rien n'est encore enregistré. */
+  dataRead: (nom: string): Promise<unknown> => (inTauri ? invoke("donnees_lire", { nom }) : Promise.resolve(preview.dataRead(nom))),
+
+  dataWrite: (nom: string, valeur: unknown): Promise<void> =>
+    inTauri ? invoke("donnees_ecrire", { nom, valeur }) : Promise.resolve(preview.dataWrite(nom, valeur)),
 };
 
 /** Documents de l'aperçu navigateur, dans localStorage. Même règles que documents.rs. */
@@ -184,5 +190,21 @@ const preview = {
 
   delete(id: string): void {
     this.write(this.all().filter((d) => d.id !== id));
+  },
+
+  dataRead(nom: string): unknown {
+    try {
+      return JSON.parse(localStorage.getItem(`etabli.preview-data.${nom}`) ?? "null");
+    } catch {
+      return null;
+    }
+  },
+
+  dataWrite(nom: string, valeur: unknown): void {
+    try {
+      localStorage.setItem(`etabli.preview-data.${nom}`, JSON.stringify(valeur));
+    } catch {
+      // Stockage indisponible : rien n'est gardé dans l'aperçu.
+    }
   },
 };

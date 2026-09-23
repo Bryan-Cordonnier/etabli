@@ -11,6 +11,8 @@
     type ThemeTokens,
   } from "@etabli/sdk/protocol";
   import { inTauri } from "$lib/api";
+  import { printFiche } from "$lib/print/print";
+  import { libraries } from "$lib/state/libraries.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { THEME_TOKENS } from "$lib/themes";
 
@@ -26,10 +28,12 @@
     appId: string;
     /** Document transmis à l'ouverture ; la mini-app gère ensuite ses données elle-même. */
     initial: DocumentSnapshot;
+    /** Titre actuel du calcul, pour les fiches imprimées. */
+    docTitle?: string;
     onmessage: (message: PluginToHost) => void;
   }
 
-  let { src, title, pluginId, appId, initial, onmessage }: Props = $props();
+  let { src, title, pluginId, appId, initial, docTitle = "", onmessage }: Props = $props();
 
   let frame: HTMLIFrameElement;
   let port: MessagePort | undefined;
@@ -46,15 +50,38 @@
     port?.postMessage(message);
   }
 
-  function connectFrame(): void {
+  // Dernières valeurs connues de la mini-app : on ne lui renvoie pas ce qu'elle vient d'envoyer.
+  let sentLibraries = "";
+  let sentPluginData = "";
+
+  async function connectFrame(): Promise<void> {
     port?.close();
+    port = undefined;
+    const pluginData = await libraries.loadPlugin(pluginId);
     const channel = new MessageChannel();
     port = channel.port1;
     port.onmessage = (event: MessageEvent<PluginToHost>) => {
       const message = event.data;
-      if (message.type === "height") height = Math.max(160, Math.ceil(message.value));
-      else onmessage(message);
+      switch (message.type) {
+        case "height":
+          height = Math.max(160, Math.ceil(message.value));
+          break;
+        case "pluginData":
+          sentPluginData = JSON.stringify(message.data);
+          libraries.setPluginData(pluginId, message.data);
+          break;
+        case "print":
+          printFiche(
+            { ...message.fiche, title: message.fiche.title.trim() || docTitle.trim() || title },
+            { author: settings.author, date: new Date() },
+          );
+          break;
+        default:
+          onmessage(message);
+      }
     };
+    sentLibraries = JSON.stringify(libraries.current);
+    sentPluginData = JSON.stringify(pluginData);
     // Origine opaque du cadre isolé : « * » est la seule cible possible, le port reste privé.
     frame.contentWindow?.postMessage({ type: CONNECT }, "*", [channel.port2]);
     send({
@@ -64,8 +91,25 @@
       appId,
       document: JSON.parse(JSON.stringify(initial)),
       ...readTheme(),
+      libraries: JSON.parse(sentLibraries),
+      pluginData: JSON.parse(sentPluginData),
     });
   }
+
+  // Fournisseurs modifiés dans les Paramètres, ou réglages du plugin changés par une autre mini-app.
+  $effect(() => {
+    const json = JSON.stringify(libraries.current);
+    if (!port || json === sentLibraries) return;
+    sentLibraries = json;
+    send({ type: "libraries", libraries: JSON.parse(json) });
+  });
+
+  $effect(() => {
+    const json = JSON.stringify($state.snapshot(libraries.pluginData[pluginId]) ?? null);
+    if (!port || json === sentPluginData) return;
+    sentPluginData = json;
+    send({ type: "pluginData", data: JSON.parse(json) });
+  });
 
   // Changement de thème (réglage ou mode sombre de Windows) : la mini-app suit.
   $effect(() => {

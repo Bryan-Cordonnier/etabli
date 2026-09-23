@@ -11,6 +11,7 @@
   import Toast from "$lib/components/Toast.svelte";
   import { DocumentSession } from "$lib/documents.svelte";
   import { appKey, getMiniAppByKey, pluginUrl, type MiniAppRef } from "$lib/plugins/registry";
+  import { libraries } from "$lib/state/libraries.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { reloadStorage } from "$lib/storage";
 
@@ -51,7 +52,7 @@
       closing = false;
       selected = 0;
       shown = true;
-      await reloadStorage();
+      await Promise.all([reloadStorage(), libraries.load()]);
       settings.reload();
       await tick();
       focusSelected();
@@ -188,6 +189,7 @@
               pluginId={current.plugin.id}
               appId={current.app.id}
               initial={session.initial}
+              docTitle={session.title}
               {onmessage}
             />
           {:else}

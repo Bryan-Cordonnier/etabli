@@ -1,5 +1,6 @@
 mod apercu;
 mod documents;
+mod donnees;
 mod files;
 mod paths;
 mod plugins;
@@ -75,6 +76,7 @@ pub fn run() {
             Some(vec![DEMARRAGE]),
         ))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
@@ -176,6 +178,8 @@ pub fn run() {
             documents::document_delete,
             store::store_load,
             store::store_save,
+            donnees::donnees_lire,
+            donnees::donnees_ecrire,
             apercu::apercu_basculer,
             apercu::apercu_fermer,
             apercu::etabli_afficher,
@@ -184,6 +188,7 @@ pub fn run() {
             infos_app,
             fermeture_zone_definir,
             journal,
+            files::fichier_enregistrer,
         ])
         .run(tauri::generate_context!())
         .expect("erreur au lancement de l'application");

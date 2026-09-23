@@ -32,6 +32,8 @@ interface Persisted {
   pluginOrder: string[];
   quickShortcut: QuickShortcut;
   closeToTray: boolean;
+  /** Nom écrit dans le cartouche des fiches d'atelier (« Préparé : … »). */
+  author: string;
 }
 
 const DEFAULTS: Persisted = {
@@ -47,6 +49,7 @@ const DEFAULTS: Persisted = {
   pluginOrder: [],
   quickShortcut: DEFAULT_SHORTCUT,
   closeToTray: true,
+  author: "",
 };
 
 class Settings {
@@ -62,6 +65,7 @@ class Settings {
   pluginOrder = $state<string[]>([]);
   quickShortcut = $state<QuickShortcut>(DEFAULTS.quickShortcut);
   closeToTray = $state(DEFAULTS.closeToTray);
+  author = $state(DEFAULTS.author);
 
   constructor() {
     this.reload();
@@ -82,6 +86,7 @@ class Settings {
     this.pluginOrder = saved.pluginOrder;
     this.quickShortcut = saved.quickShortcut;
     this.closeToTray = saved.closeToTray;
+    this.author = saved.author;
   }
 
   #save(): void {
@@ -98,11 +103,12 @@ class Settings {
       pluginOrder: $state.snapshot(this.pluginOrder),
       quickShortcut: $state.snapshot(this.quickShortcut),
       closeToTray: this.closeToTray,
+      author: this.author,
     } satisfies Persisted);
   }
 
   /** Modifie un réglage simple et l'enregistre. */
-  set<K extends "theme" | "iconStyle" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut">(
+  set<K extends "theme" | "iconStyle" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author">(
     key: K,
     value: Settings[K],
   ): void {

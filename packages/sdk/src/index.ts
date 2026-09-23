@@ -13,12 +13,24 @@ import {
   isHostShortcut,
   type ColorScheme,
   type DocumentSnapshot,
+  type FichePrint,
   type HostToPlugin,
+  type Libraries,
   type PluginToHost,
   type ThemeTokens,
 } from "./protocol";
 
-export type { ColorScheme, DocumentSnapshot, ThemeTokens } from "./protocol";
+export { STOCK_KINDS } from "./protocol";
+export type {
+  ColorScheme,
+  DocumentSnapshot,
+  FichePrint,
+  Libraries,
+  StockKind,
+  Supplier,
+  SupplierItem,
+  ThemeTokens,
+} from "./protocol";
 
 export interface EtabliDocument<T> {
   /** `null` tant que rien n'a été enregistré. */
@@ -45,6 +57,21 @@ export interface Etabli<T> {
     /** Copie un texte et affiche une confirmation. */
     copy(text: string): Promise<void>;
   };
+  /** Bibliothèques de l'application (fournisseurs…), en lecture seule. Vides si l'utilisateur n'a rien saisi. */
+  readonly libraries: {
+    readonly current: Libraries;
+    onChange(listener: (libraries: Libraries) => void): () => void;
+  };
+  /** Réglages du plugin (machines de l'atelier…), partagés par toutes ses mini-apps et enregistrés par le moteur. */
+  readonly settings: {
+    /** `null` tant que le plugin n'a rien enregistré. */
+    readonly data: unknown;
+    update(data: unknown): void;
+    /** Réglages modifiés par une autre mini-app du même plugin. */
+    onChange(listener: (data: unknown) => void): () => void;
+  };
+  /** Imprime une fiche d'atelier (A4, ou PDF avec l'imprimante « Enregistrer au format PDF »). */
+  print(fiche: FichePrint): void;
   /** Appelé quand l'utilisateur change de thème. Renvoie une fonction pour se désabonner. */
   onThemeChange(listener: (theme: ThemeTokens, scheme: ColorScheme) => void): () => void;
 }
@@ -68,8 +95,12 @@ export function connect<T>(): Promise<Etabli<T>> {
 function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void {
   const send = (message: PluginToHost) => port.postMessage(message);
   const themeListeners = new Set<(theme: ThemeTokens, scheme: ColorScheme) => void>();
+  const libraryListeners = new Set<(libraries: Libraries) => void>();
+  const settingsListeners = new Set<(data: unknown) => void>();
   let doc: DocumentSnapshot = { id: null, title: "", data: null };
   let ids = { pluginId: "", appId: "" };
+  let libraries: Libraries = { suppliers: [] };
+  let pluginData: unknown = null;
 
   const api: Etabli<unknown> = {
     get pluginId() {
@@ -117,6 +148,31 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         }
       },
     },
+    libraries: {
+      get current() {
+        return libraries;
+      },
+      onChange(listener) {
+        libraryListeners.add(listener);
+        return () => libraryListeners.delete(listener);
+      },
+    },
+    settings: {
+      get data() {
+        return pluginData;
+      },
+      update(data) {
+        pluginData = JSON.parse(JSON.stringify(data));
+        send({ type: "pluginData", data: pluginData });
+      },
+      onChange(listener) {
+        settingsListeners.add(listener);
+        return () => settingsListeners.delete(listener);
+      },
+    },
+    print(fiche) {
+      send({ type: "print", fiche: JSON.parse(JSON.stringify(fiche)) });
+    },
     onThemeChange(listener) {
       themeListeners.add(listener);
       return () => themeListeners.delete(listener);
@@ -129,12 +185,22 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "init":
         ids = { pluginId: message.pluginId, appId: message.appId };
         doc = message.document;
+        libraries = message.libraries ?? { suppliers: [] };
+        pluginData = message.pluginData ?? null;
         applyTheme(message.theme, message.colorScheme);
         resolve(api);
         break;
       case "theme":
         applyTheme(message.theme, message.colorScheme);
         for (const listener of themeListeners) listener(message.theme, message.colorScheme);
+        break;
+      case "libraries":
+        libraries = message.libraries;
+        for (const listener of libraryListeners) listener(libraries);
+        break;
+      case "pluginData":
+        pluginData = message.data;
+        for (const listener of settingsListeners) listener(pluginData);
         break;
     }
   };

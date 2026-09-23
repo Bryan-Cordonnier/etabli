@@ -1,4 +1,29 @@
 use std::{fs, io, path::Path};
+use tauri_plugin_dialog::DialogExt;
+
+/// Export d'une mini-app (CSV, DXF…) : boîte « Enregistrer sous » de Windows, puis écriture.
+/// Renvoie le chemin choisi, ou `None` si l'utilisateur a annulé.
+#[tauri::command]
+pub async fn fichier_enregistrer(
+    app: tauri::AppHandle,
+    nom: String,
+    contenu: String,
+    extension: String,
+    description: String,
+) -> Result<Option<String>, String> {
+    let choisi = app
+        .dialog()
+        .file()
+        .set_file_name(&nom)
+        .add_filter(&description, &[extension.as_str()])
+        .blocking_save_file();
+    let Some(chemin) = choisi else {
+        return Ok(None);
+    };
+    let chemin = chemin.into_path().map_err(|e| e.to_string())?;
+    write_atomic(&chemin, contenu.as_bytes()).map_err(|e| format!("Écriture impossible : {e}"))?;
+    Ok(Some(chemin.display().to_string()))
+}
 
 /// Écrit un fichier sans risque de le corrompre : on écrit à côté, puis on remplace
 /// (cahier des charges, section 7.2). Une coupure pendant l'écriture laisse l'ancien fichier intact.

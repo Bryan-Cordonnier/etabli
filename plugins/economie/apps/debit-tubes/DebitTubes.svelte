@@ -1,9 +1,15 @@
 <script lang="ts">
-  import { Card, Field, MiniAppDocument, colorOf, format } from "@etabli/ui";
+  import { STOCK_KINDS } from "@etabli/sdk";
+  import { Card, Field, MiniAppDocument, PluginSettings, SelectField, Suppliers, colorOf, format, printFiche } from "@etabli/ui";
   import { groupBars, planCuts, type CutPlan } from "../../src/debit";
+  import { debitFiche } from "../../src/fiche-debit";
+  import { DEFAULT_SETTINGS, cleanSettings } from "../../src/machines";
+  import MachinesPanel from "../../src/MachinesPanel.svelte";
   import { nextMark, num, quantity, rowsFromPaste } from "../../src/pieces";
 
   interface Data {
+    /** Scie de la bibliothèque Machines ; vide : réglages saisis à la main. */
+    machine: string;
     profile: string;
     stock: { length: string; quantity: string }[];
     /** Longueurs des chutes déjà en stock, séparées par des espaces ou des points-virgules. */
@@ -15,6 +21,7 @@
   }
 
   const DEFAULTS: Data = {
+    machine: "",
     profile: "Tube carré 40 × 40 × 2",
     stock: [{ length: "6000", quantity: "" }],
     offcuts: "",
@@ -82,6 +89,65 @@
     doc.notify(`${rows.length} pièce${rows.length > 1 ? "s" : ""} collée${rows.length > 1 ? "s" : ""}`);
   }
 
+  // Bibliothèques : machines d'Économie, fournisseurs d'Établi. Le calcul marche aussi sans.
+  const reglages = new PluginSettings(DEFAULT_SETTINGS, cleanSettings);
+  const suppliers = new Suppliers();
+  let showMachines = $state(false);
+
+  const saws = $derived(reglages.data.machines.saws);
+  const saw = $derived(saws.find((s) => s.id === doc.data.machine));
+  const sawOptions = $derived([
+    { value: "", label: "Réglages saisis à la main" },
+    ...saws.map((s) => ({ value: s.id, label: s.name || "Scie sans nom" })),
+  ]);
+
+  /** Choisir une scie reprend son trait de scie et son dressage. */
+  function pickSaw(id: string): void {
+    const picked = saws.find((s) => s.id === id);
+    if (!picked) return;
+    doc.data.kerf = picked.kerf;
+    doc.data.trim = picked.trim;
+  }
+
+  const kindLabel = (kind: string) => STOCK_KINDS.find((k) => k.id === kind)?.label ?? kind;
+  const barOffers = $derived(
+    suppliers.list.flatMap((s) =>
+      s.items
+        .filter((item) => item.kind !== "tole" && item.length > 0)
+        .map((item) => ({
+          value: `${s.id}/${item.id}`,
+          label: `${s.name || "Fournisseur"} — ${[kindLabel(item.kind), item.material, item.designation].filter(Boolean).join(" ")} · ${format(item.length, 0)} mm`,
+          length: item.length,
+        })),
+    ),
+  );
+  let offer = $state("");
+
+  /** Longueur de barre du fournisseur : remplace la ligne vide, sinon s'ajoute. */
+  function pickOffer(value: string): void {
+    const found = barOffers.find((o) => o.value === value);
+    offer = "";
+    if (!found) return;
+    const empty = doc.data.stock.find((b) => num(b.length) <= 0 || doc.data.stock.length === 1);
+    if (empty) empty.length = String(found.length);
+    else doc.data.stock.push({ length: String(found.length), quantity: "" });
+  }
+
+  function print(): void {
+    if (!plan) return;
+    printFiche(
+      debitFiche({
+        title: "",
+        profile: doc.data.profile,
+        plan,
+        pieces: doc.data.pieces.map((p) => ({ mark: p.mark || "?", length: num(p.length), quantity: num(p.quantity) || 0 })),
+        colors: colorOf,
+        settings: { kerf: num(doc.data.kerf) || 0, trim: num(doc.data.trim) || 0, keepMin: num(doc.data.keep) || 0 },
+        machine: saw?.name ?? "",
+      }),
+    );
+  }
+
   function copyPlan(): void {
     if (!plan) return;
     const lines = [`Plan de débit — ${doc.data.profile}`, ""];
@@ -108,14 +174,37 @@
           <button class="remove" onclick={() => doc.data.stock.splice(i, 1)} disabled={doc.data.stock.length === 1} aria-label="Retirer cette longueur">✕</button>
         {/each}
       </div>
-      <button class="btn" onclick={() => doc.data.stock.push({ length: "", quantity: "" })}>+ Autre longueur de barre</button>
+      <div class="row-actions">
+        <button class="btn" onclick={() => doc.data.stock.push({ length: "", quantity: "" })}>+ Autre longueur de barre</button>
+        {#if barOffers.length}
+          <SelectField
+            compact
+            label="Longueur d'un fournisseur"
+            options={[{ value: "", label: "Longueur d'un fournisseur…" }, ...barOffers]}
+            bind:value={offer}
+            onchange={pickOffer}
+          />
+        {/if}
+      </div>
       <Field label="Chutes déjà en stock (utilisées en premier)" numeric={false} placeholder="ex. 1200 850 640" unit="mm" bind:value={doc.data.offcuts} />
+      <div class="machine">
+        <SelectField label="Scie" options={sawOptions} bind:value={doc.data.machine} onchange={pickSaw} />
+        <button class="btn" onclick={() => (showMachines = !showMachines)} aria-expanded={showMachines}>
+          {showMachines ? "Fermer" : "Machines…"}
+        </button>
+      </div>
       <div class="three">
         <Field label="Trait de scie" unit="mm" bind:value={doc.data.kerf} />
         <Field label="Dressage en bout" unit="mm" bind:value={doc.data.trim} />
         <Field label="Chute gardée dès" unit="mm" bind:value={doc.data.keep} />
       </div>
     </Card>
+
+    {#if showMachines}
+      <Card title="Machines de l'atelier">
+        <MachinesPanel store={reglages} kinds={["saws"]} />
+      </Card>
+    {/if}
 
     <Card title="Pièces à couper">
       <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -140,7 +229,10 @@
 
   <Card title="Plan de débit">
     {#snippet actions()}
-      {#if plan?.bars.length}<button class="btn" onclick={copyPlan}>Copier le plan</button>{/if}
+      {#if plan?.bars.length}
+        <button class="btn" onclick={copyPlan}>Copier le plan</button>
+        <button class="btn primary" onclick={print}>Imprimer la fiche</button>
+      {/if}
     {/snippet}
     {#if plan && (plan.bars.length || plan.unplaced.length)}
       <div class="kpis" class:stale={computing}>
@@ -243,6 +335,26 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
+  }
+  .row-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .row-actions :global(.field) {
+    flex: 1;
+    min-width: 180px;
+  }
+  .machine {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: end;
+  }
+  /* Même hauteur que le sélecteur voisin. */
+  .machine .btn {
+    height: 36px;
   }
   .remove {
     width: 28px;

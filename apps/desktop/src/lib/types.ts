@@ -1,7 +1,14 @@
 import type { IconName } from "./icons";
 
 /** Sections de la page Paramètres (cahier des charges, section 5.10). */
-export type SettingsSection = "general" | "apparence" | "plugins" | "apercu" | "raccourcis" | "a-propos";
+export type SettingsSection =
+  | "general"
+  | "apparence"
+  | "bibliotheques"
+  | "plugins"
+  | "apercu"
+  | "raccourcis"
+  | "a-propos";
 
 /** Page affichée dans un onglet. */
 export type View =
