@@ -16,7 +16,23 @@
   import { reloadStorage } from "$lib/storage";
 
   /** Durée des fondus d'ouverture et de fermeture (voir le CSS). */
-  const FADE = 140;
+  const FADE = 180;
+
+  // Écran sous l'aperçu, capturé par Rust juste avant l'ouverture : le voile le floute
+  // progressivement (backdrop-filter), au lieu de l'effet acrylique de Windows qui arrive d'un coup.
+  let screen = $state<HTMLCanvasElement>();
+  let hasScreen = $state(false);
+
+  async function drawScreen(): Promise<void> {
+    const image = await system.quickScreen().catch(() => null);
+    if (!image || !screen) return;
+    screen.width = image.width;
+    screen.height = image.height;
+    screen.getContext("2d")?.putImageData(image, 0, 0);
+    hasScreen = true;
+  }
+
+  const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
   let session = $state<DocumentSession | null>(null);
   let selected = $state(0);
@@ -51,6 +67,9 @@
       openedAt = Date.now();
       closing = false;
       selected = 0;
+      // L'image nette s'affiche d'abord (identique à l'écran réel), puis le flou monte en fondu.
+      await drawScreen();
+      await nextFrame();
       shown = true;
       await Promise.all([reloadStorage(), libraries.load()]);
       settings.reload();
@@ -77,6 +96,7 @@
     shown = false;
     await new Promise((resolve) => setTimeout(resolve, FADE));
     await system.closeQuick();
+    hasScreen = false;
     await leaveApp();
   }
 
@@ -100,6 +120,7 @@
     }
     shown = false;
     await system.showMain();
+    hasScreen = false;
     session = null;
   }
 
@@ -161,6 +182,7 @@
 
 <svelte:window {onkeydown} {onblur} />
 
+<canvas class="screen" class:on={hasScreen} bind:this={screen} aria-hidden="true"></canvas>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="scrim" class:shown onpointerdown={(e) => e.target === e.currentTarget && void close()}>
     <div class="panel" role="dialog" aria-modal="true" aria-label="Aperçu rapide">
@@ -240,6 +262,18 @@
   :global(body) {
     background: transparent;
   }
+  .screen {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    visibility: hidden;
+  }
+  .screen.on {
+    visibility: visible;
+  }
+  /* Le flou de l'écran capturé et le voile montent ensemble ; les bords du flou sont
+     prolongés par le navigateur (pas de halo sur les bords de l'écran). */
   .scrim {
     position: fixed;
     inset: 0;
@@ -248,7 +282,10 @@
     padding: 5vh 7vw;
     background: var(--scrim);
     opacity: 0;
-    transition: opacity 0.14s ease-out;
+    backdrop-filter: blur(0);
+    transition:
+      opacity 0.18s ease-out,
+      backdrop-filter 0.18s ease-out;
   }
   .panel {
     width: min(1000px, 100%);
@@ -260,15 +297,12 @@
     border-radius: var(--r-lg);
     box-shadow: var(--shadow);
     overflow: hidden;
-    transform: scale(0.97);
-    transition: transform 0.14s ease-out;
   }
-  /* Ouverture et fermeture en fondu, à partir d'une fenêtre toujours vide (voir `shown`). */
+  /* Ouverture et fermeture en fondu, à partir d'une fenêtre toujours vide (voir `shown`).
+     Pas de zoom : avec le flou, il donnait l'impression que l'écran changeait de taille. */
   .scrim.shown {
     opacity: 1;
-  }
-  .scrim.shown .panel {
-    transform: none;
+    backdrop-filter: blur(24px) saturate(1.15);
   }
   .head {
     display: flex;

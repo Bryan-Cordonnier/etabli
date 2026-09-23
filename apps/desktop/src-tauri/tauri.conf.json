@@ -36,8 +36,7 @@
         "shadow": false,
         "resizable": false,
         "alwaysOnTop": true,
-        "skipTaskbar": true,
-        "windowEffects": { "effects": ["acrylic"] }
+        "skipTaskbar": true
       }
     ],
     "security": {

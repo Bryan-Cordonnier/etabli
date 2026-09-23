@@ -24,6 +24,16 @@ export interface AppInfo {
 export const system = {
   toggleQuick: (): Promise<void> => (inTauri ? invoke("apercu_basculer") : Promise.resolve()),
   closeQuick: (): Promise<void> => (inTauri ? invoke("apercu_fermer") : Promise.resolve()),
+  /** Écran sous l'aperçu, capturé à l'ouverture (RGBA, en basse résolution), ou null. */
+  quickScreen: async (): Promise<ImageData | null> => {
+    if (!inTauri) return null;
+    const bytes = await invoke<ArrayBuffer>("apercu_ecran");
+    if (bytes.byteLength <= 8) return null;
+    const view = new DataView(bytes);
+    const [width, height] = [view.getUint32(0, true), view.getUint32(4, true)];
+    if (bytes.byteLength !== 8 + width * height * 4) return null;
+    return new ImageData(new Uint8ClampedArray(bytes, 8), width, height);
+  },
   showMain: (): Promise<void> => (inTauri ? invoke("etabli_afficher") : Promise.resolve()),
 
   setShortcut: (accelerator: string): Promise<void> =>
