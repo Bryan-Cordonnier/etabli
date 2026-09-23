@@ -1,14 +1,21 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions de la fenêtre principale : barre de titre personnalisée (déplacer, réduire, agrandir, fermer).",
-  "windows": ["main"],
+  "description": "Permissions de la fenêtre principale et de l'aperçu rapide.",
+  "windows": ["main", "apercu"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
     "core:window:allow-internal-toggle-maximize",
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
-    "core:window:allow-close"
+    "core:window:allow-close",
+    "core:window:allow-hide",
+    "core:webview:allow-set-webview-zoom",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+    "opener:allow-open-url",
+    "opener:allow-reveal-item-in-dir"
   ]
 }

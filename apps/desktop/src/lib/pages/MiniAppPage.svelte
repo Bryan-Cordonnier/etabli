@@ -3,12 +3,13 @@
   // cadre isolé, le titre du calcul, l'enregistrement automatique et la liste des anciens calculs.
   import type { PluginToHost } from "@etabli/sdk/protocol";
   import { onMount } from "svelte";
-  import { api, inTauri, type DocumentMeta } from "$lib/api";
+  import { inTauri } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
   import PastCalcs from "$lib/components/PastCalcs.svelte";
   import Tile from "$lib/components/Tile.svelte";
-  import { formatDate, stamp } from "$lib/dates";
+  import { formatDate } from "$lib/dates";
+  import { DocumentSession } from "$lib/documents.svelte";
   import { getMiniApp, pluginUrl } from "$lib/plugins/registry";
   import { handleShortcut } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -25,171 +26,54 @@
 
   let { tabId, pluginId, appId, docId }: Props = $props();
 
-  const SAVE_DELAY = 1000;
   const found = $derived(getMiniApp(pluginId, appId));
-
-  let meta = $state<DocumentMeta | null>(null);
-  let title = $state("");
-  let initial = $state<{ id: string | null; title: string; data: unknown } | null>(null);
-  let missing = $state(false);
-  let history = $state<DocumentMeta[]>([]);
-
-  // Données courantes de la mini-app : pas besoin de réactivité, elles ne sont pas affichées ici.
-  let data: unknown = null;
-  let summary = "";
-  let dirty = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let queue: Promise<void> = Promise.resolve();
+  let session = $state<DocumentSession | null>(null);
 
   const pastCalcs = $derived(
-    history.map((d) => ({ id: d.id, title: d.title, summary: d.summary, date: formatDate(d.modified) })),
+    (session?.history ?? []).map((d) => ({ id: d.id, title: d.title, summary: d.summary, date: formatDate(d.modified) })),
   );
 
-  const defaultTitle = () => `${found?.app.name ?? "Calcul"} — ${stamp()}`;
-
-  /** Un nouveau calcul n'est enregistré qu'après une première modification (section 7.2). */
-  const hasContent = () => meta !== null || data !== null;
-
   onMount(() => {
-    void load(docId);
-    const flush = () => void saveNow();
+    if (!found) return;
+    const current = new DocumentSession(found, (id) => tabs.setDocId(tabId, id));
+    session = current;
+    void current.load(docId).then(() => current.refreshHistory());
+    const flush = () => void current.saveNow();
     window.addEventListener("beforeunload", flush);
     return () => {
       window.removeEventListener("beforeunload", flush);
-      if (dirty) void saveNow();
+      current.dispose();
     };
   });
 
-  async function load(id: string | undefined): Promise<void> {
-    if (id) {
-      try {
-        const doc = await api.documentRead(id);
-        meta = doc;
-        title = doc.title;
-        summary = doc.summary;
-        data = doc.data;
-        initial = { id: doc.id, title: doc.title, data: doc.data };
-      } catch {
-        missing = true;
-      }
-    }
-    if (!initial) {
-      title = defaultTitle();
-      initial = { id: null, title, data: null };
-    }
-    await refreshHistory();
-  }
-
-  async function refreshHistory(): Promise<void> {
-    history = await api.documentsList({ pluginId, appId }).catch(() => []);
-  }
-
-  function scheduleSave(): void {
-    dirty = true;
-    clearTimeout(timer);
-    timer = setTimeout(() => void saveNow(), SAVE_DELAY);
-  }
-
-  /** Les enregistrements passent l'un après l'autre : un nouveau calcul n'est jamais créé deux fois. */
-  function saveNow(): Promise<void> {
-    clearTimeout(timer);
-    queue = queue.then(write);
-    return queue;
-  }
-
-  async function write(): Promise<void> {
-    if (!dirty || !found) return;
-    dirty = false;
-    try {
-      const saved = await api.documentSave({
-        id: meta?.id,
-        pluginId,
-        appId,
-        dataVersion: found.app.dataVersion,
-        title: title.trim() || defaultTitle(),
-        summary,
-        data,
-      });
-      const created = meta === null;
-      meta = saved;
-      if (created) tabs.setDocId(tabId, saved.id);
-      await refreshHistory();
-    } catch (err) {
-      dirty = true;
-      ui.notify(`Enregistrement impossible : ${err}`);
-    }
-  }
-
   function onmessage(message: PluginToHost): void {
-    switch (message.type) {
-      case "update":
-        data = message.data;
-        scheduleSave();
-        break;
-      case "summary":
-        summary = message.summary;
-        if (hasContent()) scheduleSave();
-        break;
-      case "title":
-        title = message.title;
-        if (hasContent()) scheduleSave();
-        break;
-      case "notify":
-        ui.notify(message.text);
-        break;
-      case "copy":
-        void copyText(message.text);
-        break;
-      case "shortcut":
-        handleShortcut(message);
-        break;
-    }
-  }
-
-  async function copyText(text: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(text);
-      ui.notify(`Copié : ${text}`);
-    } catch {
-      ui.notify("Copie impossible");
-    }
+    if (session?.handle(message)) return;
+    if (message.type === "shortcut") handleShortcut(message);
   }
 
   const view = (id?: string): AppView => ({ kind: "app", pluginId, appId, docId: id });
 
   async function newCalc(): Promise<void> {
-    await saveNow();
+    await session?.saveNow();
     tabs.replace(view());
   }
 
   async function duplicate(): Promise<void> {
-    await saveNow();
-    if (!found || !meta) return;
-    const copy = await api.documentSave({
-      pluginId,
-      appId,
-      dataVersion: found.app.dataVersion,
-      title: `${title} (copie)`,
-      summary,
-      data,
-    });
-    tabs.replace(view(copy.id));
+    const id = await session?.duplicate();
+    if (!id) return;
+    tabs.replace(view(id));
     ui.notify("Calcul dupliqué");
   }
 
   async function remove(): Promise<void> {
-    if (!meta) return;
-    clearTimeout(timer);
-    dirty = false;
-    await queue;
-    await api.documentDelete(meta.id);
+    await session?.remove();
     tabs.replace(view());
     ui.notify("Calcul déplacé dans la corbeille");
   }
 
   async function openPast(id: string, event: MouseEvent): Promise<void> {
-    if (id === meta?.id) return;
-    await saveNow();
+    if (!session || id === session.meta?.id) return;
+    await session.saveNow();
     const elsewhere = tabs.list.find((t) => t.view.kind === "app" && t.view.docId === id);
     if (elsewhere) tabs.activate(elsewhere.id);
     else if (event.ctrlKey) tabs.open(view(id));
@@ -208,27 +92,40 @@
 
     <header class="head">
       <Tile color={plugin.color} icon={app.icon} emoji={app.emoji} variant="soft" size={36} />
-      <input
-        class="title"
-        bind:value={title}
-        oninput={() => hasContent() && scheduleSave()}
-        onblur={() => void saveNow()}
-        aria-label="Titre du calcul"
-        spellcheck="false"
-      />
+      {#if session}
+        <input
+          class="title"
+          value={session.title}
+          oninput={(e) => session?.rename(e.currentTarget.value)}
+          onblur={() => void session?.saveNow()}
+          aria-label="Titre du calcul"
+          spellcheck="false"
+        />
+      {/if}
       <div class="actions">
         <button class="btn" onclick={newCalc}><Icon name="plus" size={16} /> Nouveau</button>
         <button class="btn" disabled title="L'export PDF et CSV arrive avec les mini-apps de calcul">Exporter</button>
-        <button class="btn" onclick={duplicate} disabled={!meta} title={meta ? "Dupliquer ce calcul" : "Modifiez le calcul pour pouvoir le dupliquer"}>
+        <button
+          class="btn"
+          onclick={duplicate}
+          disabled={!session?.meta}
+          title={session?.meta ? "Dupliquer ce calcul" : "Modifiez le calcul pour pouvoir le dupliquer"}
+        >
           Dupliquer
         </button>
-        <button class="btn icon" onclick={remove} disabled={!meta} title="Déplacer dans la corbeille" aria-label="Supprimer le calcul">
+        <button
+          class="btn icon"
+          onclick={remove}
+          disabled={!session?.meta}
+          title="Déplacer dans la corbeille"
+          aria-label="Supprimer le calcul"
+        >
           <Icon name="trash" size={16} />
         </button>
       </div>
     </header>
 
-    {#if missing}
+    {#if session?.missing}
       <p class="notice">Ce calcul est introuvable : il a peut-être été supprimé ou déplacé. Un nouveau calcul a été ouvert.</p>
     {/if}
 
@@ -236,8 +133,15 @@
       {#if !inTauri}
         <p class="notice">Aperçu navigateur : les calculs sont gardés dans ce navigateur, pas dans des fichiers.</p>
       {/if}
-      {#if initial}
-        <MiniAppFrame src={pluginUrl(pluginId, app.entry)} title={app.name} {pluginId} {appId} {initial} {onmessage} />
+      {#if session?.initial}
+        <MiniAppFrame
+          src={pluginUrl(pluginId, app.entry)}
+          title={app.name}
+          {pluginId}
+          {appId}
+          initial={session.initial}
+          {onmessage}
+        />
       {/if}
     {:else}
       <div class="split">
@@ -255,7 +159,7 @@
       </div>
     {/if}
 
-    <PastCalcs items={pastCalcs} currentId={meta?.id} onopen={openPast} />
+    <PastCalcs items={pastCalcs} currentId={session?.meta?.id} onopen={openPast} />
   {:else}
     <h1>Mini-app introuvable</h1>
     <p class="sub">Le plugin qui la contenait a peut-être été désinstallé ou désactivé.</p>

@@ -63,6 +63,13 @@ export default defineConfig({
   },
   envPrefix: ["VITE_", "TAURI_ENV_"],
   build: {
+    // Deux fenêtres : l'application et l'aperçu rapide.
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL("./index.html", import.meta.url)),
+        apercu: fileURLToPath(new URL("./apercu.html", import.meta.url)),
+      },
+    },
     // WebView2 est basé sur Chromium : on cible un moteur récent.
     target: "chrome120",
     minify: !process.env.TAURI_ENV_DEBUG,

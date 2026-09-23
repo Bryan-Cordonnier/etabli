@@ -242,6 +242,14 @@ button {
   }
 }
 
+/* « Réduire les animations » : réglage de l'application, ou demande de Windows. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

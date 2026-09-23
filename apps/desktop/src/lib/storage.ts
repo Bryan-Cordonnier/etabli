@@ -25,6 +25,16 @@ export async function initStorage(): Promise<void> {
   }
 }
 
+/** Relit settings.json : une autre fenêtre (la principale) a pu le modifier. */
+export async function reloadStorage(): Promise<void> {
+  if (!inTauri) return;
+  try {
+    cache = await api.storeLoad();
+  } catch {
+    // On garde ce qui était déjà chargé.
+  }
+}
+
 export function load<T>(key: string, fallback: T): T {
   if (!inTauri) return (readLocal(key) as T | undefined) ?? fallback;
   return key in cache ? (cache[key] as T) : fallback;

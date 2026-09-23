@@ -1,5 +1,6 @@
 <script lang="ts">
   // Colonne des plugins (cahier des charges, section 5.2).
+  import { inTauri, system } from "$lib/api";
   import { PLUGINS } from "$lib/plugins/registry";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -8,7 +9,60 @@
   import Icon from "./Icon.svelte";
   import Tile from "./Tile.svelte";
 
-  const plugins = $derived(PLUGINS.filter((p) => settings.isPluginEnabled(p.id)));
+  /** Plugins actifs, dans l'ordre choisi par glisser-déposer (les nouveaux à la fin). */
+  const plugins = $derived.by(() => {
+    const order = settings.pluginOrder;
+    const rank = (id: string) => {
+      const index = order.indexOf(id);
+      return index < 0 ? Number.MAX_SAFE_INTEGER : index;
+    };
+    return PLUGINS.filter((p) => settings.isPluginEnabled(p.id))
+      .map((plugin, index) => ({ plugin, index }))
+      .sort((a, b) => rank(a.plugin.id) - rank(b.plugin.id) || a.index - b.index)
+      .map(({ plugin }) => plugin);
+  });
+
+  let nav: HTMLElement;
+  let drag: { id: string; startY: number; moved: boolean } | null = null;
+  let dragging = $state<string | null>(null);
+  let justDragged = false;
+
+  function startDrag(event: PointerEvent, id: string): void {
+    if (event.button !== 0) return;
+    drag = { id, startY: event.clientY, moved: false };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: PointerEvent): void {
+    if (!drag) return;
+    if (!drag.moved && Math.abs(event.clientY - drag.startY) < 6) return;
+    drag.moved = true;
+    dragging = drag.id;
+    const items = [...nav.querySelectorAll<HTMLElement>("[data-plugin]")];
+    const target = items.findIndex((el) => {
+      const rect = el.getBoundingClientRect();
+      return event.clientY >= rect.top && event.clientY <= rect.bottom;
+    });
+    const ids = plugins.map((p) => p.id);
+    const from = ids.indexOf(drag.id);
+    if (target < 0 || target === from) return;
+    ids.splice(target, 0, ...ids.splice(from, 1));
+    settings.setPluginOrder(ids, false);
+  }
+
+  function endDrag(): void {
+    if (drag?.moved) {
+      justDragged = true;
+      settings.setPluginOrder([...settings.pluginOrder]);
+    }
+    drag = null;
+    dragging = null;
+  }
+
+  function quickOverview(): void {
+    if (inTauri) void system.toggleQuick();
+    else ui.notify("L'aperçu rapide s'ouvre dans l'application, pas dans l'aperçu navigateur.");
+  }
   const view = $derived(tabs.active?.view);
   const activePluginId = $derived(view?.kind === "plugin" || view?.kind === "app" ? view.pluginId : undefined);
 
@@ -65,7 +119,7 @@
     </button>
   </div>
 
-  <nav class="nav" aria-label="Plugins">
+  <nav class="nav" aria-label="Plugins" bind:this={nav}>
     <button
       class="item"
       class:active={view?.kind === "home"}
@@ -84,10 +138,20 @@
       <button
         class="item"
         class:active={activePluginId === plugin.id}
-        onclick={(e) => go(pluginView(plugin), e)}
+        class:dragging={dragging === plugin.id}
+        data-plugin={plugin.id}
+        onclick={(e) => {
+          // Un glisser-déposer se termine par un clic : il ne doit pas ouvrir le plugin.
+          if (justDragged) justDragged = false;
+          else go(pluginView(plugin), e);
+        }}
         onauxclick={(e) => e.button === 1 && go(pluginView(plugin), e)}
         onmousedown={preventAutoscroll}
-        title={plugin.name}
+        onpointerdown={(e) => startDrag(e, plugin.id)}
+        onpointermove={moveDrag}
+        onpointerup={endDrag}
+        onpointercancel={endDrag}
+        title={`${plugin.name} (glisser pour déplacer)`}
       >
         <Tile color={plugin.color} icon={plugin.icon} emoji={plugin.emoji} />
         <span class="label">{plugin.name}</span>
@@ -115,8 +179,8 @@
     </button>
     <button
       class="strip-btn"
-      onclick={() => ui.notify("L'aperçu rapide arrive au jalon 3.")}
-      title="Aperçu rapide (Ctrl+Alt+Espace)"
+      onclick={quickOverview}
+      title={`Aperçu rapide (${settings.quickShortcut.label})`}
       aria-label="Aperçu rapide"
     >
       <Icon name="zap" />
@@ -235,6 +299,12 @@
   }
   .item.active .label {
     font-weight: 600;
+  }
+  .item.dragging {
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    cursor: grabbing;
+    z-index: 2;
   }
   .home-tile {
     width: 40px;

@@ -7,15 +7,21 @@
   import MiniAppPage from "$lib/pages/MiniAppPage.svelte";
   import PluginPage from "$lib/pages/PluginPage.svelte";
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
+  import { system } from "$lib/api";
+  import { applyAppearance } from "$lib/appearance";
   import { handleShortcut } from "$lib/shortcuts";
-  import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
-  import { applyTheme } from "$lib/themes";
   import type { View } from "$lib/types";
 
-  $effect(() => applyTheme(settings.theme));
+  $effect(() => applyAppearance());
   $effect(() => tabs.persist());
+
+  // « Ouvrir dans l'Établi » depuis l'aperçu rapide : le calcul arrive dans un nouvel onglet.
+  $effect(() => {
+    const unlisten = system.onOpenRequest((view) => tabs.navigate(view, { newTab: true }));
+    return () => void unlisten.then((stop) => stop());
+  });
 
   const view = $derived(tabs.active?.view);
 

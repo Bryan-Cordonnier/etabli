@@ -166,6 +166,11 @@ function reportHeight(send: (message: PluginToHost) => void): void {
 
 function forwardShortcuts(send: (message: PluginToHost) => void): void {
   window.addEventListener("keydown", (event) => {
+    // Échap : l'aperçu rapide s'en sert pour revenir en arrière. La mini-app peut aussi l'utiliser.
+    if (event.key === "Escape" && !event.defaultPrevented) {
+      send({ type: "shortcut", key: "Escape", ctrl: false, shift: false, alt: false });
+      return;
+    }
     if (!isHostShortcut(event)) return;
     event.preventDefault();
     send({ type: "shortcut", key: event.key, ctrl: event.ctrlKey, shift: event.shiftKey, alt: event.altKey });

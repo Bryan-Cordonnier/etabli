@@ -2,17 +2,22 @@
 
 use crate::files::write_atomic;
 use serde_json::{json, Value};
-use std::fs;
+use std::{fs, path::Path};
 
 const FILE: &str = "settings.json";
 
-#[tauri::command]
-pub fn store_load(state: tauri::State<'_, crate::AppState>) -> Value {
-    fs::read(state.paths.config.join(FILE))
+/// Contenu de settings.json, ou un objet vide s'il n'existe pas encore.
+pub fn read(config_dir: &Path) -> Value {
+    fs::read(config_dir.join(FILE))
         .ok()
         .and_then(|bytes| serde_json::from_slice(&bytes).ok())
         .filter(Value::is_object)
         .unwrap_or_else(|| json!({}))
+}
+
+#[tauri::command]
+pub fn store_load(state: tauri::State<'_, crate::AppState>) -> Value {
+    read(&state.paths.config)
 }
 
 #[tauri::command]

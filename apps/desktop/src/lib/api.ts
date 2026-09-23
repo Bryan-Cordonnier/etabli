@@ -1,8 +1,65 @@
 // Appels au cœur Rust. Hors de Tauri (aperçu dans un navigateur pendant le développement),
 // les documents sont gardés dans le navigateur avec le même comportement, pour tester l'interface.
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { emitTo, listen } from "@tauri-apps/api/event";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+import type { AppView } from "./types";
 
 export const inTauri = isTauri();
+
+export interface ShortcutStatus {
+  accelerator: string | null;
+  erreur: string | null;
+}
+
+export interface AppInfo {
+  version: string;
+  documents: string;
+  config: string;
+}
+
+/** Fenêtres, raccourci global, démarrage avec Windows, liens. */
+export const system = {
+  toggleQuick: (): Promise<void> => (inTauri ? invoke("apercu_basculer") : Promise.resolve()),
+  closeQuick: (): Promise<void> => (inTauri ? invoke("apercu_fermer") : Promise.resolve()),
+  showMain: (): Promise<void> => (inTauri ? invoke("etabli_afficher") : Promise.resolve()),
+
+  setShortcut: (accelerator: string): Promise<void> =>
+    inTauri ? invoke("raccourci_definir", { accelerator }) : Promise.resolve(),
+  shortcutStatus: (): Promise<ShortcutStatus> =>
+    inTauri ? invoke("raccourci_etat") : Promise.resolve({ accelerator: null, erreur: null }),
+
+  appInfo: (): Promise<AppInfo> =>
+    inTauri
+      ? invoke("infos_app")
+      : Promise.resolve({ version: "0.1.0", documents: "(aperçu navigateur)", config: "(aperçu navigateur)" }),
+
+  setCloseToTray: (active: boolean): Promise<void> =>
+    inTauri ? invoke("fermeture_zone_definir", { active }) : Promise.resolve(),
+
+  autostartEnabled: (): Promise<boolean> => (inTauri ? isEnabled() : Promise.resolve(false)),
+  setAutostart: (active: boolean): Promise<void> =>
+    inTauri ? (active ? enable() : disable()) : Promise.resolve(),
+
+  openUrl: (url: string): Promise<void> => (inTauri ? openUrl(url) : Promise.resolve(void window.open(url))),
+  reveal: (path: string): Promise<void> => (inTauri ? revealItemInDir(path) : Promise.resolve()),
+
+  /** Taille du texte : zoom de toute la fenêtre, mini-apps comprises. */
+  setZoom: (factor: number): Promise<void> => {
+    if (inTauri) return getCurrentWebview().setZoom(factor);
+    document.documentElement.style.zoom = String(factor);
+    return Promise.resolve();
+  },
+
+  /** L'aperçu rapide demande à la fenêtre principale d'ouvrir un calcul dans un onglet. */
+  openInMain: (view: AppView): Promise<void> => (inTauri ? emitTo("main", "etabli:ouvrir", view) : Promise.resolve()),
+  onOpenRequest: (handler: (view: AppView) => void): Promise<() => void> =>
+    inTauri ? listen<AppView>("etabli:ouvrir", (event) => handler(event.payload)) : Promise.resolve(() => {}),
+  onQuickOpened: (handler: () => void): Promise<() => void> =>
+    inTauri ? listen("apercu:ouvert", () => handler()) : Promise.resolve(() => {}),
+};
 
 export interface DocumentMeta {
   id: string;

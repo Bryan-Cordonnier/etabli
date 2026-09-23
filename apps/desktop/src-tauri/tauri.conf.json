@@ -21,7 +21,23 @@
         "center": true,
         "resizable": true,
         "decorations": false,
-        "shadow": true
+        "shadow": true,
+        "visible": false
+      },
+      {
+        "label": "apercu",
+        "title": "Aperçu rapide — Établi",
+        "url": "apercu.html",
+        "width": 1280,
+        "height": 800,
+        "visible": false,
+        "transparent": true,
+        "decorations": false,
+        "shadow": false,
+        "resizable": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "windowEffects": { "effects": ["acrylic"] }
       }
     ],
     "security": {

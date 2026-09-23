@@ -112,15 +112,75 @@ export const THEMES: Theme[] = [
   },
 ];
 
-export function applyTheme(id: string): void {
+export function applyTheme(id: string, custom: Theme[] = []): void {
   const root = document.documentElement;
   for (const token of THEME_TOKENS) root.style.removeProperty(`--${token}`);
   root.style.removeProperty("color-scheme");
 
-  const theme = THEMES.find((t) => t.id === id);
+  const theme = [...THEMES, ...custom].find((t) => t.id === id);
   if (!theme) return;
   for (const [token, value] of Object.entries(theme.colors)) {
     root.style.setProperty(`--${token}`, value);
   }
   root.style.setProperty("color-scheme", theme.base);
+}
+
+const COLOR = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i;
+
+/**
+ * Lit un fichier de thème (format documenté dans le cahier des charges, section 4) :
+ * { "name": "Atelier", "author": "…", "base": "dark", "colors": { "accent": "#f08a3c", … } }.
+ * Les couleurs absentes sont reprises du thème Clair ou Sombre selon `base`.
+ */
+export function parseTheme(text: string): Theme {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw new Error("Le fichier n'est pas un JSON valide.");
+  }
+  if (typeof raw !== "object" || raw === null) throw new Error("Le fichier ne décrit pas un thème.");
+  const t = raw as Record<string, unknown>;
+  const name = typeof t.name === "string" ? t.name.trim() : "";
+  if (!name) throw new Error("Le champ « name » est obligatoire.");
+  const base = t.base === "dark" ? "dark" : "light";
+  const fallback = THEMES.find((theme) => theme.id === (base === "dark" ? "sombre" : "clair"))!;
+
+  const colors = { ...fallback.colors };
+  const given = typeof t.colors === "object" && t.colors !== null ? (t.colors as Record<string, unknown>) : {};
+  for (const token of THEME_TOKENS) {
+    const value = given[token];
+    if (value === undefined) continue;
+    if (typeof value !== "string" || !COLOR.test(value.trim())) {
+      throw new Error(`Couleur « ${token} » invalide : utilisez par exemple "#f08a3c".`);
+    }
+    colors[token] = value.trim();
+  }
+
+  const slug = name
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return {
+    id: `perso-${slug || "theme"}`,
+    name,
+    author: typeof t.author === "string" && t.author.trim() ? t.author.trim() : "Thème importé",
+    base,
+    colors,
+  };
+}
+
+/** Fichier JSON d'un thème, pour le partager ou s'en servir de base. */
+export function themeToJson(theme: Theme): string {
+  return JSON.stringify({ name: theme.name, author: theme.author, base: theme.base, colors: theme.colors }, null, 2);
+}
+
+/** Couleurs actuellement affichées (utile pour « Comme Windows »). */
+export function currentColors(): ThemeColors {
+  const style = getComputedStyle(document.documentElement);
+  const colors = {} as ThemeColors;
+  for (const token of THEME_TOKENS) colors[token] = style.getPropertyValue(`--${token}`).trim();
+  return colors;
 }
