@@ -8,10 +8,28 @@ interface Session {
 
 const HOME: View = { kind: "home" };
 
-const sameView = (a: View, b: View): boolean => JSON.stringify(a) === JSON.stringify(b);
+/** Même page, sans tenir compte du `nonce` (voir types.ts). */
+function sameView(a: View, b: View): boolean {
+  if (a.kind !== b.kind) return false;
+  switch (a.kind) {
+    case "home":
+      return true;
+    case "plugin":
+      return b.kind === "plugin" && a.pluginId === b.pluginId;
+    case "settings":
+      return b.kind === "settings" && a.section === b.section;
+    case "app":
+      return b.kind === "app" && a.pluginId === b.pluginId && a.appId === b.appId && a.docId === b.docId;
+  }
+}
 
 /** Accueil, grille d'un plugin et Paramètres sont des pages de navigation ; une mini-app contient du travail. */
 const isNavigation = (view: View): boolean => view.kind !== "app";
+
+let nonce = Date.now();
+
+/** Chaque ouverture d'une mini-app reçoit un nouveau `nonce` : l'écran est recréé. */
+const fresh = (view: View): View => (view.kind === "app" ? { ...view, nonce: ++nonce } : view);
 
 class Tabs {
   list = $state<Tab[]>([]);
@@ -24,7 +42,7 @@ class Tabs {
   constructor() {
     const session = load<Session | null>("session", null);
     const views = session?.views.length ? session.views : [HOME];
-    for (const view of views) this.#create(view);
+    for (const view of views) this.#create(fresh(view));
     const restored = this.list[Math.min(session?.active ?? 0, this.list.length - 1)];
     this.activeId = restored?.id ?? 0;
   }
@@ -35,7 +53,7 @@ class Tabs {
   }
 
   open(view: View, focus = true): void {
-    const tab = this.#create(view);
+    const tab = this.#create(fresh(view));
     if (focus) this.activeId = tab.id;
   }
 
@@ -90,13 +108,27 @@ class Tabs {
     }
     if (sameView(tab.view, view)) return;
     tab.history.push($state.snapshot(tab.view));
-    tab.view = view;
+    tab.view = fresh(view);
+  }
+
+  /** Remplace la page de l'onglet actif (autre calcul de la même mini-app, nouveau calcul). */
+  replace(view: View): void {
+    const tab = this.active;
+    if (!tab) return this.open(view);
+    tab.history.push($state.snapshot(tab.view));
+    tab.view = fresh(view);
+  }
+
+  /** Le calcul vient d'être enregistré : l'onglet retient son identifiant, sans recréer l'écran. */
+  setDocId(tabId: number, docId: string): void {
+    const tab = this.list.find((t) => t.id === tabId);
+    if (tab?.view.kind === "app") tab.view = { ...tab.view, docId };
   }
 
   back(): void {
     const tab = this.active;
     const previous = tab?.history.pop();
-    if (tab && previous) tab.view = previous;
+    if (tab && previous) tab.view = fresh(previous);
   }
 
   cycle(delta: number): void {

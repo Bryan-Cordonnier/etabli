@@ -1,0 +1,41 @@
+{
+  "id": "materiaux",
+  "name": "Matériaux et fixation",
+  "version": "0.1.0",
+  "apiVersion": "^1",
+  "author": "Établi",
+  "description": "Masses, perçages, taraudages",
+  "color": "#0e9fb7",
+  "emoji": "⚖️",
+  "icon": "weight",
+  "permissions": [],
+  "miniApps": [
+    {
+      "id": "masse",
+      "name": "Masse d'un profilé",
+      "description": "Tube, tôle, rond plein…",
+      "icon": "weight",
+      "emoji": "⚖️",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    },
+    {
+      "id": "taraudage",
+      "name": "Perçage avant taraudage",
+      "description": "Métrique, pas standard et fin",
+      "icon": "bolt",
+      "emoji": "🔩",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    },
+    {
+      "id": "rotation",
+      "name": "Vitesse de rotation",
+      "description": "N = 1000·Vc / (π·D)",
+      "icon": "gauge",
+      "emoji": "⚙️",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    }
+  ]
+}

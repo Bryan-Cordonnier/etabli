@@ -7,39 +7,34 @@
   import MiniAppPage from "$lib/pages/MiniAppPage.svelte";
   import PluginPage from "$lib/pages/PluginPage.svelte";
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
+  import { handleShortcut } from "$lib/shortcuts";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { applyTheme } from "$lib/themes";
+  import type { View } from "$lib/types";
 
   $effect(() => applyTheme(settings.theme));
   $effect(() => tabs.persist());
 
   const view = $derived(tabs.active?.view);
-  // Change à chaque changement de page, pour rejouer le fondu d'apparition.
-  const viewKey = $derived(`${tabs.activeId}:${JSON.stringify(view)}`);
 
-  /** Raccourcis clavier de la section 5.3 du cahier des charges. */
+  /** Change à chaque changement de page : l'écran est recréé et le fondu rejoué. Pour une mini-app,
+   *  seul le `nonce` compte : l'identifiant reçu au premier enregistrement ne recrée rien. */
+  function keyOf(v: View | undefined): string {
+    if (v?.kind === "app") return `app:${v.pluginId}:${v.appId}:${v.nonce}`;
+    return JSON.stringify(v);
+  }
+  const viewKey = $derived(`${tabs.activeId}:${keyOf(view)}`);
+
   function onkeydown(event: KeyboardEvent): void {
-    const ctrl = event.ctrlKey || event.metaKey;
-    const key = event.key.toLowerCase();
-
-    if (ctrl && key === "k") {
-      event.preventDefault();
-      ui.paletteOpen = !ui.paletteOpen;
-      return;
-    }
-    if (ui.paletteOpen) return;
-
-    if (ctrl && event.shiftKey && key === "t") tabs.reopenClosed();
-    else if (ctrl && key === "t") tabs.open({ kind: "home" });
-    else if (ctrl && key === "w") tabs.close(tabs.activeId);
-    else if (ctrl && event.key === "Tab") tabs.cycle(event.shiftKey ? -1 : 1);
-    else if (ctrl && /^[1-9]$/.test(event.key)) tabs.goTo(Number(event.key));
-    else if (ctrl && key === "b") settings.toggleSidebar();
-    else if (event.altKey && event.key === "ArrowLeft") tabs.back();
-    else return;
-    event.preventDefault();
+    const handled = handleShortcut({
+      key: event.key,
+      ctrl: event.ctrlKey || event.metaKey,
+      shift: event.shiftKey,
+      alt: event.altKey,
+    });
+    if (handled) event.preventDefault();
   }
 
   /** Bouton « précédent » de la souris. */
@@ -65,7 +60,7 @@
           {:else if view?.kind === "plugin"}
             <PluginPage pluginId={view.pluginId} />
           {:else if view?.kind === "app"}
-            <MiniAppPage pluginId={view.pluginId} appId={view.appId} />
+            <MiniAppPage tabId={tabs.activeId} pluginId={view.pluginId} appId={view.appId} docId={view.docId} />
           {:else if view?.kind === "settings"}
             <SettingsPage section={view.section} />
           {/if}

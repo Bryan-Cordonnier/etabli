@@ -1,0 +1,32 @@
+{
+  "id": "tolerie",
+  "name": "Tôlerie",
+  "version": "0.1.0",
+  "apiVersion": "^1",
+  "author": "Établi",
+  "description": "Pliage : développés et efforts",
+  "color": "#ea7a1a",
+  "emoji": "🔨",
+  "icon": "hammer",
+  "permissions": [],
+  "miniApps": [
+    {
+      "id": "developpe",
+      "name": "Développé de pliage",
+      "description": "Facteur K, lignes de pli",
+      "icon": "bend",
+      "emoji": "📃",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    },
+    {
+      "id": "ve",
+      "name": "Vé et effort de pliage",
+      "description": "Ouverture conseillée, tonnage",
+      "icon": "vee",
+      "emoji": "🔻",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    }
+  ]
+}

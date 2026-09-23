@@ -8,9 +8,11 @@
     "plugins/*"
   ],
   "scripts": {
-    "dev": "npm run tauri dev -w @etabli/desktop",
-    "build": "npm run tauri build -w @etabli/desktop",
-    "check": "npm run check --workspaces --if-present"
+    "dev": "npm run build:plugins && npm run tauri dev -w @etabli/desktop",
+    "build": "npm run build:plugins && npm run tauri build -w @etabli/desktop",
+    "build:plugins": "npm run build -w plugins --if-present",
+    "check": "npm run check --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
   },
   "engines": {
     "node": ">=22"

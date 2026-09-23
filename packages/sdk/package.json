@@ -1,0 +1,17 @@
+{
+  "name": "@etabli/sdk",
+  "version": "0.1.0",
+  "description": "Bibliothèque pour écrire des plugins Établi : document, thème, notifications, presse-papiers.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./protocol": "./src/protocol.ts",
+    "./base.css": "./src/base.css"
+  },
+  "scripts": {
+    "check": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0"
+  }
+}

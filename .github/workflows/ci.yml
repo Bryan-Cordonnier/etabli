@@ -37,8 +37,14 @@ jobs:
       - name: Dépendances npm
         run: npm ci
 
-      - name: Types (svelte-check)
+      - name: Types (moteur, SDK, plugins)
         run: npm run check
+
+      - name: Tests des calculs (plugins)
+        run: npm test
+
+      - name: Plugins (build)
+        run: npm run build:plugins
 
       - name: Interface (vite build)
         run: npm run build -w @etabli/desktop

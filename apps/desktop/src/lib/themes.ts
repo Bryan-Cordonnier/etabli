@@ -1,7 +1,8 @@
 // Thèmes : chaque thème redéfinit les variables CSS de app.css (cahier des charges, section 4).
 // « Comme Windows » n'applique rien : app.css suit alors prefers-color-scheme.
 
-const TOKENS = [
+/** Variables de couleur d'un thème, transmises aussi aux mini-apps. */
+export const THEME_TOKENS = [
   "page",
   "surface",
   "surface-2",
@@ -16,7 +17,7 @@ const TOKENS = [
   "scrim",
 ] as const;
 
-export type ThemeColors = Record<(typeof TOKENS)[number], string>;
+export type ThemeColors = Record<(typeof THEME_TOKENS)[number], string>;
 
 export interface Theme {
   id: string;
@@ -113,7 +114,7 @@ export const THEMES: Theme[] = [
 
 export function applyTheme(id: string): void {
   const root = document.documentElement;
-  for (const token of TOKENS) root.style.removeProperty(`--${token}`);
+  for (const token of THEME_TOKENS) root.style.removeProperty(`--${token}`);
   root.style.removeProperty("color-scheme");
 
   const theme = THEMES.find((t) => t.id === id);

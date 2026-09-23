@@ -1,5 +1,6 @@
 <script lang="ts">
   import AppCard from "$lib/components/AppCard.svelte";
+  import RecentDocs from "$lib/components/RecentDocs.svelte";
   import Tile from "$lib/components/Tile.svelte";
   import { getPlugin } from "$lib/plugins/registry";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -36,7 +37,7 @@
 
     <section class="section">
       <h2>Récents dans ce plugin</h2>
-      <p class="empty">Les derniers calculs de ce plugin apparaîtront ici.</p>
+      <RecentDocs {pluginId} empty="Les derniers calculs de ce plugin apparaîtront ici." />
     </section>
   {:else}
     <h1>Plugin introuvable</h1>

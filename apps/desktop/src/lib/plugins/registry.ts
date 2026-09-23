@@ -1,87 +1,91 @@
+import { api, inTauri } from "$lib/api";
+import { ICONS, type IconName } from "$lib/icons";
 import type { MiniAppManifest, PluginManifest } from "$lib/types";
 
-// Plugins officiels déclarés ici pour le jalon 1 (le contenu des mini-apps viendra ensuite).
-// Au jalon 2, chaque plugin sera chargé depuis son propre manifest.json (cahier des charges, section 8.2).
-export const PLUGINS: PluginManifest[] = [
-  {
-    id: "maths",
-    name: "Maths et géométrie",
-    description: "Trigonométrie, triangles, arcs et conversions",
-    version: "0.1.0",
-    color: "#7c5cfa",
-    emoji: "📐",
-    icon: "sigma",
-    official: true,
-    miniApps: [
-      { id: "pythagore", name: "Pythagore", description: "Deux côtés connus, le troisième calculé", icon: "triangle-right", emoji: "📐", plannedFor: "v1" },
-      { id: "triangle", name: "Résolution de triangle", description: "Côtés, angles, aire", icon: "triangle", emoji: "🔺", plannedFor: "v1" },
-      { id: "arc", name: "Arc et cercle", description: "Corde, flèche, rayon, longueur d'arc", icon: "spline", emoji: "⭕", plannedFor: "v1" },
-      { id: "conversions", name: "Conversions", description: "mm ↔ pouces, degrés ↔ pente %", icon: "arrows", emoji: "🔁", plannedFor: "v1" },
-    ],
-  },
-  {
-    id: "economie",
-    name: "Économie de matière",
-    description: "Optimiser les débits de barres et le calepinage de tôles",
-    version: "0.1.0",
-    color: "#16a34a",
-    emoji: "♻️",
-    icon: "layers",
-    official: true,
-    miniApps: [
-      { id: "debit-tubes", name: "Débit de tubes", description: "Le moins de barres possible", icon: "cylinder", emoji: "📏", plannedFor: "v1" },
-      { id: "calepinage-rect", name: "Calepinage rectangles", description: "Platines et flans sur tôle", icon: "grid", emoji: "🟩", plannedFor: "v1" },
-      { id: "calepinage-dxf", name: "Calepinage DXF", description: "Formes libres importées de SolidWorks", icon: "shapes", emoji: "🧩", plannedFor: "v2" },
-    ],
-  },
-  {
-    id: "tolerie",
-    name: "Tôlerie",
-    description: "Pliage : développés et efforts",
-    version: "0.1.0",
-    color: "#ea7a1a",
-    emoji: "🔨",
-    icon: "hammer",
-    official: true,
-    miniApps: [
-      { id: "developpe", name: "Développé de pliage", description: "Facteur K, lignes de pli", icon: "bend", emoji: "📃", plannedFor: "v1" },
-      { id: "ve", name: "Vé et effort de pliage", description: "Ouverture conseillée, tonnage", icon: "vee", emoji: "🔻", plannedFor: "v1" },
-    ],
-  },
-  {
-    id: "materiaux",
-    name: "Matériaux et fixation",
-    description: "Masses, perçages, taraudages",
-    version: "0.1.0",
-    color: "#0e9fb7",
-    emoji: "⚖️",
-    icon: "weight",
-    official: true,
-    miniApps: [
-      { id: "masse", name: "Masse d'un profilé", description: "Tube, tôle, rond plein…", icon: "weight", emoji: "⚖️", plannedFor: "v1" },
-      { id: "taraudage", name: "Perçage avant taraudage", description: "Métrique, pas standard et fin", icon: "bolt", emoji: "🔩", plannedFor: "v1" },
-      { id: "rotation", name: "Vitesse de rotation", description: "N = 1000·Vc / (π·D)", icon: "gauge", emoji: "⚙️", plannedFor: "v1" },
-    ],
-  },
-  {
-    id: "chaudronnerie",
-    name: "Chaudronnerie",
-    description: "Développés de traçage",
-    version: "0.1.0",
-    color: "#e0483e",
-    emoji: "🔥",
-    icon: "flame",
-    official: true,
-    miniApps: [
-      { id: "cone", name: "Tronçon de cône", description: "Traçage et DXF 1:1", icon: "cone", emoji: "🔶", plannedFor: "v2" },
-      { id: "piquage", name: "Piquage", description: "Cylindre sur cylindre", icon: "cylinder", emoji: "➕", plannedFor: "v2" },
-    ],
-  },
-];
+/** Plugins installés, remplis une fois au démarrage par `loadPlugins()`. */
+export const PLUGINS: PluginManifest[] = [];
 
 export interface MiniAppRef {
   plugin: PluginManifest;
   app: MiniAppManifest;
+}
+
+/**
+ * Charge les manifestes (cahier des charges, section 8.2) : depuis le cœur Rust dans
+ * l'application, depuis les fichiers du dépôt dans l'aperçu navigateur.
+ */
+export async function loadPlugins(): Promise<void> {
+  const raw = inTauri ? await api.pluginsList().catch(() => []) : repositoryManifests();
+  const plugins = raw.map(({ manifest, official }) => normalize(manifest, official)).filter((p) => p !== null);
+  plugins.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "fr"));
+  PLUGINS.splice(0, PLUGINS.length, ...plugins);
+}
+
+/** Ordre par défaut de la colonne : les plugins officiels dans l'ordre du cahier des charges, puis les autres. */
+const OFFICIAL_ORDER = ["maths", "economie", "tolerie", "materiaux", "chaudronnerie"];
+const rank = (plugin: PluginManifest) => {
+  const index = OFFICIAL_ORDER.indexOf(plugin.id);
+  return plugin.official && index >= 0 ? index : OFFICIAL_ORDER.length;
+};
+
+function repositoryManifests(): { manifest: unknown; official: boolean }[] {
+  const files = import.meta.glob<unknown>(
+    ["../../../../../plugins/*/manifest.json", "../../../../../plugins/*/public/manifest.json"],
+    { eager: true, import: "default" },
+  );
+  return Object.values(files).map((manifest) => ({ manifest, official: true }));
+}
+
+const text = (value: unknown, fallback = ""): string => (typeof value === "string" ? value : fallback);
+const icon = (value: unknown): IconName => (typeof value === "string" && value in ICONS ? (value as IconName) : "puzzle");
+
+/** Valide un manifeste et complète les champs facultatifs. Renvoie null s'il est inutilisable. */
+function normalize(raw: unknown, official: boolean): PluginManifest | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const m = raw as Record<string, unknown>;
+  const id = text(m.id);
+  if (!id || !Array.isArray(m.miniApps)) return null;
+
+  const miniApps: MiniAppManifest[] = m.miniApps
+    .filter((a): a is Record<string, unknown> => typeof a === "object" && a !== null && typeof a.id === "string")
+    .map((a) => ({
+      id: text(a.id),
+      name: text(a.name, text(a.id)),
+      description: text(a.description),
+      icon: icon(a.icon),
+      emoji: text(a.emoji, "🧩"),
+      entry: typeof a.entry === "string" ? a.entry : undefined,
+      dataVersion: typeof a.dataVersion === "number" ? a.dataVersion : 1,
+      plannedFor: a.plannedFor === "v2" ? "v2" : "v1",
+    }));
+
+  return {
+    id,
+    name: text(m.name, id),
+    description: text(m.description),
+    version: text(m.version, "0.0.0"),
+    apiVersion: text(m.apiVersion, "^1"),
+    author: text(m.author),
+    color: text(m.color, "#6b7280"),
+    emoji: text(m.emoji, "🧩"),
+    icon: icon(m.icon),
+    permissions: Array.isArray(m.permissions) ? m.permissions.filter((p) => typeof p === "string") : [],
+    official,
+    miniApps,
+  };
+}
+
+/** Adresse d'un fichier de plugin, servie par le cœur Rust (voir plugins.rs). */
+export function pluginUrl(pluginId: string, path: string): string {
+  // Sous Windows, WebView2 expose les protocoles personnalisés en http://<nom>.localhost.
+  // Dans l'aperçu navigateur, c'est le serveur Vite qui sert les plugins (voir vite.config.ts).
+  const base = !inTauri
+    ? "/__plugins"
+    : navigator.userAgent.includes("Windows")
+      ? "http://plugins.localhost"
+      : "plugins://localhost";
+  const encoded = path.split("/").map(encodeURIComponent).join("/");
+  return `${base}/${encodeURIComponent(pluginId)}/${encoded}`;
 }
 
 /** Identifiant global d'une mini-app, utilisé pour les favoris : « plugin/mini-app ». */

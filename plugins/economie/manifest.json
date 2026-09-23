@@ -1,0 +1,41 @@
+{
+  "id": "economie",
+  "name": "Économie de matière",
+  "version": "0.1.0",
+  "apiVersion": "^1",
+  "author": "Établi",
+  "description": "Optimiser les débits de barres et le calepinage de tôles",
+  "color": "#16a34a",
+  "emoji": "♻️",
+  "icon": "layers",
+  "permissions": [],
+  "miniApps": [
+    {
+      "id": "debit-tubes",
+      "name": "Débit de tubes",
+      "description": "Le moins de barres possible",
+      "icon": "cylinder",
+      "emoji": "📏",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    },
+    {
+      "id": "calepinage-rect",
+      "name": "Calepinage rectangles",
+      "description": "Platines et flans sur tôle",
+      "icon": "grid",
+      "emoji": "🟩",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    },
+    {
+      "id": "calepinage-dxf",
+      "name": "Calepinage DXF",
+      "description": "Formes libres importées de SolidWorks",
+      "icon": "shapes",
+      "emoji": "🧩",
+      "dataVersion": 1,
+      "plannedFor": "v2"
+    }
+  ]
+}

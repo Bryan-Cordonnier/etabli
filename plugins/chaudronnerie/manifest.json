@@ -1,0 +1,32 @@
+{
+  "id": "chaudronnerie",
+  "name": "Chaudronnerie",
+  "version": "0.1.0",
+  "apiVersion": "^1",
+  "author": "Établi",
+  "description": "Développés de traçage",
+  "color": "#e0483e",
+  "emoji": "🔥",
+  "icon": "flame",
+  "permissions": [],
+  "miniApps": [
+    {
+      "id": "cone",
+      "name": "Tronçon de cône",
+      "description": "Traçage et DXF 1:1",
+      "icon": "cone",
+      "emoji": "🔶",
+      "dataVersion": 1,
+      "plannedFor": "v2"
+    },
+    {
+      "id": "piquage",
+      "name": "Piquage",
+      "description": "Cylindre sur cylindre",
+      "icon": "cylinder",
+      "emoji": "➕",
+      "dataVersion": 1,
+      "plannedFor": "v2"
+    }
+  ]
+}

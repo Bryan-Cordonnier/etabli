@@ -1,0 +1,51 @@
+{
+  "id": "maths",
+  "name": "Maths et géométrie",
+  "version": "0.2.0",
+  "apiVersion": "^1",
+  "author": "Établi",
+  "description": "Trigonométrie, triangles, arcs et conversions",
+  "color": "#7c5cfa",
+  "emoji": "📐",
+  "icon": "sigma",
+  "permissions": [],
+  "miniApps": [
+    {
+      "id": "pythagore",
+      "name": "Pythagore",
+      "description": "Deux côtés connus, le troisième calculé",
+      "icon": "triangle-right",
+      "emoji": "📐",
+      "entry": "apps/pythagore/index.html",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    },
+    {
+      "id": "triangle",
+      "name": "Résolution de triangle",
+      "description": "Côtés, angles, aire",
+      "icon": "triangle",
+      "emoji": "🔺",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    },
+    {
+      "id": "arc",
+      "name": "Arc et cercle",
+      "description": "Corde, flèche, rayon, longueur d'arc",
+      "icon": "spline",
+      "emoji": "⭕",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    },
+    {
+      "id": "conversions",
+      "name": "Conversions",
+      "description": "mm ↔ pouces, degrés ↔ pente %",
+      "icon": "arrows",
+      "emoji": "🔁",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    }
+  ]
+}

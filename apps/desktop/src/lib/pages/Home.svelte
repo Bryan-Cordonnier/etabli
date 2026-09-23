@@ -1,5 +1,6 @@
 <script lang="ts">
   import AppCard from "$lib/components/AppCard.svelte";
+  import RecentDocs from "$lib/components/RecentDocs.svelte";
   import SearchBox from "$lib/components/SearchBox.svelte";
   import { allMiniApps, appKey, getMiniAppByKey, type MiniAppRef } from "$lib/plugins/registry";
   import { settings } from "$lib/state/settings.svelte";
@@ -57,6 +58,6 @@
 
   <section class="section">
     <h2>Documents récents</h2>
-    <p class="empty">Vos calculs récents apparaîtront ici.</p>
+    <RecentDocs empty="Vos calculs récents apparaîtront ici." />
   </section>
 </div>
