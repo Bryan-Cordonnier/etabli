@@ -365,8 +365,21 @@
     background: var(--field);
     color: var(--text);
   }
+  /* Page Paramètres ouverte : même repère que les plugins de la colonne (fond, bordure, barre d'accent). */
   .strip-btn.on {
-    color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 1px var(--border);
+    color: var(--text);
+  }
+  .strip-btn.on::before {
+    content: "";
+    position: absolute;
+    left: -12px;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--accent);
   }
 
   /* Repliée : les textes s'estompent (en gardant leur place : rien ne remonte), puis
