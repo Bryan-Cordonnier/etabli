@@ -119,7 +119,7 @@
 >
   <div class="brand-row">
     <button class="brand" onclick={(e) => go({ kind: "home" }, e)} title="Accueil">
-      <Logo size={30} />
+      <Logo size={32} />
       <span class="label">Établi</span>
     </button>
     <!-- Zone vide de la barre de titre : elle déplace la fenêtre. -->
@@ -209,10 +209,11 @@
 
   /* Mêmes marges repliée ou dépliée : logo et tuiles ne bougent pas pendant l'animation,
      seule la largeur change et les textes s'estompent. Repliée (64 px), tout tombe au centre. */
+  /* Aligné sur les onglets : même hauteur (36 px) posée en bas de la barre de titre. */
   .brand-row {
     height: var(--titlebar);
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     padding: 0 12px;
     flex: none;
     overflow: hidden;
@@ -225,13 +226,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    height: 38px;
-    padding: 0 5px;
+    height: 36px;
+    padding: 0 4px;
     border: 0;
     border-radius: 10px;
     background: none;
     font-weight: 700;
-    font-size: 18px;
+    font-size: 19px;
     letter-spacing: -0.2px;
     white-space: nowrap;
   }
