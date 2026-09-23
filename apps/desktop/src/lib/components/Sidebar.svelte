@@ -1,10 +1,8 @@
 <script lang="ts">
   // Colonne des plugins (cahier des charges, section 5.2).
-  import { inTauri, system } from "$lib/api";
   import { PLUGINS } from "$lib/plugins/registry";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
-  import { ui } from "$lib/state/ui.svelte";
   import type { PluginManifest, View } from "$lib/types";
   import Icon from "./Icon.svelte";
   import Tile from "./Tile.svelte";
@@ -59,10 +57,6 @@
     dragging = null;
   }
 
-  function quickOverview(): void {
-    if (inTauri) void system.toggleQuick();
-    else ui.notify("L'aperçu rapide s'ouvre dans l'application, pas dans l'aperçu navigateur.");
-  }
   const view = $derived(tabs.active?.view);
   const activePluginId = $derived(view?.kind === "plugin" || view?.kind === "app" ? view.pluginId : undefined);
 
@@ -101,16 +95,16 @@
     handle.addEventListener("pointercancel", stop);
   }
 
-  // La bande du bas passe à la verticale une fois le repli terminé (0,2 s), pour que rien ne
-  // bouge pendant l'animation ; au dépliage, elle redevient horizontale tout de suite.
+  // Une fois le repli terminé (0,2 s), les textes déjà invisibles sont retirés de la mise en page ;
+  // au dépliage, ils reviennent tout de suite pour s'afficher en fondu.
   const FOLD_DURATION = 200;
-  let stacked = $state(settings.sidebarCollapsed);
+  let folded = $state(settings.sidebarCollapsed);
   $effect(() => {
     if (!settings.sidebarCollapsed) {
-      stacked = false;
+      folded = false;
       return;
     }
-    const timer = setTimeout(() => (stacked = true), FOLD_DURATION);
+    const timer = setTimeout(() => (folded = true), FOLD_DURATION);
     return () => clearTimeout(timer);
   });
 </script>
@@ -118,7 +112,7 @@
 <aside
   class="side"
   class:collapsed={settings.sidebarCollapsed}
-  class:folded={stacked}
+  class:folded
   class:resizing
   style:width={settings.sidebarCollapsed ? "64px" : `${settings.sidebarWidth}px`}
 >
@@ -175,9 +169,11 @@
     {/each}
   </nav>
 
-  <div class="strip" class:stacked>
+  <!-- Dépliée : les deux boutons côte à côte. Repliée : « Replier » glisse au-dessus de
+       « Paramètres », en même temps que la colonne se réduit (aucun saut). -->
+  <div class="strip">
     <button
-      class="strip-btn"
+      class="strip-btn settings"
       class:on={view?.kind === "settings"}
       onclick={(e) => go({ kind: "settings" }, e)}
       title="Paramètres"
@@ -186,20 +182,12 @@
       <Icon name="settings" />
     </button>
     <button
-      class="strip-btn"
+      class="strip-btn fold"
       onclick={() => settings.toggleSidebar()}
       title={settings.sidebarCollapsed ? "Déplier la colonne (Ctrl+B)" : "Replier la colonne (Ctrl+B)"}
       aria-label={settings.sidebarCollapsed ? "Déplier la colonne" : "Replier la colonne"}
     >
       <Icon name="panel" />
-    </button>
-    <button
-      class="strip-btn"
-      onclick={quickOverview}
-      title={`Aperçu rapide (${settings.quickShortcut.label})`}
-      aria-label="Aperçu rapide"
-    >
-      <Icon name="zap" />
     </button>
   </div>
 
@@ -334,19 +322,22 @@
     z-index: 2;
   }
 
+  /* Deux boutons de 40 px placés à la main, pour animer leur déplacement avec la même durée et
+     la même courbe que la largeur de la colonne. Paramètres ne bouge jamais (en bas à gauche). */
   .strip {
+    position: relative;
+    height: 57px; /* 1 px de trait + 8 + 40 + 8 */
     border-top: 1px solid var(--border);
-    padding: 8px 12px;
-    display: flex;
-    gap: 4px;
     flex: none;
-    overflow: hidden;
+    transition: height 0.2s ease-out;
   }
-  .strip.stacked {
-    flex-direction: column;
-    animation: fade-in 0.15s ease-out;
+  .collapsed .strip {
+    height: 101px; /* un bouton de plus au-dessus : 44 px */
   }
   .strip-btn {
+    position: absolute;
+    left: 12px;
+    bottom: 8px;
     width: 40px;
     height: 40px;
     border: 0;
@@ -356,8 +347,19 @@
     display: grid;
     place-items: center;
     transition:
+      transform 0.2s ease-out,
       background 0.12s,
       color 0.12s;
+  }
+  .strip-btn.fold {
+    transform: translateX(44px);
+  }
+  .collapsed .strip-btn.fold {
+    transform: translateY(-44px);
+  }
+  .resizing .strip,
+  .resizing .strip-btn {
+    transition: none;
   }
   .strip-btn:hover {
     background: var(--field);

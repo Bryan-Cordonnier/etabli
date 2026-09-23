@@ -162,13 +162,14 @@
   .tabs.fade-left.fade-right {
     mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 48px), transparent);
   }
-  /* Comme un navigateur : les onglets rétrécissent (jusqu'à 96 px) avant de déborder. */
+  /* Tous les onglets ont la même largeur, quel que soit le titre (ergonomie : ils ne bougent pas).
+     Quand il y en a trop, la barre défile plutôt que de les écraser. */
   .tab {
     position: relative;
     z-index: 0;
     height: 36px;
-    flex: 0 1 200px;
-    min-width: 96px;
+    flex: none;
+    width: 180px;
     display: flex;
     align-items: center;
     gap: 8px;
