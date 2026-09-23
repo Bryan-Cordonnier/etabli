@@ -390,7 +390,7 @@
     height: 36px;
     padding: 0 12px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--r-md);
     background: none;
     text-align: left;
     color: var(--muted);
@@ -458,7 +458,7 @@
     font: 12.5px var(--mono);
     background: var(--field);
     padding: 6px 10px;
-    border-radius: 6px;
+    border-radius: var(--r-xs);
     user-select: text;
     overflow-wrap: anywhere;
   }
@@ -471,7 +471,7 @@
   .theme {
     position: relative;
     border: 2px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--r-md);
     overflow: hidden;
   }
   .theme.on {
@@ -506,7 +506,7 @@
   .lines b {
     display: block;
     height: 8px;
-    border-radius: 4px;
+    border-radius: var(--r-xs);
   }
   .theme-label {
     padding: 8px 10px;
@@ -528,7 +528,7 @@
     width: 24px;
     height: 24px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--r-xs);
     background: var(--surface);
     color: var(--muted);
     display: grid;
@@ -541,7 +541,7 @@
   .segmented {
     display: inline-flex;
     background: var(--field);
-    border-radius: 10px;
+    border-radius: var(--r-md);
     padding: 3px;
     gap: 2px;
     flex: none;
@@ -550,7 +550,7 @@
     height: 32px;
     padding: 0 12px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--r-md);
     background: none;
     color: var(--muted);
     font-weight: 500;
@@ -580,7 +580,7 @@
     align-items: center;
     gap: 10px;
     padding: 6px 8px;
-    border-radius: 10px;
+    border-radius: var(--r-md);
   }
   .favorites li:hover {
     background: var(--surface-2);
@@ -595,7 +595,7 @@
     width: 28px;
     height: 28px;
     border: 0;
-    border-radius: 7px;
+    border-radius: var(--r-xs);
     background: none;
     color: var(--muted);
     display: grid;
@@ -630,7 +630,7 @@
     font: 600 12px var(--mono);
     background: var(--field);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--r-xs);
     padding: 2px 8px;
     white-space: nowrap;
   }

@@ -178,7 +178,7 @@
     padding: 0 8px 4px 12px;
     border: 1px solid transparent;
     border-bottom: 0;
-    border-radius: 10px 10px 0 0;
+    border-radius: var(--r-md) var(--r-md) 0 0;
     color: var(--muted);
     cursor: default;
     animation: tab-in 0.15s ease-out;
@@ -189,7 +189,7 @@
     position: absolute;
     inset: 3px 2px 5px;
     z-index: -1;
-    border-radius: 8px;
+    border-radius: var(--r-md);
     transition: background 0.12s;
   }
   .tab:not(.active):hover::before {
@@ -210,7 +210,7 @@
     width: 22px;
     height: 22px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--r-xs);
     background: none;
     display: grid;
     place-items: center;
@@ -232,7 +232,7 @@
     align-self: center;
     margin: 0 6px 0 14px;
     border: 0;
-    border-radius: 9px;
+    border-radius: var(--r-md);
     background: var(--accent);
     color: var(--accent-text);
     display: grid;

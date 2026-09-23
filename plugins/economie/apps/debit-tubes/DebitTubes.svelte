@@ -237,7 +237,7 @@
   .swatch {
     width: 10px;
     height: 10px;
-    border-radius: 3px;
+    border-radius: 2px;
   }
   .three {
     display: grid;
@@ -248,7 +248,7 @@
     width: 28px;
     height: 28px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--r-md);
     background: none;
     color: var(--faint);
   }
@@ -340,7 +340,7 @@
     display: flex;
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--r-md);
     background: repeating-linear-gradient(135deg, var(--field) 0 6px, var(--surface-2) 6px 12px);
   }
   .cut {

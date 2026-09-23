@@ -16,8 +16,11 @@
   --ok: #1f9d63;
   --warn: #d9822b;
   --err: #d64545;
-  --r-sm: 8px;
-  --r-md: 12px;
+  /* Mêmes arrondis que l'application : 6 px partout, 4 px pour les détails, 8 px flottant. */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 6px;
+  --r-lg: 8px;
   --font: "Inter Variable", "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", Consolas, monospace;
 }

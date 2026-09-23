@@ -13,7 +13,7 @@
   .logo {
     width: var(--size);
     height: var(--size);
-    border-radius: calc(var(--size) * 0.28);
+    border-radius: var(--r-md);
     background: var(--accent);
     color: var(--accent-text);
     display: grid;

@@ -270,7 +270,7 @@
   .swatch {
     width: 10px;
     height: 10px;
-    border-radius: 3px;
+    border-radius: 2px;
   }
   input[type="checkbox"] {
     width: 16px;
@@ -292,7 +292,7 @@
     width: 28px;
     height: 28px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--r-md);
     background: none;
     color: var(--faint);
   }
@@ -387,7 +387,7 @@
   svg {
     width: 100%;
     height: auto;
-    border-radius: 4px;
+    border-radius: var(--r-xs);
   }
   .plate {
     fill: var(--field);

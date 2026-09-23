@@ -30,7 +30,7 @@
     align-items: center;
     gap: 8px;
     height: 36px;
-    border-radius: 10px;
+    border-radius: var(--r-md);
     background: var(--field);
     padding: 0 12px;
     color: var(--faint);
@@ -44,7 +44,7 @@
   .big {
     height: 46px;
     max-width: 620px;
-    border-radius: 12px;
+    border-radius: var(--r-md);
   }
   input {
     border: 0;

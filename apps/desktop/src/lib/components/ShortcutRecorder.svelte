@@ -159,7 +159,7 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-bottom-width: 2px;
-    border-radius: 6px;
+    border-radius: var(--r-xs);
     padding: 3px 8px;
   }
   .plus {

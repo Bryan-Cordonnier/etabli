@@ -182,7 +182,7 @@
     font: 700 20px var(--font);
     color: var(--text);
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: var(--r-md);
     background: none;
     padding: 2px 6px;
     margin-left: -6px;

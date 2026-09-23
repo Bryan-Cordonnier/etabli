@@ -18,9 +18,12 @@
   --warn: #d9822b;
   --err: #d64545;
   --shadow: 0 20px 60px rgba(20, 30, 50, 0.22);
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
+  /* Arrondis : trois valeurs seulement, partout (plugins compris, voir @etabli/sdk/base.css).
+     6 px pour presque tout, 4 px pour les petits détails, 8 px pour les éléments flottants. */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 6px;
+  --r-lg: 8px;
   --titlebar: 44px;
   --font: "Inter Variable", "Inter", system-ui, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", Consolas, monospace;
@@ -191,7 +194,7 @@ button {
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: 99px;
+  border-radius: var(--r-xs);
   background: var(--field);
   color: var(--muted);
   white-space: nowrap;

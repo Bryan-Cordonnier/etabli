@@ -31,7 +31,7 @@
     align-self: flex-start;
     flex-wrap: wrap;
     background: var(--field);
-    border-radius: 10px;
+    border-radius: var(--r-md);
     padding: 3px;
     gap: 2px;
   }
@@ -39,7 +39,7 @@
     height: 30px;
     padding: 0 12px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--r-xs);
     background: none;
     color: var(--muted);
     font-weight: 500;

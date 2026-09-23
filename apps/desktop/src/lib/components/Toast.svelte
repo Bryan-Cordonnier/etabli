@@ -18,7 +18,7 @@
     background: var(--text);
     color: var(--surface);
     padding: 10px 14px;
-    border-radius: 10px;
+    border-radius: var(--r-lg);
     font-size: 13px;
     box-shadow: var(--shadow);
     animation: toast 0.2s ease-out;

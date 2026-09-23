@@ -229,7 +229,7 @@
     height: 36px;
     padding: 0 4px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--r-md);
     background: none;
     font-weight: 700;
     font-size: 19px;
@@ -269,7 +269,7 @@
     padding: 4px;
     flex: none;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--r-md);
     background: none;
     text-align: left;
     white-space: nowrap;
@@ -326,7 +326,7 @@
     width: 40px;
     height: 40px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--r-md);
     background: none;
     color: var(--muted);
     display: grid;

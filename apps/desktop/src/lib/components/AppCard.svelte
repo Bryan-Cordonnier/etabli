@@ -99,7 +99,7 @@
     width: 28px;
     height: 28px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--r-xs);
     background: none;
     color: var(--faint);
     display: grid;

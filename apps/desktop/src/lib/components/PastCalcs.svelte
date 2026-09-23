@@ -93,7 +93,7 @@
     gap: 12px;
     padding: 9px 12px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--r-md);
     background: none;
     text-align: left;
     width: 100%;
@@ -140,7 +140,7 @@
     height: 32px;
     padding: 0 8px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--r-md);
     background: none;
     color: var(--muted);
     font: 500 13px var(--mono);

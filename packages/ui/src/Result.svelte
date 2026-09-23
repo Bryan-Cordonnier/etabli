@@ -63,7 +63,7 @@
   .number {
     display: inline-block;
     animation: flash 0.4s ease-out;
-    border-radius: 4px;
+    border-radius: var(--r-xs);
   }
   @keyframes flash {
     from {

@@ -285,7 +285,7 @@
   .logo {
     width: 30px;
     height: 30px;
-    border-radius: 9px;
+    border-radius: var(--r-md);
     background: var(--accent);
     color: var(--accent-text);
     display: grid;
@@ -295,7 +295,7 @@
     width: 34px;
     height: 34px;
     border: 0;
-    border-radius: 9px;
+    border-radius: var(--r-md);
     background: var(--field);
     color: var(--muted);
     display: grid;
@@ -375,7 +375,7 @@
   kbd {
     font: 11px var(--mono);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--r-xs);
     padding: 0 4px;
     color: var(--muted);
   }

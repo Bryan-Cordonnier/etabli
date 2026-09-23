@@ -174,7 +174,7 @@
     gap: 12px;
     padding: 8px 10px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--r-md);
     background: none;
     text-align: left;
   }
@@ -206,7 +206,7 @@
   kbd {
     font: 11px var(--mono);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--r-xs);
     padding: 0 4px;
     margin-right: 2px;
   }

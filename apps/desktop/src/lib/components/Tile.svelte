@@ -29,7 +29,7 @@
   .tile {
     width: var(--size);
     height: var(--size);
-    border-radius: calc(var(--size) * 0.28);
+    border-radius: var(--r-md);
     display: grid;
     place-items: center;
     flex: none;
