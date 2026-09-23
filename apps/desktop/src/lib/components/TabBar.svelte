@@ -136,7 +136,7 @@
     top: 0;
     left: 0;
     right: 138px; /* les trois boutons de la fenêtre */
-    height: 6px;
+    height: 4px;
     z-index: 2;
   }
   .tabs {
@@ -163,17 +163,19 @@
     mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 48px), transparent);
   }
   /* Tous les onglets ont la même largeur, quel que soit le titre (ergonomie : ils ne bougent pas).
-     Quand il y en a trop, la barre défile plutôt que de les écraser. */
+     Quand il y en a trop, la barre défile plutôt que de les écraser.
+     40 px de haut, posé en bas de la barre (44 px) ; le contenu est remonté de 4 px pour tomber
+     pile au milieu de la barre, à la même hauteur que le « + », le logo et les boutons de fenêtre. */
   .tab {
     position: relative;
     z-index: 0;
-    height: 36px;
+    height: 40px;
     flex: none;
     width: 180px;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 8px 0 12px;
+    padding: 0 8px 4px 12px;
     border: 1px solid transparent;
     border-bottom: 0;
     border-radius: 10px 10px 0 0;
@@ -227,7 +229,8 @@
     z-index: 1;
     width: 30px;
     height: 30px;
-    margin: 0 6px 4px 14px;
+    align-self: center;
+    margin: 0 6px 0 14px;
     border: 0;
     border-radius: 9px;
     background: var(--accent);

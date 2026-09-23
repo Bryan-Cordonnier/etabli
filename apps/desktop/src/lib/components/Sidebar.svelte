@@ -209,11 +209,11 @@
 
   /* Mêmes marges repliée ou dépliée : logo et tuiles ne bougent pas pendant l'animation,
      seule la largeur change et les textes s'estompent. Repliée (64 px), tout tombe au centre. */
-  /* Aligné sur les onglets : même hauteur (36 px) posée en bas de la barre de titre. */
+  /* Centré dans la barre de titre, à la même hauteur que le texte des onglets. */
   .brand-row {
     height: var(--titlebar);
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     padding: 0 12px;
     flex: none;
     overflow: hidden;
