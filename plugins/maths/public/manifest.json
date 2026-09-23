@@ -1,7 +1,7 @@
 {
   "id": "maths",
   "name": "Maths et géométrie",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "apiVersion": "^1",
   "author": "Établi",
   "description": "Trigonométrie, triangles, arcs et conversions",
@@ -27,7 +27,8 @@
       "icon": "triangle",
       "emoji": "🔺",
       "dataVersion": 1,
-      "plannedFor": "v1"
+      "plannedFor": "v1",
+      "entry": "apps/triangle/index.html"
     },
     {
       "id": "arc",
@@ -36,7 +37,8 @@
       "icon": "spline",
       "emoji": "⭕",
       "dataVersion": 1,
-      "plannedFor": "v1"
+      "plannedFor": "v1",
+      "entry": "apps/arc/index.html"
     },
     {
       "id": "conversions",
@@ -45,7 +47,8 @@
       "icon": "arrows",
       "emoji": "🔁",
       "dataVersion": 1,
-      "plannedFor": "v1"
+      "plannedFor": "v1",
+      "entry": "apps/conversions/index.html"
     }
   ]
 }

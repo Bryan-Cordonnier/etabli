@@ -1,8 +1,6 @@
 <script lang="ts">
   import { connect, type Etabli } from "@etabli/sdk";
-  import { evaluate, format } from "../../src/calc";
-  import Field from "../../src/Field.svelte";
-  import Result from "../../src/Result.svelte";
+  import { Field, Result, evaluate, format } from "@etabli/ui";
 
   /** Données enregistrées : le texte des champs, tel que saisi (calculs compris). */
   interface Data {

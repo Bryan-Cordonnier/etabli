@@ -136,6 +136,18 @@ export function isExpression(input: string): boolean {
   return /[+*/^()a-z×÷]|\d\s*-/i.test(input.trim());
 }
 
+/**
+ * Lignes collées depuis Excel ou un tableur : une ligne par pièce, colonnes séparées par des
+ * tabulations (ou des points-virgules, format CSV français). Les lignes vides sont ignorées.
+ */
+export function parsePasted(text: string): string[][] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "")
+    .map((line) => line.split(line.includes("\t") ? "\t" : ";").map((cell) => cell.trim()));
+}
+
 /** Nombre à la française : « 1 234,57 ». */
 export function format(value: number, decimals = 2): string {
   return Number.isFinite(value) ? value.toLocaleString("fr-FR", { maximumFractionDigits: decimals }) : "—";

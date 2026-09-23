@@ -1,7 +1,7 @@
 {
   "id": "economie",
   "name": "Économie de matière",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "apiVersion": "^1",
   "author": "Établi",
   "description": "Optimiser les débits de barres et le calepinage de tôles",
@@ -17,7 +17,8 @@
       "icon": "cylinder",
       "emoji": "📏",
       "dataVersion": 1,
-      "plannedFor": "v1"
+      "plannedFor": "v1",
+      "entry": "apps/debit-tubes/index.html"
     },
     {
       "id": "calepinage-rect",
@@ -26,7 +27,8 @@
       "icon": "grid",
       "emoji": "🟩",
       "dataVersion": 1,
-      "plannedFor": "v1"
+      "plannedFor": "v1",
+      "entry": "apps/calepinage-rect/index.html"
     },
     {
       "id": "calepinage-dxf",

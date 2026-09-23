@@ -15,10 +15,8 @@ export default defineConfig({
     target: "chrome120",
     rollupOptions: {
       input: {
-        pythagore: app("pythagore"),
-        triangle: app("triangle"),
-        arc: app("arc"),
-        conversions: app("conversions"),
+        "debit-tubes": app("debit-tubes"),
+        "calepinage-rect": app("calepinage-rect"),
       },
     },
   },

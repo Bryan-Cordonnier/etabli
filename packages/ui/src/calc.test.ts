@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { evaluate, format, isExpression } from "./calc";
+import { evaluate, format, isExpression, parsePasted } from "./calc";
+
+describe("parsePasted", () => {
+  it("lit un copier-coller d'Excel ou un CSV français", () => {
+    expect(parsePasted("A\t1450\t4\r\nB\t820\t6\n\n")).toEqual([
+      ["A", "1450", "4"],
+      ["B", "820", "6"],
+    ]);
+    expect(parsePasted("C;2300;2")).toEqual([["C", "2300", "2"]]);
+  });
+});
 
 describe("evaluate", () => {
   it("lit les nombres à la française", () => {

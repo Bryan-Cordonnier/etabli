@@ -9,7 +9,9 @@ Boîte à outils de bureau pour la chaudronnerie (BTS CRCI) : calculs, débits d
 ```
 apps/desktop/     le moteur : application Tauri 2 (Rust) + interface Svelte 5
 packages/sdk/     @etabli/sdk : ce qu'une mini-app utilise pour parler au moteur
-plugins/maths/    plugin officiel compilé (Pythagore)
+packages/ui/      @etabli/ui : champs, résultats copiables, cartes, document enregistré automatiquement
+plugins/maths/    Pythagore, résolution de triangle, arc et cercle, conversions
+plugins/economie/ débit de tubes (barres), calepinage de rectangles sur tôles
 plugins/*/        autres plugins officiels (manifeste seul pour l'instant)
 docs/             site de documentation (à venir)
 ```
