@@ -1,5 +1,6 @@
 <script lang="ts">
   // Barre d'onglets globale, intégrée à la barre de titre (cahier des charges, section 5.3).
+  // L'onglet actif se prolonge dans la page, comme dans un navigateur.
   import { tabs } from "$lib/state/tabs.svelte";
   import { describeView } from "$lib/views";
   import Icon from "./Icon.svelte";
@@ -8,6 +9,13 @@
 
   let strip: HTMLElement;
   let drag: { id: number; startX: number; moved: boolean } | null = null;
+
+  // L'onglet actif reste visible quand il y en a trop pour la largeur.
+  $effect(() => {
+    void tabs.activeId;
+    void tabs.list.length;
+    strip.querySelector(".tab.active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
 
   function onpointerdown(event: PointerEvent, id: number): void {
     if (event.button !== 0 || (event.target as HTMLElement).closest(".close")) return;
@@ -34,7 +42,7 @@
   }
 </script>
 
-<header class="bar" data-tauri-drag-region>
+<header class="bar">
   <div class="tabs" role="tablist" bind:this={strip}>
     {#each tabs.list as tab (tab.id)}
       {@const info = describeView(tab.view)}
@@ -62,39 +70,57 @@
       </div>
     {/each}
   </div>
-  <button class="new" onclick={() => tabs.open({ kind: "home" })} title="Nouvel onglet (Ctrl+T)" aria-label="Nouvel onglet">
+  <button class="new" onclick={() => tabs.newTab()} title="Nouvel onglet (Ctrl+T)" aria-label="Nouvel onglet">
     <Icon name="plus" size={18} strokeWidth={2.4} />
   </button>
+  <!-- Seule zone qui déplace la fenêtre : aucun bouton dedans, aucun clic perdu. -->
   <div class="drag" data-tauri-drag-region></div>
   <WindowControls />
 </header>
 
 <style>
   .bar {
+    position: relative;
     height: var(--titlebar);
     display: flex;
     align-items: flex-end;
     padding-left: 8px;
-    border-bottom: 1px solid var(--border);
     background: var(--surface-2);
     flex: none;
   }
+  /* Trait sous la barre, recouvert par l'onglet actif qui se prolonge dans la page. */
+  .bar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--border);
+  }
   .tabs {
+    position: relative;
+    z-index: 1;
     display: flex;
+    align-items: flex-end;
     gap: 2px;
     overflow-x: auto;
+    overflow-y: hidden;
     flex: 0 1 auto;
     min-width: 0;
+    height: 100%;
     scrollbar-width: none;
   }
   .tab {
+    position: relative;
+    z-index: 0;
     height: 36px;
     min-width: 110px;
     max-width: 200px;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 6px 0 10px;
+    padding: 0 8px 0 12px;
     border: 1px solid transparent;
     border-bottom: 0;
     border-radius: 10px 10px 0 0;
@@ -103,15 +129,22 @@
     cursor: default;
     animation: tab-in 0.15s ease-out;
   }
-  .tab:hover {
+  /* Survol d'un onglet inactif : une pastille en retrait, qui ne touche ni le haut ni le trait du bas. */
+  .tab::before {
+    content: "";
+    position: absolute;
+    inset: 3px 2px 5px;
+    z-index: -1;
+    border-radius: 8px;
+    transition: background 0.12s;
+  }
+  .tab:not(.active):hover::before {
     background: var(--field);
   }
   .tab.active {
     background: var(--surface);
     border-color: var(--border);
     color: var(--text);
-    height: 37px;
-    margin-bottom: -1px;
   }
   .title {
     flex: 1;
@@ -120,8 +153,8 @@
     white-space: nowrap;
   }
   .close {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border: 0;
     border-radius: 6px;
     background: none;
@@ -138,9 +171,11 @@
     background: var(--field);
   }
   .new {
+    position: relative;
+    z-index: 1;
     width: 30px;
     height: 30px;
-    margin: 0 0 5px 8px;
+    margin: 0 10px 4px 14px;
     border: 0;
     border-radius: 9px;
     background: var(--accent);

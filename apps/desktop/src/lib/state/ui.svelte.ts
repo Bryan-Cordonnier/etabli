@@ -1,5 +1,7 @@
 class Ui {
   paletteOpen = $state(false);
+  /** Un nouvel onglet vient d'être ouvert : l'Accueil place le curseur dans la recherche. */
+  focusSearch = false;
   toast = $state<{ id: number; text: string } | null>(null);
 
   #timer: ReturnType<typeof setTimeout> | undefined;

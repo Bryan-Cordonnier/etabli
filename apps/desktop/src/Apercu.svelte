@@ -18,6 +18,15 @@
   let selected = $state(0);
   let openings = $state(0);
   let grid = $state<HTMLElement>();
+  let openedAt = 0;
+
+  /** Clic dans un autre logiciel : l'aperçu se ferme. Le focus qui passe dans une mini-app
+   *  (son cadre) déclenche aussi « blur », mais le document garde alors le focus. */
+  function onblur(): void {
+    setTimeout(() => {
+      if (!document.hasFocus() && Date.now() - openedAt > 400) void close();
+    }, 60);
+  }
 
   const favorites = $derived(
     settings.favorites
@@ -31,6 +40,7 @@
   onMount(() => {
     // Chaque ouverture : réglages relus (la fenêtre principale a pu les changer), retour à la grille.
     const unlisten = system.onQuickOpened(async () => {
+      openedAt = Date.now();
       await leaveApp();
       await reloadStorage();
       settings.reload();
@@ -132,7 +142,7 @@
   }
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} {onblur} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="scrim" onpointerdown={(e) => e.target === e.currentTarget && void close()}>

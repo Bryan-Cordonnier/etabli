@@ -8,8 +8,9 @@
     color: string;
     icon: IconName;
     emoji: string;
-    /** solid : icône blanche sur la couleur ; soft : icône colorée sur une teinte légère. */
-    variant?: "solid" | "soft";
+    /** solid : icône blanche sur la couleur ; soft : icône colorée sur une teinte légère ;
+     *  plain : icône neutre (Accueil). */
+    variant?: "solid" | "soft" | "plain";
     size?: number;
   }
 
@@ -40,6 +41,10 @@
   .soft {
     background: color-mix(in srgb, var(--c) 15%, transparent);
     color: var(--c);
+  }
+  .plain {
+    background: var(--field);
+    color: var(--muted);
   }
   .emoji {
     font-size: calc(var(--size) * 0.7);

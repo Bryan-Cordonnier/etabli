@@ -22,7 +22,7 @@ export function handleShortcut({ key, ctrl, shift, alt }: ShortcutKey): boolean 
   if (ui.paletteOpen) return false;
 
   if (ctrl && shift && lower === "t") tabs.reopenClosed();
-  else if (ctrl && lower === "t") tabs.open({ kind: "home" });
+  else if (ctrl && lower === "t") tabs.newTab();
   else if (ctrl && lower === "w") tabs.close(tabs.activeId);
   else if (ctrl && key === "Tab") tabs.cycle(shift ? -1 : 1);
   else if (ctrl && /^[1-9]$/.test(key)) tabs.goTo(Number(key));

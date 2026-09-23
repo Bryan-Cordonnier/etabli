@@ -12,6 +12,7 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
         return;
     };
     if window.is_visible().unwrap_or(false) {
+        log::info!("Aperçu rapide : masqué");
         let _ = window.hide();
         return;
     }
@@ -20,8 +21,9 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
         let _ = window.set_position(*monitor.position());
         let _ = window.set_size(*monitor.size());
     }
-    let _ = window.show();
-    let _ = window.set_focus();
+    let shown = window.show();
+    let focused = window.set_focus();
+    log::info!("Aperçu rapide : affiché (show {shown:?}, focus {focused:?})");
     // L'interface de l'aperçu relit les réglages (favoris, thème) et revient à la grille.
     let _ = app.emit_to(LABEL, "apercu:ouvert", ());
 }

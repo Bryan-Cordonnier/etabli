@@ -14,7 +14,8 @@ export interface QuickShortcut {
   label: string;
 }
 
-export const DEFAULT_SHORTCUT: QuickShortcut = { accelerator: "Ctrl+Alt+Space", label: "Ctrl + Alt + Espace" };
+/** Ctrl+Alt+Espace est déjà pris par d'autres applications (Claude, par exemple). */
+export const DEFAULT_SHORTCUT: QuickShortcut = { accelerator: "Ctrl+Shift+Space", label: "Ctrl + Maj + Espace" };
 
 interface Persisted {
   theme: string;

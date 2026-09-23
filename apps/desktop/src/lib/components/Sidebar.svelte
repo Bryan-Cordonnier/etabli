@@ -108,7 +108,7 @@
   class:resizing
   style:width={settings.sidebarCollapsed ? "64px" : `${settings.sidebarWidth}px`}
 >
-  <div class="brand-row" data-tauri-drag-region>
+  <div class="brand-row">
     <button class="brand" onclick={(e) => go({ kind: "home" }, e)} title="Accueil">
       <span class="logo" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
@@ -117,6 +117,8 @@
       </span>
       <span class="label">Établi</span>
     </button>
+    <!-- Zone vide de la barre de titre : elle déplace la fenêtre. -->
+    <div class="drag" data-tauri-drag-region></div>
   </div>
 
   <nav class="nav" aria-label="Plugins" bind:this={nav}>
@@ -128,7 +130,7 @@
       onmousedown={preventAutoscroll}
       title="Accueil"
     >
-      <span class="home-tile"><Icon name="home" /></span>
+      <Tile color="var(--muted)" icon="home" emoji="🏠" variant="plain" />
       <span class="label">Accueil</span>
     </button>
 
@@ -212,6 +214,10 @@
     align-items: center;
     padding: 0 8px;
     flex: none;
+  }
+  .drag {
+    flex: 1;
+    align-self: stretch;
   }
   .brand {
     display: flex;
@@ -306,16 +312,6 @@
     cursor: grabbing;
     z-index: 2;
   }
-  .home-tile {
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
-    display: grid;
-    place-items: center;
-    flex: none;
-    background: var(--field);
-    color: var(--muted);
-  }
 
   .strip {
     border-top: 1px solid var(--border);
@@ -346,6 +342,32 @@
   }
 
   .collapsed .label {
+    display: none;
+  }
+  /* Colonne repliée : des boutons carrés, la tuile bien centrée avec de la marge tout autour. */
+  .collapsed .nav {
+    padding: 6px 8px;
+    align-items: center;
+  }
+  .collapsed .item {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    flex: none;
+  }
+  .collapsed .item.active::before {
+    left: -8px;
+  }
+  .collapsed .brand-row {
+    justify-content: center;
+    padding: 0;
+  }
+  .collapsed .brand {
+    padding: 0 4px;
+  }
+  .collapsed .brand-row .drag {
     display: none;
   }
   .collapsed .strip {

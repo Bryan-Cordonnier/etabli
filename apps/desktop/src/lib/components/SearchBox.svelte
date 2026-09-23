@@ -5,15 +5,23 @@
     value?: string;
     placeholder: string;
     big?: boolean;
+    /** Place le curseur dans le champ à l'affichage (nouvel onglet). */
+    focus?: boolean;
     oninput?: () => void;
   }
 
-  let { value = $bindable(""), placeholder, big = false, oninput }: Props = $props();
+  let { value = $bindable(""), placeholder, big = false, focus = false, oninput }: Props = $props();
+
+  let input: HTMLInputElement;
+
+  $effect(() => {
+    if (focus) input.focus();
+  });
 </script>
 
 <label class="search" class:big>
   <Icon name="search" size={big ? 18 : 16} />
-  <input bind:value {placeholder} {oninput} autocomplete="off" spellcheck="false" aria-label={placeholder} />
+  <input bind:this={input} bind:value {placeholder} {oninput} autocomplete="off" spellcheck="false" aria-label={placeholder} />
 </label>
 
 <style>

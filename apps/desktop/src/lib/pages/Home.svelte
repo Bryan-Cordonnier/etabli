@@ -5,9 +5,14 @@
   import { allMiniApps, appKey, getMiniAppByKey, type MiniAppRef } from "$lib/plugins/registry";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
+  import { ui } from "$lib/state/ui.svelte";
   import { normalize } from "$lib/views";
 
   let query = $state("");
+
+  // Nouvel onglet (« + », Ctrl+T) : le curseur est déjà dans la recherche, comme dans un navigateur.
+  const focusSearch = ui.focusSearch;
+  ui.focusSearch = false;
 
   const available = (ref: MiniAppRef | undefined): ref is MiniAppRef =>
     !!ref && settings.isPluginEnabled(ref.plugin.id);
@@ -37,7 +42,7 @@
     <p class="sub">Que voulez-vous calculer ?</p>
   </header>
 
-  <SearchBox big bind:value={query} placeholder="Rechercher une mini-app…" />
+  <SearchBox big focus={focusSearch} bind:value={query} placeholder="Rechercher une mini-app…" />
 
   <section class="section">
     <h2>{searching ? `Résultats (${results.length})` : "Favoris"}</h2>

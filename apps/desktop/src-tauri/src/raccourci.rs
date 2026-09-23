@@ -5,7 +5,8 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 
-pub const DEFAULT: &str = "Ctrl+Alt+Space";
+/// Ctrl+Alt+Espace est déjà pris par d'autres applications (Claude, par exemple).
+pub const DEFAULT: &str = "Ctrl+Shift+Space";
 
 /// Raccourci enregistré auprès de Windows, et la dernière erreur éventuelle.
 #[derive(Default)]

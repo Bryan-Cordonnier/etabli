@@ -1,5 +1,6 @@
 import { load, save } from "$lib/storage";
 import type { Tab, View } from "$lib/types";
+import { ui } from "./ui.svelte";
 
 interface Session {
   views: View[];
@@ -55,6 +56,12 @@ class Tabs {
   open(view: View, focus = true): void {
     const tab = this.#create(fresh(view));
     if (focus) this.activeId = tab.id;
+  }
+
+  /** Bouton « + » et Ctrl+T : comme un navigateur, un onglet neuf, prêt pour la recherche. */
+  newTab(): void {
+    ui.focusSearch = true;
+    this.open(HOME);
   }
 
   activate(id: number): void {

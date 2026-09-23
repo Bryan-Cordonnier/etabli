@@ -50,12 +50,25 @@ fn fermeture_zone_definir(state: tauri::State<'_, AppState>, active: bool) {
     state.fermeture_zone.store(active, Ordering::Relaxed);
 }
 
+/// Erreurs de l'interface, recopiées dans le journal de l'application.
+#[tauri::command]
+fn journal(fenetre: tauri::Window, message: String) {
+    log::warn!("[interface {}] {message}", fenetre.label());
+}
+
+/// Argument de lancement qui ouvre directement l'aperçu rapide (utile pour un raccourci Windows).
+const APERCU: &str = "--apercu";
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         // En premier : relancer l'application ramène la fenêtre existante au lieu d'en ouvrir une seconde.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            apercu::show_main(app);
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if args.iter().any(|a| a == APERCU) {
+                apercu::toggle(app);
+            } else {
+                apercu::show_main(app);
+            }
         }))
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -81,10 +94,14 @@ pub fn run() {
             }
         })
         .setup(|app| {
-            // Journal détaillé uniquement en développement.
+            // Journal détaillé uniquement en développement, dans le terminal (rien d'écrit sur le disque).
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
+                        .clear_targets()
+                        .target(tauri_plugin_log::Target::new(
+                            tauri_plugin_log::TargetKind::Stdout,
+                        ))
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
@@ -109,7 +126,7 @@ pub fn run() {
                 fermeture_zone: AtomicBool::new(fermeture_zone),
             });
 
-            // Raccourci de l'aperçu rapide : celui des réglages, sinon Ctrl+Alt+Espace.
+            // Raccourci de l'aperçu rapide : celui des réglages, sinon Ctrl+Maj+Espace.
             app.manage(raccourci::QuickShortcut::default());
             let accelerator = reglage("quickShortcut")
                 .and_then(|v| {
@@ -124,15 +141,21 @@ pub fn run() {
             tray::create(app)?;
 
             // Lancé avec Windows : on reste discret dans la zone de notification.
-            if !std::env::args().any(|a| a == DEMARRAGE) {
+            let args: Vec<String> = std::env::args().collect();
+            if args.iter().any(|a| a == APERCU) {
+                apercu::toggle(app.handle());
+            } else if !args.iter().any(|a| a == DEMARRAGE) {
                 if let Some(main) = app.get_webview_window(apercu::MAIN) {
                     main.show()?;
                 }
             }
             Ok(())
         })
-        .on_window_event(|window, event| match (window.label(), event) {
-            (apercu::MAIN, WindowEvent::CloseRequested { api, .. }) => {
+        // Pas de fermeture de l'aperçu sur `Focused(false)` : WebView2 le déclenche aussi quand le
+        // focus passe de la fenêtre à la page. C'est la page qui détecte la vraie perte de focus.
+        .on_window_event(|window, event| {
+            if let (apercu::MAIN, WindowEvent::CloseRequested { api, .. }) = (window.label(), event)
+            {
                 let app = window.app_handle();
                 let vers_zone = app
                     .try_state::<AppState>()
@@ -144,11 +167,6 @@ pub fn run() {
                     app.exit(0);
                 }
             }
-            // Un clic ailleurs (autre logiciel, autre écran) ferme l'aperçu.
-            (apercu::LABEL, WindowEvent::Focused(false)) => {
-                let _ = window.hide();
-            }
-            _ => {}
         })
         .invoke_handler(tauri::generate_handler![
             plugins::plugins_list,
@@ -165,6 +183,7 @@ pub fn run() {
             raccourci::raccourci_etat,
             infos_app,
             fermeture_zone_definir,
+            journal,
         ])
         .run(tauri::generate_context!())
         .expect("erreur au lancement de l'application");

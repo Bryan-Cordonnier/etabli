@@ -181,6 +181,12 @@ button {
   color: var(--accent-text);
 }
 
+/* Le bouton principal garde sa couleur au survol, juste un peu plus lumineux. */
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.1);
+}
+
 .pill {
   font-size: 11px;
   font-weight: 600;
