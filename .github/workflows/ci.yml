@@ -1,0 +1,56 @@
+# Vérification automatique : à chaque envoi sur GitHub et sur chaque Pull Request,
+# le code est vérifié et compilé sous Windows, comme sur les PC des utilisateurs.
+name: Vérification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Dépendances npm
+        run: npm ci
+
+      - name: Types (svelte-check)
+        run: npm run check
+
+      - name: Interface (vite build)
+        run: npm run build -w @etabli/desktop
+
+      - name: Format Rust
+        working-directory: apps/desktop/src-tauri
+        run: cargo fmt --check
+
+      - name: Analyse Rust (clippy)
+        working-directory: apps/desktop/src-tauri
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Tests Rust
+        working-directory: apps/desktop/src-tauri
+        run: cargo test
