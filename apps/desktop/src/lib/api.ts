@@ -59,6 +59,9 @@ export const system = {
     inTauri ? listen<AppView>("etabli:ouvrir", (event) => handler(event.payload)) : Promise.resolve(() => {}),
   onQuickOpened: (handler: () => void): Promise<() => void> =>
     inTauri ? listen("apercu:ouvert", () => handler()) : Promise.resolve(() => {}),
+  /** Le raccourci a été pressé alors que l'aperçu était ouvert : il doit se fermer. */
+  onQuickCloseRequest: (handler: () => void): Promise<() => void> =>
+    inTauri ? listen("apercu:fermer", () => handler()) : Promise.resolve(() => {}),
 };
 
 export interface DocumentMeta {

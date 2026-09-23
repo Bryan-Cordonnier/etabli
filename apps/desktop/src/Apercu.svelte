@@ -3,7 +3,7 @@
   // logiciel. Flèches pour choisir, Entrée pour ouvrir, Échap pour revenir puis fermer.
   import type { PluginToHost } from "@etabli/sdk/protocol";
   import { onMount, tick } from "svelte";
-  import { system } from "$lib/api";
+  import { inTauri, system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
@@ -14,11 +14,18 @@
   import { settings } from "$lib/state/settings.svelte";
   import { reloadStorage } from "$lib/storage";
 
+  /** Durée des fondus d'ouverture et de fermeture (voir le CSS). */
+  const FADE = 140;
+
   let session = $state<DocumentSession | null>(null);
   let selected = $state(0);
-  let openings = $state(0);
   let grid = $state<HTMLElement>();
   let openedAt = 0;
+  let closing = false;
+
+  // Le contenu est effacé en fondu AVANT de masquer la fenêtre : à la réouverture, la fenêtre
+  // réapparaît vide, puis le panneau apparaît en fondu (aucun ancien contenu qui saute).
+  let shown = $state(!inTauri);
 
   /** Clic dans un autre logiciel : l'aperçu se ferme. Le focus qui passe dans une mini-app
    *  (son cadre) déclenche aussi « blur », mais le document garde alors le focus. */
@@ -39,29 +46,37 @@
 
   onMount(() => {
     // Chaque ouverture : réglages relus (la fenêtre principale a pu les changer), retour à la grille.
-    const unlisten = system.onQuickOpened(async () => {
+    const unlistenOpen = system.onQuickOpened(async () => {
       openedAt = Date.now();
-      await leaveApp();
+      closing = false;
+      selected = 0;
+      shown = true;
       await reloadStorage();
       settings.reload();
-      selected = 0;
-      openings++;
       await tick();
       focusSelected();
     });
-    return () => void unlisten.then((stop) => stop());
+    const unlistenClose = system.onQuickCloseRequest(() => void close());
+    return () => {
+      void unlistenOpen.then((stop) => stop());
+      void unlistenClose.then((stop) => stop());
+    };
   });
 
   async function leaveApp(): Promise<void> {
     if (!session) return;
-    const closing = session;
+    const leaving = session;
     session = null;
-    await closing.saveNow();
+    await leaving.saveNow();
   }
 
   async function close(): Promise<void> {
-    await leaveApp();
+    if (closing) return;
+    closing = true;
+    shown = false;
+    await new Promise((resolve) => setTimeout(resolve, FADE));
     await system.closeQuick();
+    await leaveApp();
   }
 
   async function openApp(ref: MiniAppRef): Promise<void> {
@@ -81,9 +96,10 @@
     if (session) {
       await session.saveNow();
       await system.openInMain({ kind: "app", pluginId: session.pluginId, appId: session.appId, docId: session.meta?.id });
-      session = null;
     }
+    shown = false;
     await system.showMain();
+    session = null;
   }
 
   function focusSelected(): void {
@@ -145,8 +161,7 @@
 <svelte:window {onkeydown} {onblur} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="scrim" onpointerdown={(e) => e.target === e.currentTarget && void close()}>
-  {#key openings}
+<div class="scrim" class:shown onpointerdown={(e) => e.target === e.currentTarget && void close()}>
     <div class="panel" role="dialog" aria-modal="true" aria-label="Aperçu rapide">
       <header class="head">
         {#if session && current}
@@ -185,7 +200,6 @@
                 class="fav"
                 class:sel={i === selected}
                 style:--c={ref.plugin.color}
-                style:animation-delay="{i * 15}ms"
                 onclick={() => void openApp(ref)}
                 onfocus={() => (selected = i)}
               >
@@ -216,7 +230,6 @@
         {/if}
       </footer>
     </div>
-  {/key}
 </div>
 <Toast />
 
@@ -232,7 +245,8 @@
     place-items: center;
     padding: 5vh 7vw;
     background: var(--scrim);
-    animation: fade-in 0.12s ease-out;
+    opacity: 0;
+    transition: opacity 0.14s ease-out;
   }
   .panel {
     width: min(1000px, 100%);
@@ -244,7 +258,15 @@
     border-radius: var(--r-lg);
     box-shadow: var(--shadow);
     overflow: hidden;
-    animation: zoom 0.12s ease-out;
+    transform: scale(0.97);
+    transition: transform 0.14s ease-out;
+  }
+  /* Ouverture et fermeture en fondu, à partir d'une fenêtre toujours vide (voir `shown`). */
+  .scrim.shown {
+    opacity: 1;
+  }
+  .scrim.shown .panel {
+    transform: none;
   }
   .head {
     display: flex;
@@ -306,7 +328,6 @@
     border-radius: var(--r-md);
     background: var(--surface);
     text-align: left;
-    animation: rise 0.2s ease-out both;
     transition:
       transform 0.12s ease-out,
       border-color 0.12s,
@@ -357,15 +378,5 @@
     border-radius: 4px;
     padding: 0 4px;
     color: var(--muted);
-  }
-  @keyframes zoom {
-    from {
-      transform: scale(0.97);
-      opacity: 0;
-    }
-    to {
-      transform: none;
-      opacity: 1;
-    }
   }
 </style>

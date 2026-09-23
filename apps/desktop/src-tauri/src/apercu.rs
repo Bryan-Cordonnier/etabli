@@ -12,8 +12,9 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
         return;
     };
     if window.is_visible().unwrap_or(false) {
-        log::info!("Aperçu rapide : masqué");
-        let _ = window.hide();
+        // La page joue son fondu de fermeture, puis demande elle-même à masquer la fenêtre.
+        log::info!("Aperçu rapide : fermeture demandée");
+        let _ = app.emit_to(LABEL, "apercu:fermer", ());
         return;
     }
     // L'aperçu couvre tout l'écran où se trouve la souris (utile en double écran).

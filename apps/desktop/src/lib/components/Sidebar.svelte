@@ -100,11 +100,25 @@
     handle.addEventListener("pointerup", stop);
     handle.addEventListener("pointercancel", stop);
   }
+
+  // La bande du bas passe à la verticale une fois le repli terminé (0,2 s), pour que rien ne
+  // bouge pendant l'animation ; au dépliage, elle redevient horizontale tout de suite.
+  const FOLD_DURATION = 200;
+  let stacked = $state(settings.sidebarCollapsed);
+  $effect(() => {
+    if (!settings.sidebarCollapsed) {
+      stacked = false;
+      return;
+    }
+    const timer = setTimeout(() => (stacked = true), FOLD_DURATION);
+    return () => clearTimeout(timer);
+  });
 </script>
 
 <aside
   class="side"
   class:collapsed={settings.sidebarCollapsed}
+  class:folded={stacked}
   class:resizing
   style:width={settings.sidebarCollapsed ? "64px" : `${settings.sidebarWidth}px`}
 >
@@ -161,7 +175,7 @@
     {/each}
   </nav>
 
-  <div class="strip">
+  <div class="strip" class:stacked>
     <button
       class="strip-btn"
       class:on={view?.kind === "settings"}
@@ -208,12 +222,15 @@
     transition: none;
   }
 
+  /* Mêmes marges repliée ou dépliée : logo et tuiles ne bougent pas pendant l'animation,
+     seule la largeur change et les textes s'estompent. Repliée (64 px), tout tombe au centre. */
   .brand-row {
     height: var(--titlebar);
     display: flex;
     align-items: center;
-    padding: 0 8px;
+    padding: 0 12px;
     flex: none;
+    overflow: hidden;
   }
   .drag {
     flex: 1;
@@ -254,10 +271,13 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 6px 10px;
+    padding: 6px 8px;
     display: flex;
     flex-direction: column;
     gap: 2px;
+  }
+  .label {
+    transition: opacity 0.12s ease-out;
   }
   .section-label {
     font-size: 11px;
@@ -271,9 +291,10 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 11px;
-    height: 50px;
-    padding: 5px;
+    gap: 12px;
+    height: 48px;
+    padding: 4px;
+    flex: none;
     border: 0;
     border-radius: 12px;
     background: none;
@@ -291,7 +312,7 @@
   .item.active::before {
     content: "";
     position: absolute;
-    left: -10px;
+    left: -8px;
     top: 13px;
     bottom: 13px;
     width: 3px;
@@ -315,10 +336,15 @@
 
   .strip {
     border-top: 1px solid var(--border);
-    padding: 8px 10px;
+    padding: 8px 12px;
     display: flex;
     gap: 4px;
     flex: none;
+    overflow: hidden;
+  }
+  .strip.stacked {
+    flex-direction: column;
+    animation: fade-in 0.15s ease-out;
   }
   .strip-btn {
     width: 40px;
@@ -341,38 +367,14 @@
     color: var(--accent);
   }
 
+  /* Repliée : les textes s'estompent (en gardant leur place : rien ne remonte), puis
+     disparaissent une fois l'animation finie pour que les boutons restent bien carrés. */
   .collapsed .label {
+    opacity: 0;
+  }
+  .collapsed.folded .item .label,
+  .collapsed.folded .brand .label {
     display: none;
-  }
-  /* Colonne repliée : des boutons carrés, la tuile bien centrée avec de la marge tout autour. */
-  .collapsed .nav {
-    padding: 6px 8px;
-    align-items: center;
-  }
-  .collapsed .item {
-    width: 48px;
-    height: 48px;
-    padding: 0;
-    gap: 0;
-    justify-content: center;
-    flex: none;
-  }
-  .collapsed .item.active::before {
-    left: -8px;
-  }
-  .collapsed .brand-row {
-    justify-content: center;
-    padding: 0;
-  }
-  .collapsed .brand {
-    padding: 0 4px;
-  }
-  .collapsed .brand-row .drag {
-    display: none;
-  }
-  .collapsed .strip {
-    flex-direction: column;
-    align-items: center;
   }
 
   .resizer {
