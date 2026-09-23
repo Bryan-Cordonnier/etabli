@@ -1,72 +1,102 @@
 <script lang="ts">
-  // Écran provisoire du jalon 0 : vérifie que Tauri, Svelte et le thème fonctionnent.
-  // Le moteur (colonne des plugins, onglets, Accueil) arrive au jalon 1.
-  const version = "0.1.0";
+  import CommandPalette from "$lib/components/CommandPalette.svelte";
+  import Sidebar from "$lib/components/Sidebar.svelte";
+  import TabBar from "$lib/components/TabBar.svelte";
+  import Toast from "$lib/components/Toast.svelte";
+  import Home from "$lib/pages/Home.svelte";
+  import MiniAppPage from "$lib/pages/MiniAppPage.svelte";
+  import PluginPage from "$lib/pages/PluginPage.svelte";
+  import SettingsPage from "$lib/pages/SettingsPage.svelte";
+  import { settings } from "$lib/state/settings.svelte";
+  import { tabs } from "$lib/state/tabs.svelte";
+  import { ui } from "$lib/state/ui.svelte";
+  import { applyTheme } from "$lib/themes";
+
+  $effect(() => applyTheme(settings.theme));
+  $effect(() => tabs.persist());
+
+  const view = $derived(tabs.active?.view);
+  // Change à chaque changement de page, pour rejouer le fondu d'apparition.
+  const viewKey = $derived(`${tabs.activeId}:${JSON.stringify(view)}`);
+
+  /** Raccourcis clavier de la section 5.3 du cahier des charges. */
+  function onkeydown(event: KeyboardEvent): void {
+    const ctrl = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
+
+    if (ctrl && key === "k") {
+      event.preventDefault();
+      ui.paletteOpen = !ui.paletteOpen;
+      return;
+    }
+    if (ui.paletteOpen) return;
+
+    if (ctrl && event.shiftKey && key === "t") tabs.reopenClosed();
+    else if (ctrl && key === "t") tabs.open({ kind: "home" });
+    else if (ctrl && key === "w") tabs.close(tabs.activeId);
+    else if (ctrl && event.key === "Tab") tabs.cycle(event.shiftKey ? -1 : 1);
+    else if (ctrl && /^[1-9]$/.test(event.key)) tabs.goTo(Number(event.key));
+    else if (ctrl && key === "b") settings.toggleSidebar();
+    else if (event.altKey && event.key === "ArrowLeft") tabs.back();
+    else return;
+    event.preventDefault();
+  }
+
+  /** Bouton « précédent » de la souris. */
+  function onmouseup(event: MouseEvent): void {
+    if (event.button === 3) {
+      event.preventDefault();
+      tabs.back();
+    }
+  }
 </script>
 
+<svelte:window {onkeydown} {onmouseup} />
+
 <div class="shell">
-  <aside class="side">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-          <path d="M4 18h16M6 18V9l6-4 6 4v9" />
-        </svg>
-      </span>
-      Établi
-    </div>
-  </aside>
-  <main class="main">
-    <h1>Le moteur démarre.</h1>
-    <p>Tauri 2, Svelte 5 et le thème fonctionnent. Prochaine étape : colonne des plugins, onglets et Accueil.</p>
-    <p class="version">Version {version}</p>
-  </main>
+  <Sidebar />
+  <section class="main">
+    <TabBar />
+    <main class="content">
+      {#key viewKey}
+        <div class="view">
+          {#if view?.kind === "home"}
+            <Home />
+          {:else if view?.kind === "plugin"}
+            <PluginPage pluginId={view.pluginId} />
+          {:else if view?.kind === "app"}
+            <MiniAppPage pluginId={view.pluginId} appId={view.appId} />
+          {:else if view?.kind === "settings"}
+            <SettingsPage section={view.section} />
+          {/if}
+        </div>
+      {/key}
+    </main>
+  </section>
 </div>
+
+{#if ui.paletteOpen}
+  <CommandPalette />
+{/if}
+<Toast />
 
 <style>
   .shell {
-    display: grid;
-    grid-template-columns: 232px 1fr;
+    display: flex;
     height: 100%;
   }
-  .side {
-    background: var(--surface-2);
-    border-right: 1px solid var(--border);
-  }
-  .brand {
-    height: 48px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 14px;
-    font-weight: 700;
-    font-size: 15px;
-  }
-  .logo {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: var(--accent);
-    color: var(--accent-text);
-    display: grid;
-    place-items: center;
-  }
-  .logo svg {
-    width: 16px;
-    height: 16px;
-  }
   .main {
-    padding: 32px;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
   }
-  h1 {
-    margin: 0 0 8px;
-    font-size: 22px;
+  .content {
+    flex: 1;
+    overflow: auto;
+    background: var(--surface);
   }
-  p {
-    margin: 0 0 6px;
-    color: var(--muted);
-  }
-  .version {
-    font: 12px var(--mono);
-    color: var(--faint);
+  .view {
+    animation: fade-in 0.18s ease-out;
   }
 </style>

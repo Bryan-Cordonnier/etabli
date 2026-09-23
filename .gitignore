@@ -21,3 +21,6 @@ Thumbs.db
 .env
 .env.*
 *.key
+
+# Réglages locaux de l'assistant
+.claude/
