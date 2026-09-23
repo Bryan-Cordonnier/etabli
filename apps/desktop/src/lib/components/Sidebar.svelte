@@ -5,6 +5,7 @@
   import { tabs } from "$lib/state/tabs.svelte";
   import type { PluginManifest, View } from "$lib/types";
   import Icon from "./Icon.svelte";
+  import Logo from "./Logo.svelte";
   import Tile from "./Tile.svelte";
 
   /** Plugins actifs, dans l'ordre choisi par glisser-déposer (les nouveaux à la fin). */
@@ -118,11 +119,7 @@
 >
   <div class="brand-row">
     <button class="brand" onclick={(e) => go({ kind: "home" }, e)} title="Accueil">
-      <span class="logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-          <path d="M4 18h16M6 18V9l6-4 6 4v9" />
-        </svg>
-      </span>
+      <Logo size={30} />
       <span class="label">Établi</span>
     </button>
     <!-- Zone vide de la barre de titre : elle déplace la fenêtre. -->
@@ -228,31 +225,18 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    height: 36px;
-    padding: 0 6px;
+    height: 38px;
+    padding: 0 5px;
     border: 0;
     border-radius: 10px;
     background: none;
     font-weight: 700;
-    font-size: 15px;
+    font-size: 18px;
+    letter-spacing: -0.2px;
     white-space: nowrap;
   }
   .brand:hover {
     background: var(--field);
-  }
-  .logo {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: var(--accent);
-    color: var(--accent-text);
-    display: grid;
-    place-items: center;
-    flex: none;
-  }
-  .logo svg {
-    width: 16px;
-    height: 16px;
   }
 
   .nav {
