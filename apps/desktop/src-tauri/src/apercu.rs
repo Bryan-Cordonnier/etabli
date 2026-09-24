@@ -1,17 +1,11 @@
 //! Aperçu rapide (cahier des charges, section 6) : une fenêtre transparente, créée au démarrage
-//! puis cachée, qui s'affiche par-dessus tous les logiciels sur l'écran de la souris. Le flou de
-//! l'arrière-plan est fait par la page, à partir d'une capture de l'écran (voir capture.rs).
+//! puis cachée, qui s'affiche par-dessus tous les logiciels sur l'écran de la souris, derrière
+//! un voile en fondu dessiné par la page.
 
-use crate::capture::{self, Ecran};
-use std::sync::Mutex;
-use tauri::{ipc::Response, AppHandle, Emitter, Manager, Monitor, Runtime};
+use tauri::{AppHandle, Emitter, Manager, Monitor, Runtime};
 
 pub const LABEL: &str = "apercu";
 pub const MAIN: &str = "main";
-
-/// Écran capturé juste avant l'ouverture, en attente d'être lu par la page.
-#[derive(Default)]
-pub struct DernierEcran(Mutex<Option<Ecran>>);
 
 /// Affiche l'aperçu, ou le cache s'il est déjà visible.
 pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
@@ -25,21 +19,9 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
         return;
     }
     // L'aperçu couvre tout l'écran où se trouve la souris (utile en double écran).
-    let mut image = None;
     if let Some(monitor) = monitor_under_cursor(app) {
-        let (position, size) = (*monitor.position(), *monitor.size());
-        // Capturé avant d'afficher la fenêtre : la page floute cette image progressivement.
-        let debut = std::time::Instant::now();
-        image = capture::ecran(position.x, position.y, size.width, size.height);
-        log::info!(
-            "Aperçu rapide : écran capturé en {} ms",
-            debut.elapsed().as_millis()
-        );
-        let _ = window.set_position(position);
-        let _ = window.set_size(size);
-    }
-    if let Some(etat) = app.try_state::<DernierEcran>() {
-        *etat.0.lock().unwrap_or_else(|e| e.into_inner()) = image;
+        let _ = window.set_position(*monitor.position());
+        let _ = window.set_size(*monitor.size());
     }
     let shown = window.show();
     let focused = window.set_focus();
@@ -75,13 +57,6 @@ fn monitor_under_cursor<R: Runtime>(app: &AppHandle<R>) -> Option<Monitor> {
             && cursor.y >= top
             && cursor.y < top + f64::from(size.height)
     })
-}
-
-/// Écran capturé à l'ouverture (une seule lecture), en binaire ; vide si la capture a échoué.
-#[tauri::command]
-pub fn apercu_ecran(etat: tauri::State<'_, DernierEcran>) -> Response {
-    let image = etat.0.lock().unwrap_or_else(|e| e.into_inner()).take();
-    Response::new(image.map(Ecran::octets).unwrap_or_default())
 }
 
 #[tauri::command]

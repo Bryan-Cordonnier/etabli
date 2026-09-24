@@ -3,6 +3,7 @@
   import { system, type AppInfo } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
   import ShortcutRecorder from "$lib/components/ShortcutRecorder.svelte";
+  import MachinesEditor from "$lib/components/MachinesEditor.svelte";
   import SuppliersEditor from "$lib/components/SuppliersEditor.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
@@ -294,6 +295,15 @@
             il ne sert qu'au chiffrage.
           </p>
           <SuppliersEditor />
+        </div>
+
+        <div class="box">
+          <h3>Machines</h3>
+          <p class="hint">
+            Les machines de l'atelier : les calculs reprennent leurs réglages (trait de scie, angles, longueur de lame,
+            butée) et les contraintes qu'elles imposent.
+          </p>
+          <MachinesEditor />
         </div>
       {:else if section === "plugins"}
         <div class="box">

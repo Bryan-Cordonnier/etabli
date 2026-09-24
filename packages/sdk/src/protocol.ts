@@ -71,9 +71,58 @@ export interface Supplier {
   items: SupplierItem[];
 }
 
+export type SawType = "ruban" | "tronconneuse" | "onglet" | "autre";
+
+export const SAW_TYPES: { id: SawType; label: string }[] = [
+  { id: "ruban", label: "Scie à ruban" },
+  { id: "tronconneuse", label: "Tronçonneuse" },
+  { id: "onglet", label: "Scie à onglet" },
+  { id: "autre", label: "Autre scie" },
+];
+
+/** Scie de débit (tubes, profilés). Dimensions en mm, angles en degrés. */
+export interface Saw {
+  id: string;
+  kind: "scie";
+  name: string;
+  type: SawType;
+  /** Épaisseur de lame (trait de scie). */
+  kerf: number;
+  /** Angle maxi de la scie (0 : coupes droites seulement). */
+  maxAngle: number;
+  /** La scie tourne des deux côtés (−45° à +45°), sinon d'un seul. */
+  bothSides: boolean;
+  /** Course maxi de la butée de longueur ; `null` : pas de butée. */
+  stopMax: number | null;
+  /** Longueur la plus courte que l'étau tient encore. */
+  minLength: number;
+  /** Dressage du bout de barre avant la première coupe. */
+  trim: number;
+}
+
+/** Cisaille guillotine (calepinage de tôles). Dimensions en mm. */
+export interface Shear {
+  id: string;
+  kind: "cisaille";
+  name: string;
+  /** Longueur de coupe maxi (longueur de lame). */
+  bladeLength: number;
+  /** Épaisseur maxi en acier. */
+  maxThickness: number;
+  /** Course de la butée arrière. */
+  gaugeMax: number;
+  /** Dressage du premier bord de la tôle. */
+  trim: number;
+}
+
+export type Machine = Saw | Shear;
+export type MachineKind = Machine["kind"];
+
 /** Bibliothèques de l'application, lisibles par tous les plugins (cahier des charges, section 3.3). */
 export interface Libraries {
   suppliers: Supplier[];
+  /** Machines de l'atelier : scies, cisailles (la presse plieuse viendra avec la Tôlerie). */
+  machines: Machine[];
 }
 
 /**
@@ -120,7 +169,8 @@ export type PluginToHost =
   | { type: "height"; value: number }
   | { type: "shortcut"; key: string; ctrl: boolean; shift: boolean; alt: boolean }
   | { type: "pluginData"; data: unknown }
-  | { type: "print"; fiche: FichePrint };
+  | { type: "print"; fiche: FichePrint }
+  | { type: "addMachine"; kind: MachineKind };
 
 /** Raccourcis gérés par le moteur même quand le clavier est dans une mini-app. */
 export function isHostShortcut(e: { key: string; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }): boolean {

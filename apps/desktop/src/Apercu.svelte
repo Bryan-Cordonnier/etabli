@@ -1,7 +1,7 @@
 <script lang="ts">
   // Aperçu rapide : les mini-apps favorites, utilisables directement par-dessus n'importe quel
   // logiciel. Flèches pour choisir, Entrée pour ouvrir, Échap pour revenir puis fermer.
-  import type { PluginToHost } from "@etabli/sdk/protocol";
+  import type { MachineKind, PluginToHost } from "@etabli/sdk/protocol";
   import { onMount, tick } from "svelte";
   import { inTauri, system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
@@ -16,23 +16,7 @@
   import { reloadStorage } from "$lib/storage";
 
   /** Durée des fondus d'ouverture et de fermeture (voir le CSS). */
-  const FADE = 180;
-
-  // Écran sous l'aperçu, capturé par Rust juste avant l'ouverture : le voile le floute
-  // progressivement (backdrop-filter), au lieu de l'effet acrylique de Windows qui arrive d'un coup.
-  let screen = $state<HTMLCanvasElement>();
-  let hasScreen = $state(false);
-
-  async function drawScreen(): Promise<void> {
-    const image = await system.quickScreen().catch(() => null);
-    if (!image || !screen) return;
-    screen.width = image.width;
-    screen.height = image.height;
-    screen.getContext("2d")?.putImageData(image, 0, 0);
-    hasScreen = true;
-  }
-
-  const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const FADE = 150;
 
   let session = $state<DocumentSession | null>(null);
   let selected = $state(0);
@@ -67,9 +51,6 @@
       openedAt = Date.now();
       closing = false;
       selected = 0;
-      // L'image nette s'affiche d'abord (identique à l'écran réel), puis le flou monte en fondu.
-      await drawScreen();
-      await nextFrame();
       shown = true;
       await Promise.all([reloadStorage(), libraries.load()]);
       settings.reload();
@@ -96,7 +77,6 @@
     shown = false;
     await new Promise((resolve) => setTimeout(resolve, FADE));
     await system.closeQuick();
-    hasScreen = false;
     await leaveApp();
   }
 
@@ -120,7 +100,6 @@
     }
     shown = false;
     await system.showMain();
-    hasScreen = false;
     session = null;
   }
 
@@ -177,12 +156,18 @@
   function onmessage(message: PluginToHost): void {
     if (session?.handle(message)) return;
     if (message.type === "shortcut" && message.key === "Escape") onEscape();
+    else if (message.type === "addMachine") void addMachine(message);
+  }
+
+  /** Les machines se règlent dans les Paramètres : le calcul passe dans l'Établi, qui les ouvre. */
+  async function addMachine({ kind }: { kind: MachineKind }): Promise<void> {
+    await openInEtabli();
+    await system.requestMachine(kind);
   }
 </script>
 
 <svelte:window {onkeydown} {onblur} />
 
-<canvas class="screen" class:on={hasScreen} bind:this={screen} aria-hidden="true"></canvas>
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="scrim" class:shown onpointerdown={(e) => e.target === e.currentTarget && void close()}>
     <div class="panel" role="dialog" aria-modal="true" aria-label="Aperçu rapide">
@@ -262,30 +247,17 @@
   :global(body) {
     background: transparent;
   }
-  .screen {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    visibility: hidden;
-  }
-  .screen.on {
-    visibility: visible;
-  }
-  /* Le flou de l'écran capturé et le voile montent ensemble ; les bords du flou sont
-     prolongés par le navigateur (pas de halo sur les bords de l'écran). */
+  /* Voile simple en fondu : pas de flou (l'acrylique de Windows ne peut pas s'animer) ni de zoom. */
   .scrim {
     position: fixed;
     inset: 0;
     display: grid;
     place-items: center;
     padding: 5vh 7vw;
-    background: var(--scrim);
+    /* Sans flou derrière, un voile plus sombre que celui de l'application détache le panneau. */
+    background: rgba(10, 14, 20, 0.42);
     opacity: 0;
-    backdrop-filter: blur(0);
-    transition:
-      opacity 0.18s ease-out,
-      backdrop-filter 0.18s ease-out;
+    transition: opacity 0.15s ease-out;
   }
   .panel {
     width: min(1000px, 100%);
@@ -298,11 +270,9 @@
     box-shadow: var(--shadow);
     overflow: hidden;
   }
-  /* Ouverture et fermeture en fondu, à partir d'une fenêtre toujours vide (voir `shown`).
-     Pas de zoom : avec le flou, il donnait l'impression que l'écran changeait de taille. */
+  /* Ouverture et fermeture en fondu, à partir d'une fenêtre toujours vide (voir `shown`). */
   .scrim.shown {
     opacity: 1;
-    backdrop-filter: blur(24px) saturate(1.15);
   }
   .head {
     display: flex;

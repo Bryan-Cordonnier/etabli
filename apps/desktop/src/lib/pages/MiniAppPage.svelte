@@ -10,6 +10,7 @@
   import Tile from "$lib/components/Tile.svelte";
   import { formatDate } from "$lib/dates";
   import { DocumentSession } from "$lib/documents.svelte";
+  import { addMachineFromApp } from "$lib/machines";
   import { getMiniApp, pluginUrl } from "$lib/plugins/registry";
   import { handleShortcut } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -49,6 +50,7 @@
   function onmessage(message: PluginToHost): void {
     if (session?.handle(message)) return;
     if (message.type === "shortcut") handleShortcut(message);
+    else if (message.type === "addMachine") addMachineFromApp(message.kind);
   }
 
   const view = (id?: string): AppView => ({ kind: "app", pluginId, appId, docId: id });

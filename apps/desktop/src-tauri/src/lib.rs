@@ -1,5 +1,4 @@
 mod apercu;
-mod capture;
 mod documents;
 mod donnees;
 mod files;
@@ -129,7 +128,6 @@ pub fn run() {
                 fermeture_zone: AtomicBool::new(fermeture_zone),
             });
 
-            app.manage(apercu::DernierEcran::default());
             // Raccourci de l'aperçu rapide : celui des réglages, sinon Ctrl+Maj+Espace.
             app.manage(raccourci::QuickShortcut::default());
             let accelerator = reglage("quickShortcut")
@@ -183,7 +181,6 @@ pub fn run() {
             donnees::donnees_lire,
             donnees::donnees_ecrire,
             apercu::apercu_basculer,
-            apercu::apercu_ecran,
             apercu::apercu_fermer,
             apercu::etabli_afficher,
             raccourci::raccourci_definir,

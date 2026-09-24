@@ -1,9 +1,17 @@
-// Ce que le moteur partage avec toutes les mini-apps d'un plugin : ses réglages (machines de
-// l'atelier…), les bibliothèques de l'application (fournisseurs) et l'impression des fiches.
+// Ce que le moteur partage avec les mini-apps : les réglages propres au plugin, les bibliothèques
+// de l'application (fournisseurs, machines) et l'impression des fiches.
 //
-//   const machines = new PluginSettings({ saws: [] }, clean);
-//   <Field bind:value={machines.data.saws[0].name} />   // enregistré par le moteur
-import { connect, type Etabli, type FichePrint, type Supplier } from "@etabli/sdk";
+//   const reglages = new PluginSettings({ keepMin: "300" });
+//   <Field bind:value={reglages.data.keepMin} />   // enregistré par le moteur
+import {
+  connect,
+  type Etabli,
+  type FichePrint,
+  type Libraries as HostLibraries,
+  type Machine,
+  type MachineKind,
+  type Supplier,
+} from "@etabli/sdk";
 
 /** Réglages du plugin, réactifs, partagés par ses mini-apps ouvertes et enregistrés automatiquement. */
 export class PluginSettings<S extends object> {
@@ -43,16 +51,29 @@ export class PluginSettings<S extends object> {
   }
 }
 
-/** Fournisseurs saisis dans les Paramètres d'Établi (liste vide si l'utilisateur n'en a pas). */
-export class Suppliers {
-  list = $state<Supplier[]>([]);
+/** Bibliothèques saisies dans les Paramètres d'Établi (listes vides si l'utilisateur n'a rien saisi). */
+export class Libraries {
+  suppliers = $state<Supplier[]>([]);
+  machines = $state<Machine[]>([]);
+  #host: Etabli<unknown> | undefined;
 
   constructor() {
     void connect().then((host) => {
-      this.list = host.libraries.current.suppliers;
-      host.libraries.onChange((libraries) => (this.list = libraries.suppliers));
+      this.#host = host;
+      this.#receive(host.libraries.current);
+      host.libraries.onChange((libraries) => this.#receive(libraries));
     });
   }
+
+  #receive(libraries: HostLibraries): void {
+    this.suppliers = libraries.suppliers ?? [];
+    this.machines = libraries.machines ?? [];
+  }
+
+  /** Ouvre les Paramètres sur une nouvelle machine ; elle arrive ensuite dans `machines`. */
+  addMachine = (kind: MachineKind): void => {
+    this.#host?.libraries.addMachine(kind);
+  };
 }
 
 /** Ouvre la fenêtre d'impression de la fiche (le moteur ajoute l'en-tête et le pied de page). */

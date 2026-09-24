@@ -16,16 +16,22 @@ import {
   type FichePrint,
   type HostToPlugin,
   type Libraries,
+  type MachineKind,
   type PluginToHost,
   type ThemeTokens,
 } from "./protocol";
 
-export { STOCK_KINDS } from "./protocol";
+export { SAW_TYPES, STOCK_KINDS } from "./protocol";
 export type {
   ColorScheme,
   DocumentSnapshot,
   FichePrint,
   Libraries,
+  Machine,
+  MachineKind,
+  Saw,
+  SawType,
+  Shear,
   StockKind,
   Supplier,
   SupplierItem,
@@ -61,6 +67,8 @@ export interface Etabli<T> {
   readonly libraries: {
     readonly current: Libraries;
     onChange(listener: (libraries: Libraries) => void): () => void;
+    /** Ouvre Paramètres → Bibliothèques sur une nouvelle machine à régler ; elle arrive ensuite par `onChange`. */
+    addMachine(kind: MachineKind): void;
   };
   /** Réglages du plugin (machines de l'atelier…), partagés par toutes ses mini-apps et enregistrés par le moteur. */
   readonly settings: {
@@ -99,7 +107,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
   const settingsListeners = new Set<(data: unknown) => void>();
   let doc: DocumentSnapshot = { id: null, title: "", data: null };
   let ids = { pluginId: "", appId: "" };
-  let libraries: Libraries = { suppliers: [] };
+  let libraries: Libraries = { suppliers: [], machines: [] };
   let pluginData: unknown = null;
 
   const api: Etabli<unknown> = {
@@ -156,6 +164,9 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         libraryListeners.add(listener);
         return () => libraryListeners.delete(listener);
       },
+      addMachine(kind) {
+        send({ type: "addMachine", kind });
+      },
     },
     settings: {
       get data() {
@@ -185,7 +196,11 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "init":
         ids = { pluginId: message.pluginId, appId: message.appId };
         doc = message.document;
-        libraries = message.libraries ?? { suppliers: [] };
+        // Un moteur plus ancien peut ne pas envoyer toutes les bibliothèques.
+        libraries = {
+          suppliers: message.libraries?.suppliers ?? [],
+          machines: message.libraries?.machines ?? [],
+        };
         pluginData = message.pluginData ?? null;
         applyTheme(message.theme, message.colorScheme);
         resolve(api);

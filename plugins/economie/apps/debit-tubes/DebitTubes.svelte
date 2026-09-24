@@ -1,10 +1,9 @@
 <script lang="ts">
   import { STOCK_KINDS } from "@etabli/sdk";
-  import { Card, Field, MiniAppDocument, PluginSettings, SelectField, Suppliers, colorOf, format, printFiche } from "@etabli/ui";
+  import type { Saw } from "@etabli/sdk";
+  import { Card, Field, Libraries, MiniAppDocument, SelectField, colorOf, format, printFiche } from "@etabli/ui";
   import { groupBars, planCuts, type CutPlan } from "../../src/debit";
   import { debitFiche } from "../../src/fiche-debit";
-  import { DEFAULT_SETTINGS, cleanSettings } from "../../src/machines";
-  import MachinesPanel from "../../src/MachinesPanel.svelte";
   import { nextMark, num, quantity, rowsFromPaste } from "../../src/pieces";
 
   interface Data {
@@ -31,7 +30,17 @@
     pieces: [{ mark: "A", length: "", quantity: "1" }],
   };
 
-  function compute(data: Data): CutPlan | null {
+  /** Réglages de coupe : ceux de la scie choisie, sinon ceux saisis à la main. */
+  function cutSettings(data: Data) {
+    const chosen = saws.find((s) => s.id === data.machine);
+    return {
+      kerf: chosen ? chosen.kerf : num(data.kerf) || 0,
+      trim: chosen ? chosen.trim : num(data.trim) || 0,
+      keepMin: num(data.keep) || 0,
+    };
+  }
+
+  function compute(data: Data, settings = cutSettings(data)): CutPlan | null {
     const pieces = data.pieces
       .map((p) => ({ mark: p.mark || "?", length: num(p.length), quantity: num(p.quantity) || 0 }))
       .filter((p) => p.length > 0 && p.quantity > 0);
@@ -42,7 +51,7 @@
       data.stock.map((b) => ({ length: num(b.length), quantity: quantity(b.quantity) })).filter((b) => b.length > 0),
       data.offcuts.split(/[\s;]+/).map(num).filter((l) => l > 0),
       all,
-      { kerf: num(data.kerf) || 0, trim: num(data.trim) || 0, keepMin: num(data.keep) || 0 },
+      settings,
     );
   }
 
@@ -60,9 +69,11 @@
   let computing = $state(false);
   $effect(() => {
     const snapshot = JSON.parse(JSON.stringify(doc.data)) as Data;
+    // Lu ici : une scie modifiée dans les Paramètres relance aussi le calcul.
+    const settings = cutSettings(snapshot);
     computing = true;
     const timer = setTimeout(() => {
-      plan = compute(snapshot);
+      plan = compute(snapshot, settings);
       computing = false;
     }, 250);
     return () => clearTimeout(timer);
@@ -89,29 +100,43 @@
     doc.notify(`${rows.length} pièce${rows.length > 1 ? "s" : ""} collée${rows.length > 1 ? "s" : ""}`);
   }
 
-  // Bibliothèques : machines d'Économie, fournisseurs d'Établi. Le calcul marche aussi sans.
-  const reglages = new PluginSettings(DEFAULT_SETTINGS, cleanSettings);
-  const suppliers = new Suppliers();
-  let showMachines = $state(false);
+  // Bibliothèques d'Établi (Paramètres → Bibliothèques) : fournisseurs et machines. Le calcul marche aussi sans.
+  const libraries = new Libraries();
+  const ADD = "__ajouter__";
 
-  const saws = $derived(reglages.data.machines.saws);
+  const saws = $derived(libraries.machines.filter((m): m is Saw => m.kind === "scie"));
   const saw = $derived(saws.find((s) => s.id === doc.data.machine));
   const sawOptions = $derived([
     { value: "", label: "Réglages saisis à la main" },
     ...saws.map((s) => ({ value: s.id, label: s.name || "Scie sans nom" })),
+    { value: ADD, label: "+ Ajouter une machine…" },
   ]);
 
-  /** Choisir une scie reprend son trait de scie et son dressage. */
+  // « + Ajouter une machine… » : les Paramètres s'ouvrent sur une nouvelle scie ; dès qu'elle
+  // arrive dans la bibliothèque, elle est choisie ici. En attendant, l'ancien choix reste.
+  let knownSaws = $state<Set<string> | null>(null);
+  let previous = "";
+  $effect(() => {
+    if (doc.data.machine !== ADD) previous = doc.data.machine;
+  });
+
   function pickSaw(id: string): void {
-    const picked = saws.find((s) => s.id === id);
-    if (!picked) return;
-    doc.data.kerf = picked.kerf;
-    doc.data.trim = picked.trim;
+    if (id !== ADD) return;
+    doc.data.machine = previous;
+    knownSaws = new Set(saws.map((s) => s.id));
+    libraries.addMachine("scie");
   }
+
+  $effect(() => {
+    const added = knownSaws && saws.find((s) => !knownSaws!.has(s.id));
+    if (!added) return;
+    knownSaws = null;
+    doc.data.machine = added.id;
+  });
 
   const kindLabel = (kind: string) => STOCK_KINDS.find((k) => k.id === kind)?.label ?? kind;
   const barOffers = $derived(
-    suppliers.list.flatMap((s) =>
+    libraries.suppliers.flatMap((s) =>
       s.items
         .filter((item) => item.kind !== "tole" && item.length > 0)
         .map((item) => ({
@@ -142,7 +167,7 @@
         plan,
         pieces: doc.data.pieces.map((p) => ({ mark: p.mark || "?", length: num(p.length), quantity: num(p.quantity) || 0 })),
         colors: colorOf,
-        settings: { kerf: num(doc.data.kerf) || 0, trim: num(doc.data.trim) || 0, keepMin: num(doc.data.keep) || 0 },
+        settings: cutSettings(doc.data),
         machine: saw?.name ?? "",
       }),
     );
@@ -187,24 +212,23 @@
         {/if}
       </div>
       <Field label="Chutes déjà en stock (utilisées en premier)" numeric={false} placeholder="ex. 1200 850 640" unit="mm" bind:value={doc.data.offcuts} />
-      <div class="machine">
-        <SelectField label="Scie" options={sawOptions} bind:value={doc.data.machine} onchange={pickSaw} />
-        <button class="btn" onclick={() => (showMachines = !showMachines)} aria-expanded={showMachines}>
-          {showMachines ? "Fermer" : "Machines…"}
-        </button>
-      </div>
-      <div class="three">
-        <Field label="Trait de scie" unit="mm" bind:value={doc.data.kerf} />
-        <Field label="Dressage en bout" unit="mm" bind:value={doc.data.trim} />
-        <Field label="Chute gardée dès" unit="mm" bind:value={doc.data.keep} />
-      </div>
+      <SelectField label="Scie" options={sawOptions} bind:value={doc.data.machine} onchange={pickSaw} />
+      {#if saw}
+        <!-- Réglages de la scie : modifiables dans Paramètres → Bibliothèques → Machines. -->
+        <div class="two">
+          <p class="machine-settings">
+            Trait de scie <b>{format(saw.kerf)} mm</b> · dressage <b>{format(saw.trim)} mm</b>
+          </p>
+          <Field label="Chute gardée dès" unit="mm" bind:value={doc.data.keep} />
+        </div>
+      {:else}
+        <div class="three">
+          <Field label="Trait de scie" unit="mm" bind:value={doc.data.kerf} />
+          <Field label="Dressage en bout" unit="mm" bind:value={doc.data.trim} />
+          <Field label="Chute gardée dès" unit="mm" bind:value={doc.data.keep} />
+        </div>
+      {/if}
     </Card>
-
-    {#if showMachines}
-      <Card title="Machines de l'atelier">
-        <MachinesPanel store={reglages} kinds={["saws"]} />
-      </Card>
-    {/if}
 
     <Card title="Pièces à couper">
       <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -346,15 +370,21 @@
     flex: 1;
     min-width: 180px;
   }
-  .machine {
+  .two {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 2fr 1fr;
     gap: 8px;
-    align-items: end;
+    align-items: start;
   }
-  /* Même hauteur que le sélecteur voisin. */
-  .machine .btn {
-    height: 36px;
+  .machine-settings {
+    margin: 0;
+    padding-top: 30px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .machine-settings b {
+    font-family: var(--mono);
+    color: var(--text);
   }
   .remove {
     width: 28px;

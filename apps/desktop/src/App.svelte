@@ -9,6 +9,7 @@
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
   import { system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
+  import { addMachineFromApp } from "$lib/machines";
   import { handleShortcut } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -20,6 +21,12 @@
   // « Ouvrir dans l'Établi » depuis l'aperçu rapide : le calcul arrive dans un nouvel onglet.
   $effect(() => {
     const unlisten = system.onOpenRequest((view) => tabs.navigate(view, { newTab: true }));
+    return () => void unlisten.then((stop) => stop());
+  });
+
+  // « + Ajouter une machine… » dans une mini-app de l'aperçu rapide.
+  $effect(() => {
+    const unlisten = system.onMachineRequest(addMachineFromApp);
     return () => void unlisten.then((stop) => stop());
   });
 

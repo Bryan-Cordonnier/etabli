@@ -5,6 +5,7 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+import type { MachineKind } from "@etabli/sdk/protocol";
 import type { AppView } from "./types";
 
 export const inTauri = isTauri();
@@ -24,16 +25,6 @@ export interface AppInfo {
 export const system = {
   toggleQuick: (): Promise<void> => (inTauri ? invoke("apercu_basculer") : Promise.resolve()),
   closeQuick: (): Promise<void> => (inTauri ? invoke("apercu_fermer") : Promise.resolve()),
-  /** Écran sous l'aperçu, capturé à l'ouverture (RGBA, en basse résolution), ou null. */
-  quickScreen: async (): Promise<ImageData | null> => {
-    if (!inTauri) return null;
-    const bytes = await invoke<ArrayBuffer>("apercu_ecran");
-    if (bytes.byteLength <= 8) return null;
-    const view = new DataView(bytes);
-    const [width, height] = [view.getUint32(0, true), view.getUint32(4, true)];
-    if (bytes.byteLength !== 8 + width * height * 4) return null;
-    return new ImageData(new Uint8ClampedArray(bytes, 8), width, height);
-  },
   showMain: (): Promise<void> => (inTauri ? invoke("etabli_afficher") : Promise.resolve()),
 
   setShortcut: (accelerator: string): Promise<void> =>
@@ -67,6 +58,11 @@ export const system = {
   openInMain: (view: AppView): Promise<void> => (inTauri ? emitTo("main", "etabli:ouvrir", view) : Promise.resolve()),
   onOpenRequest: (handler: (view: AppView) => void): Promise<() => void> =>
     inTauri ? listen<AppView>("etabli:ouvrir", (event) => handler(event.payload)) : Promise.resolve(() => {}),
+  /** Une mini-app de l'aperçu rapide demande une nouvelle machine : la fenêtre principale ouvre les Paramètres. */
+  requestMachine: (kind: MachineKind): Promise<void> =>
+    inTauri ? emitTo("main", "etabli:machine", kind) : Promise.resolve(),
+  onMachineRequest: (handler: (kind: MachineKind) => void): Promise<() => void> =>
+    inTauri ? listen<MachineKind>("etabli:machine", (event) => handler(event.payload)) : Promise.resolve(() => {}),
   onQuickOpened: (handler: () => void): Promise<() => void> =>
     inTauri ? listen("apercu:ouvert", () => handler()) : Promise.resolve(() => {}),
   /** Le raccourci a été pressé alors que l'aperçu était ouvert : il doit se fermer. */
