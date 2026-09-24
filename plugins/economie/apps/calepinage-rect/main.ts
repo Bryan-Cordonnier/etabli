@@ -1,5 +1,5 @@
 import "@etabli/sdk/base.css";
 import { mount } from "svelte";
-import CalepinageRect from "./CalepinageRect.svelte";
+import Calepinage from "./Calepinage.svelte";
 
-mount(CalepinageRect, { target: document.getElementById("app")! });
+mount(Calepinage, { target: document.getElementById("app")! });
