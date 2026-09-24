@@ -7,6 +7,7 @@
     type ColorScheme,
     type DocumentSnapshot,
     type HostToPlugin,
+    type Incoming,
     type PluginToHost,
     type ThemeTokens,
   } from "@etabli/sdk/protocol";
@@ -30,10 +31,13 @@
     initial: DocumentSnapshot;
     /** Titre actuel du calcul, pour les fiches imprimées. */
     docTitle?: string;
+    /** Données envoyées par une autre mini-app, transmises à la première ouverture seulement. */
+    incoming?: Incoming | null;
     onmessage: (message: PluginToHost) => void;
   }
 
-  let { src, title, pluginId, appId, initial, docTitle = "", onmessage }: Props = $props();
+  let { src, title, pluginId, appId, initial, docTitle = "", incoming = null, onmessage }: Props = $props();
+  let incomingSent = false;
 
   let frame: HTMLIFrameElement;
   let port: MessagePort | undefined;
@@ -93,7 +97,10 @@
       ...readTheme(),
       libraries: JSON.parse(sentLibraries),
       pluginData: JSON.parse(sentPluginData),
+      // Si le cadre se recharge, les données reçues ne sont pas appliquées une seconde fois.
+      incoming: incoming && !incomingSent ? JSON.parse(JSON.stringify(incoming)) : null,
     });
+    incomingSent = true;
   }
 
   // Fournisseurs modifiés dans les Paramètres, ou réglages du plugin changés par une autre mini-app.

@@ -155,6 +155,8 @@ export type HostToPlugin =
       libraries: Libraries;
       /** Réglages du plugin, partagés par toutes ses mini-apps ; `null` s'il n'en a pas encore. */
       pluginData: unknown;
+      /** Données envoyées par une autre mini-app (« Envoyer au calepinage »), ou `null`. */
+      incoming: Incoming | null;
     }
   | { type: "theme"; theme: ThemeTokens; colorScheme: ColorScheme }
   | { type: "libraries"; libraries: Libraries }
@@ -170,7 +172,24 @@ export type PluginToHost =
   | { type: "shortcut"; key: string; ctrl: boolean; shift: boolean; alt: boolean }
   | { type: "pluginData"; data: unknown }
   | { type: "print"; fiche: FichePrint }
-  | { type: "addMachine"; kind: MachineKind };
+  | { type: "addMachine"; kind: MachineKind }
+  | { type: "send"; kind: string; data: unknown };
+
+/**
+ * Envoi d'une mini-app vers une autre (cahier des charges des plugins, section 3) : le moteur
+ * ouvre, dans un nouvel onglet, une mini-app qui déclare accepter ce type dans son manifeste
+ * (`"accepts": ["piece-plate"]`), et lui transmet les données à son ouverture.
+ *
+ * Types connus :
+ * - `piece-plate` : une pièce plate rectangulaire `{ name, length, width, quantity, grain, thickness?, family? }`
+ *   (longueur le long du sens de laminage si `grain`).
+ */
+export interface Incoming {
+  kind: string;
+  data: unknown;
+  /** Nom de la mini-app qui a envoyé les données. */
+  from: string;
+}
 
 /** Raccourcis gérés par le moteur même quand le clavier est dans une mini-app. */
 export function isHostShortcut(e: { key: string; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }): boolean {

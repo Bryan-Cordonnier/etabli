@@ -80,3 +80,18 @@ export class Libraries {
 export function printFiche(fiche: FichePrint): void {
   void connect().then((host) => host.print(fiche));
 }
+
+/** Envoie des données à une autre mini-app (« Envoyer au calepinage »). */
+export function sendTo(kind: string, data: unknown): void {
+  void connect().then((host) => host.send(kind, data));
+}
+
+/**
+ * Données reçues d'une autre mini-app à l'ouverture. À appeler après avoir créé le
+ * `MiniAppDocument` : le calcul est chargé avant que les données reçues soient appliquées.
+ */
+export function onIncoming(kind: string, handler: (data: unknown, from: string) => void): void {
+  void connect().then((host) => {
+    if (host.incoming?.kind === kind) handler(host.incoming.data, host.incoming.from);
+  });
+}

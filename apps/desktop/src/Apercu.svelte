@@ -157,6 +157,14 @@
     if (session?.handle(message)) return;
     if (message.type === "shortcut" && message.key === "Escape") onEscape();
     else if (message.type === "addMachine") void addMachine(message);
+    else if (message.type === "send") void send(message);
+  }
+
+  /** L'envoi ouvre un nouvel onglet : le calcul passe dans l'Établi, qui ouvre la mini-app cible. */
+  async function send({ kind, data }: { kind: string; data: unknown }): Promise<void> {
+    const from = current?.app.name ?? "";
+    await openInEtabli();
+    await system.requestSend({ kind, data, from });
   }
 
   /** Les machines se règlent dans les Paramètres : le calcul passe dans l'Établi, qui les ouvre. */

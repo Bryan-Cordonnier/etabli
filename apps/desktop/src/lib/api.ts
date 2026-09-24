@@ -58,6 +58,11 @@ export const system = {
   openInMain: (view: AppView): Promise<void> => (inTauri ? emitTo("main", "etabli:ouvrir", view) : Promise.resolve()),
   onOpenRequest: (handler: (view: AppView) => void): Promise<() => void> =>
     inTauri ? listen<AppView>("etabli:ouvrir", (event) => handler(event.payload)) : Promise.resolve(() => {}),
+  /** Une mini-app de l'aperçu rapide envoie des données à une autre : la fenêtre principale l'ouvre. */
+  requestSend: (request: { kind: string; data: unknown; from: string }): Promise<void> =>
+    inTauri ? emitTo("main", "etabli:envoyer", request) : Promise.resolve(),
+  onSendRequest: (handler: (request: { kind: string; data: unknown; from: string }) => void): Promise<() => void> =>
+    inTauri ? listen<{ kind: string; data: unknown; from: string }>("etabli:envoyer", (event) => handler(event.payload)) : Promise.resolve(() => {}),
   /** Une mini-app de l'aperçu rapide demande une nouvelle machine : la fenêtre principale ouvre les Paramètres. */
   requestMachine: (kind: MachineKind): Promise<void> =>
     inTauri ? emitTo("main", "etabli:machine", kind) : Promise.resolve(),

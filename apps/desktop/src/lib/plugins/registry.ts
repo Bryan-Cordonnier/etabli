@@ -57,6 +57,7 @@ function normalize(raw: unknown, official: boolean): PluginManifest | null {
       entry: typeof a.entry === "string" ? a.entry : undefined,
       dataVersion: typeof a.dataVersion === "number" ? a.dataVersion : 1,
       plannedFor: a.plannedFor === "v2" ? "v2" : "v1",
+      accepts: Array.isArray(a.accepts) ? a.accepts.filter((k): k is string => typeof k === "string") : [],
     }));
 
   return {

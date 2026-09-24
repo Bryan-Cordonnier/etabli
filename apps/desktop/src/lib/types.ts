@@ -55,6 +55,8 @@ export interface MiniAppManifest {
   dataVersion: number;
   /** Version de l'application où la mini-app est prévue. */
   plannedFor: "v1" | "v2";
+  /** Types de données que la mini-app sait recevoir d'une autre (« piece-plate »…). */
+  accepts: string[];
 }
 
 export interface PluginManifest {

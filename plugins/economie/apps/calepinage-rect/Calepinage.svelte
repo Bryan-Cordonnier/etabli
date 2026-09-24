@@ -1,7 +1,7 @@
 <script lang="ts">
   // Calepinage de tôles à la cisaille guillotine (cahier des charges, section 9.4).
   import type { Shear } from "@etabli/sdk";
-  import { Card, Field, Libraries, MiniAppDocument, SelectField, colorOf, format, printFiche } from "@etabli/ui";
+  import { Card, Field, Libraries, MiniAppDocument, SelectField, colorOf, format, onIncoming, printFiche } from "@etabli/ui";
   import { groupPlates, planPlates, type Chute, type PlatePlan, type ShearSettings } from "../../src/cisaille";
   import { calepinageFiche } from "../../src/fiche-calepinage";
   import { MATERIALS, materialOf, plateWeight, type MaterialId } from "../../src/matiere";
@@ -123,6 +123,28 @@
   };
 
   const doc = new MiniAppDocument<Data>(DEFAULTS, (data) => summarize(compute(data)), migrate);
+
+  // Pièce envoyée par une autre mini-app (un flan plié de la Tôlerie, par exemple).
+  onIncoming("piece-plate", (raw, from) => {
+    const p = raw as Partial<{ name: string; length: number; width: number; quantity: number; grain: boolean; thickness: number; family: string }>;
+    if (!(Number(p.length) > 0 && Number(p.width) > 0)) return;
+    const fresh = doc.data.pieces.every((x) => x.length.trim() === "" && x.width.trim() === "");
+    if (fresh) {
+      doc.data.pieces = [];
+      if (Number(p.thickness) > 0) doc.data.thickness = String(p.thickness);
+      if (MATERIALS.some((m) => m.id === p.family)) doc.data.material = p.family as MaterialId;
+    }
+    doc.data.pieces.push(
+      newPiece(nextMark(doc.data.pieces.map((x) => x.mark)), {
+        name: p.name ?? "",
+        length: String(p.length),
+        width: String(p.width),
+        quantity: String(p.quantity ?? 1),
+        grain: p.grain ?? false,
+      }),
+    );
+    doc.notify(`Pièce reçue de « ${from} »`);
+  });
 
   let plan = $state<PlatePlan | null>(null);
   let computing = $state(false);

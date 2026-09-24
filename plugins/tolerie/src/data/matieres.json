@@ -1,0 +1,17 @@
+{
+  "source": "Valeurs indicatives d'après EN 10025-2 (S235, S355), EN 10025-6 (S690), EN 10130 (DC01), EN 10346 (DX51D), EN 10088-2 (inox), EN 485-2 (aluminium) et EN 1652 (cuivre, laiton). Rm : valeur courante dans la plage de la norme. Rayon mini : pliage à froid, pli perpendiculaire au laminage, en multiple de l'épaisseur.",
+  "matieres": [
+    { "id": "s235", "nom": "Acier S235", "masseVolumique": 7.85, "rm": 400, "re": 235, "rayonMini": 1.0 },
+    { "id": "s355", "nom": "Acier S355", "masseVolumique": 7.85, "rm": 510, "re": 355, "rayonMini": 1.5 },
+    { "id": "dc01", "nom": "Acier DC01 (tôle à froid)", "masseVolumique": 7.85, "rm": 350, "re": 240, "rayonMini": 0.5 },
+    { "id": "dx51d", "nom": "Acier galvanisé DX51D", "masseVolumique": 7.85, "rm": 380, "re": 250, "rayonMini": 1.0 },
+    { "id": "s690", "nom": "Acier HLE S690", "masseVolumique": 7.85, "rm": 850, "re": 690, "rayonMini": 3.0 },
+    { "id": "inox304l", "nom": "Inox 304L (1.4307)", "masseVolumique": 7.9, "rm": 600, "re": 220, "rayonMini": 1.0 },
+    { "id": "inox316l", "nom": "Inox 316L (1.4404)", "masseVolumique": 8.0, "rm": 600, "re": 240, "rayonMini": 1.0 },
+    { "id": "alu5754", "nom": "Aluminium 5754 H111", "masseVolumique": 2.66, "rm": 215, "re": 80, "rayonMini": 1.0 },
+    { "id": "alu5083", "nom": "Aluminium 5083 H111", "masseVolumique": 2.66, "rm": 300, "re": 125, "rayonMini": 1.5 },
+    { "id": "alu1050", "nom": "Aluminium 1050 H14", "masseVolumique": 2.7, "rm": 125, "re": 85, "rayonMini": 0.5 },
+    { "id": "cuivre", "nom": "Cuivre Cu-ETP R240", "masseVolumique": 8.93, "rm": 240, "re": 180, "rayonMini": 0.5 },
+    { "id": "laiton", "nom": "Laiton CuZn37 R370", "masseVolumique": 8.44, "rm": 370, "re": 200, "rayonMini": 1.0 }
+  ]
+}

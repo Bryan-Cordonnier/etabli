@@ -11,6 +11,7 @@
   import { formatDate } from "$lib/dates";
   import { DocumentSession } from "$lib/documents.svelte";
   import { addMachineFromApp } from "$lib/machines";
+  import { sendToApp, takeIncoming } from "$lib/send";
   import { getMiniApp, pluginUrl } from "$lib/plugins/registry";
   import { handleShortcut } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -29,6 +30,9 @@
 
   const found = $derived(getMiniApp(pluginId, appId));
   let session = $state<DocumentSession | null>(null);
+  // Données envoyées par une autre mini-app pour cet onglet : lues une seule fois, à l'ouverture.
+  // svelte-ignore state_referenced_locally
+  const incoming = takeIncoming(tabId);
 
   const pastCalcs = $derived(
     (session?.history ?? []).map((d) => ({ id: d.id, title: d.title, summary: d.summary, date: formatDate(d.modified) })),
@@ -51,6 +55,7 @@
     if (session?.handle(message)) return;
     if (message.type === "shortcut") handleShortcut(message);
     else if (message.type === "addMachine") addMachineFromApp(message.kind);
+    else if (message.type === "send") sendToApp(message.kind, message.data, found?.app.name ?? "");
   }
 
   const view = (id?: string): AppView => ({ kind: "app", pluginId, appId, docId: id });
@@ -143,6 +148,7 @@
           {appId}
           initial={session.initial}
           docTitle={session.title}
+          {incoming}
           {onmessage}
         />
       {/if}

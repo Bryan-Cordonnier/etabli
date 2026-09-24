@@ -7,5 +7,5 @@ export { default as Segmented } from "./Segmented.svelte";
 export { default as SelectField } from "./SelectField.svelte";
 export { evaluate, format, isExpression, parsePasted } from "./calc";
 export { MiniAppDocument } from "./document.svelte";
-export { Libraries, PluginSettings, printFiche } from "./host.svelte";
+export { Libraries, PluginSettings, onIncoming, printFiche, sendTo } from "./host.svelte";
 export { COLORS, colorOf } from "./colors";

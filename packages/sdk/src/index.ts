@@ -15,6 +15,7 @@ import {
   type DocumentSnapshot,
   type FichePrint,
   type HostToPlugin,
+  type Incoming,
   type Libraries,
   type MachineKind,
   type PluginToHost,
@@ -26,6 +27,7 @@ export type {
   ColorScheme,
   DocumentSnapshot,
   FichePrint,
+  Incoming,
   Libraries,
   Machine,
   MachineKind,
@@ -80,6 +82,10 @@ export interface Etabli<T> {
   };
   /** Imprime une fiche d'atelier (A4, ou PDF avec l'imprimante « Enregistrer au format PDF »). */
   print(fiche: FichePrint): void;
+  /** Envoie des données à une autre mini-app (voir `Incoming`), ouverte dans un nouvel onglet. */
+  send(kind: string, data: unknown): void;
+  /** Données reçues d'une autre mini-app à l'ouverture, ou `null`. */
+  readonly incoming: Incoming | null;
   /** Appelé quand l'utilisateur change de thème. Renvoie une fonction pour se désabonner. */
   onThemeChange(listener: (theme: ThemeTokens, scheme: ColorScheme) => void): () => void;
 }
@@ -109,6 +115,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
   let ids = { pluginId: "", appId: "" };
   let libraries: Libraries = { suppliers: [], machines: [] };
   let pluginData: unknown = null;
+  let incoming: Incoming | null = null;
 
   const api: Etabli<unknown> = {
     get pluginId() {
@@ -184,6 +191,12 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
     print(fiche) {
       send({ type: "print", fiche: JSON.parse(JSON.stringify(fiche)) });
     },
+    send(kind, data) {
+      send({ type: "send", kind, data: JSON.parse(JSON.stringify(data)) });
+    },
+    get incoming() {
+      return incoming;
+    },
     onThemeChange(listener) {
       themeListeners.add(listener);
       return () => themeListeners.delete(listener);
@@ -202,6 +215,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
           machines: message.libraries?.machines ?? [],
         };
         pluginData = message.pluginData ?? null;
+        incoming = message.incoming ?? null;
         applyTheme(message.theme, message.colorScheme);
         resolve(api);
         break;

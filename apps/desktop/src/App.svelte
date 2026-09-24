@@ -10,6 +10,7 @@
   import { system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
   import { addMachineFromApp } from "$lib/machines";
+  import { sendToApp } from "$lib/send";
   import { handleShortcut } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -24,10 +25,14 @@
     return () => void unlisten.then((stop) => stop());
   });
 
-  // « + Ajouter une machine… » dans une mini-app de l'aperçu rapide.
+  // « + Ajouter une machine… » et « Envoyer au calepinage » depuis une mini-app de l'aperçu rapide.
   $effect(() => {
-    const unlisten = system.onMachineRequest(addMachineFromApp);
-    return () => void unlisten.then((stop) => stop());
+    const machine = system.onMachineRequest(addMachineFromApp);
+    const send = system.onSendRequest(({ kind, data, from }) => sendToApp(kind, data, from));
+    return () => {
+      void machine.then((stop) => stop());
+      void send.then((stop) => stop());
+    };
   });
 
   const view = $derived(tabs.active?.view);

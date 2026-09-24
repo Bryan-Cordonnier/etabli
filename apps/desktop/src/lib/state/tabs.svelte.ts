@@ -53,9 +53,11 @@ class Tabs {
     return this.list[this.list.length - 1]!;
   }
 
-  open(view: View, focus = true): void {
+  /** Ouvre un nouvel onglet ; renvoie son identifiant. */
+  open(view: View, focus = true): number {
     const tab = this.#create(fresh(view));
     if (focus) this.activeId = tab.id;
+    return tab.id;
   }
 
   /** Bouton « + » et Ctrl+T : comme un navigateur, un onglet neuf, prêt pour la recherche. */
@@ -121,7 +123,10 @@ class Tabs {
   /** Remplace la page de l'onglet actif (autre calcul de la même mini-app, nouveau calcul). */
   replace(view: View): void {
     const tab = this.active;
-    if (!tab) return this.open(view);
+    if (!tab) {
+      this.open(view);
+      return;
+    }
     tab.history.push($state.snapshot(tab.view));
     tab.view = fresh(view);
   }

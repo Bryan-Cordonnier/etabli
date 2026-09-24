@@ -28,7 +28,8 @@
       "emoji": "🟩",
       "dataVersion": 2,
       "plannedFor": "v1",
-      "entry": "apps/calepinage-rect/index.html"
+      "entry": "apps/calepinage-rect/index.html",
+      "accepts": ["piece-plate"]
     }
   ]
 }
