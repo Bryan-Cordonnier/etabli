@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@etabli/sdk": "*",
-    "@etabli/ui": "*"
+    "@etabli/ui": "*",
+    "three": "^0.186.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0"
   }
 }

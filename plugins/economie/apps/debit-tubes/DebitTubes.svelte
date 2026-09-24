@@ -1,52 +1,106 @@
 <script lang="ts">
-  import { STOCK_KINDS } from "@etabli/sdk";
-  import type { Saw } from "@etabli/sdk";
-  import { Card, Field, Libraries, MiniAppDocument, SelectField, colorOf, format, printFiche } from "@etabli/ui";
-  import { groupBars, planCuts, type CutPlan } from "../../src/debit";
+  import { STOCK_KINDS, type Saw } from "@etabli/sdk";
+  import { Card, Field, Libraries, MiniAppDocument, Segmented, SelectField, colorOf, format, printFiche } from "@etabli/ui";
+  import { ends, type PieceShape, type Plane, type Sens } from "../../src/coupe";
+  import { groupBars, planCuts, type CutPlan, type CutSettings } from "../../src/debit";
   import { debitFiche } from "../../src/fiche-debit";
+  import Piece3D from "../../src/Piece3D.svelte";
   import { nextMark, num, quantity, rowsFromPaste } from "../../src/pieces";
+  import {
+    DEFAULT_PROFILE,
+    PROFILE_KINDS,
+    parseProfile,
+    profileFromText,
+    profileLabel,
+    section,
+    type ProfileInput,
+    type ProfileKind,
+  } from "../../src/profil";
+
+  interface PieceRow {
+    mark: string;
+    /** Longueur pointe à pointe. */
+    length: string;
+    quantity: string;
+    angleL: string;
+    angleR: string;
+    planeL: Plane;
+    planeR: Plane;
+    sens: Sens;
+  }
 
   interface Data {
     /** Scie de la bibliothèque Machines ; vide : réglages saisis à la main. */
     machine: string;
-    profile: string;
+    profile: ProfileInput;
     stock: { length: string; quantity: string }[];
     /** Longueurs des chutes déjà en stock, séparées par des espaces ou des points-virgules. */
     offcuts: string;
     kerf: string;
     trim: string;
     keep: string;
-    pieces: { mark: string; length: string; quantity: string }[];
+    pieces: PieceRow[];
   }
+
+  const newPiece = (mark: string, rest: Partial<PieceRow> = {}): PieceRow => ({
+    mark,
+    length: "",
+    quantity: "1",
+    angleL: "0",
+    angleR: "0",
+    planeL: "grande",
+    planeR: "grande",
+    sens: "oppose",
+    ...rest,
+  });
 
   const DEFAULTS: Data = {
     machine: "",
-    profile: "Tube carré 40 × 40 × 2",
+    profile: DEFAULT_PROFILE,
     stock: [{ length: "6000", quantity: "" }],
     offcuts: "",
     kerf: "3",
     trim: "0",
     keep: "300",
-    pieces: [{ mark: "A", length: "", quantity: "1" }],
+    pieces: [newPiece("A")],
   };
 
+  /** Calculs enregistrés avant les angles : profilé en texte libre, pièces sans angles. */
+  function migrate(saved: Record<string, unknown>): Partial<Data> {
+    const profile = saved.profile;
+    const pieces = Array.isArray(saved.pieces) ? (saved.pieces as Partial<PieceRow>[]) : DEFAULTS.pieces;
+    return {
+      ...(saved as Partial<Data>),
+      profile: typeof profile === "string" ? profileFromText(profile) : { ...DEFAULT_PROFILE, ...(profile as Partial<ProfileInput>) },
+      pieces: pieces.map((p) => newPiece(p.mark ?? "?", p)),
+    };
+  }
+
+  const angle = (text: string) => Math.min(89, Math.max(0, num(text) || 0));
+  const shapeOf = (p: PieceRow): PieceShape => ({
+    angleL: angle(p.angleL),
+    angleR: angle(p.angleR),
+    planeL: p.planeL,
+    planeR: p.planeR,
+    sens: p.sens,
+  });
+
   /** Réglages de coupe : ceux de la scie choisie, sinon ceux saisis à la main. */
-  function cutSettings(data: Data) {
+  function cutSettings(data: Data): CutSettings {
     const chosen = saws.find((s) => s.id === data.machine);
+    const sec = section(parseProfile(data.profile));
     return {
       kerf: chosen ? chosen.kerf : num(data.kerf) || 0,
       trim: chosen ? chosen.trim : num(data.trim) || 0,
       keepMin: num(data.keep) || 0,
+      section: sec.valid ? { width: sec.width, height: sec.height, round: sec.round } : undefined,
     };
   }
 
   function compute(data: Data, settings = cutSettings(data)): CutPlan | null {
-    const pieces = data.pieces
-      .map((p) => ({ mark: p.mark || "?", length: num(p.length), quantity: num(p.quantity) || 0 }))
-      .filter((p) => p.length > 0 && p.quantity > 0);
-    if (!pieces.length) return null;
     // Les lignes vides gardent leur place : l'indice de la pièce sert à sa couleur.
-    const all = data.pieces.map((p) => ({ mark: p.mark || "?", length: num(p.length), quantity: num(p.quantity) || 0 }));
+    const all = data.pieces.map((p) => ({ mark: p.mark || "?", length: num(p.length), quantity: num(p.quantity) || 0, shape: shapeOf(p) }));
+    if (!all.some((p) => p.length > 0 && p.quantity > 0)) return null;
     return planCuts(
       data.stock.map((b) => ({ length: num(b.length), quantity: quantity(b.quantity) })).filter((b) => b.length > 0),
       data.offcuts.split(/[\s;]+/).map(num).filter((l) => l > 0),
@@ -62,7 +116,7 @@
     return `${bars} barre${bars > 1 ? "s" : ""} · ${rate} % utilisé`;
   };
 
-  const doc = new MiniAppDocument<Data>(DEFAULTS, (data) => summarize(compute(data)));
+  const doc = new MiniAppDocument<Data>(DEFAULTS, (data) => summarize(compute(data)), migrate);
 
   // Calcul un peu après la dernière frappe : la saisie reste fluide même avec beaucoup de pièces.
   let plan = $state<CutPlan | null>(null);
@@ -86,9 +140,54 @@
   );
   const kept = $derived(plan ? plan.bars.filter((b) => b.reusable).map((b) => b.remnant) : []);
 
+  // ——— Profilé ———
+  const profile = $derived(parseProfile(doc.data.profile));
+  const sec = $derived(section(profile));
+  const profileName = $derived(profileLabel(profile));
+  const kindInfo = $derived(PROFILE_KINDS.find((k) => k.id === doc.data.profile.kind) ?? PROFILE_KINDS[0]!);
+  const kindOptions = PROFILE_KINDS.map((k) => ({ value: k.id, label: k.label }));
+
+  /** Libellés des deux faces : grande / petite, ou dessus / côté pour une section carrée. */
+  const planeOptions = $derived.by((): { value: Plane; label: string }[] => {
+    const big = Math.max(sec.width, sec.height);
+    const small = Math.min(sec.width, sec.height);
+    if (big === small) {
+      const top = sec.width >= sec.height;
+      return [
+        { value: "grande", label: top ? "Vue de dessus" : "Vue de côté" },
+        { value: "petite", label: top ? "Vue de côté" : "Vue de dessus" },
+      ];
+    }
+    return [
+      { value: "grande", label: `Grande face (${format(big)})` },
+      { value: "petite", label: `Petite face (${format(small)})` },
+    ];
+  });
+  const SENS_OPTIONS: { value: Sens; label: string }[] = [
+    { value: "oppose", label: "Sens opposé · trapèze" },
+    { value: "meme", label: "Même sens · parallélogramme" },
+  ];
+
+  // ——— Pièces ———
+  let selected = $state(0);
+  const current = $derived(Math.min(selected, doc.data.pieces.length - 1));
+  const piece = $derived(doc.data.pieces[current]!);
+  const pieceShape = $derived(shapeOf(piece));
+
   function addPiece(): void {
-    doc.data.pieces.push({ mark: nextMark(doc.data.pieces.map((p) => p.mark)), length: "", quantity: "1" });
+    doc.data.pieces.push(newPiece(nextMark(doc.data.pieces.map((p) => p.mark))));
+    selected = doc.data.pieces.length - 1;
   }
+
+  function removePiece(i: number): void {
+    doc.data.pieces.splice(i, 1);
+    if (selected >= i && selected > 0) selected--;
+  }
+
+  const angleSummary = (p: PieceRow) => {
+    const [l, r] = [angle(p.angleL), angle(p.angleR)];
+    return l === 0 && r === 0 ? "droit" : `${format(l)}° · ${format(r)}°`;
+  };
 
   function onpaste(event: ClipboardEvent): void {
     const text = event.clipboardData?.getData("text") ?? "";
@@ -96,7 +195,11 @@
     event.preventDefault();
     const rows = rowsFromPaste(text, 1, doc.data.pieces.map((p) => p.mark));
     const kept = doc.data.pieces.filter((p) => p.length.trim() !== "");
-    doc.data.pieces = [...kept, ...rows.map(([mark, length, qty]) => ({ mark: mark!, length: length!, quantity: qty! }))];
+    // Colonnes collées : repère, longueur, quantité, puis angle gauche et angle droit s'il y en a.
+    doc.data.pieces = [
+      ...kept,
+      ...rows.map(([mark, length, qty, angleL, angleR]) => newPiece(mark!, { length, quantity: qty, angleL: angleL ?? "0", angleR: angleR ?? "0" })),
+    ];
     doc.notify(`${rows.length} pièce${rows.length > 1 ? "s" : ""} collée${rows.length > 1 ? "s" : ""}`);
   }
 
@@ -134,6 +237,30 @@
     doc.data.machine = added.id;
   });
 
+  // ——— Contrôles : ce qui empêcherait de couper la pièce comme saisie ———
+  const warnings = $derived.by(() => {
+    const list: string[] = [];
+    const angled = doc.data.pieces.some((p) => angle(p.angleL) > 0 || angle(p.angleR) > 0);
+    if (angled && !sec.valid) list.push("Renseignez les dimensions du profilé : les coupes d'angle en ont besoin.");
+    for (const p of doc.data.pieces) {
+      const length = num(p.length);
+      const shape = shapeOf(p);
+      if (saw && Math.max(shape.angleL, shape.angleR) > saw.maxAngle) {
+        list.push(`${p.mark} : ${format(Math.max(shape.angleL, shape.angleR))}° dépasse l'angle maxi de la scie (${format(saw.maxAngle)}°).`);
+      }
+      if (sec.valid && length > 0) {
+        const e = ends(shape, sec);
+        const recul = (f: typeof e.left) => f.c + (Math.abs(f.a) * sec.width + Math.abs(f.b) * sec.height) / 2;
+        if (recul(e.left) + recul(e.right) >= length) list.push(`${p.mark} : trop courte pour ses angles (les coupes se croisent).`);
+      }
+      if (saw && length > 0 && length < saw.minLength) {
+        list.push(`${p.mark} : plus courte que la longueur mini de la scie (${format(saw.minLength)} mm).`);
+      }
+    }
+    return list;
+  });
+
+  // ——— Fournisseurs ———
   const kindLabel = (kind: string) => STOCK_KINDS.find((k) => k.id === kind)?.label ?? kind;
   const barOffers = $derived(
     libraries.suppliers.flatMap((s) =>
@@ -163,9 +290,15 @@
     printFiche(
       debitFiche({
         title: "",
-        profile: doc.data.profile,
+        profile: profileName,
         plan,
-        pieces: doc.data.pieces.map((p) => ({ mark: p.mark || "?", length: num(p.length), quantity: num(p.quantity) || 0 })),
+        pieces: doc.data.pieces.map((p) => ({
+          mark: p.mark || "?",
+          length: num(p.length),
+          quantity: num(p.quantity) || 0,
+          angleL: angle(p.angleL),
+          angleR: angle(p.angleR),
+        })),
         colors: colorOf,
         settings: cutSettings(doc.data),
         machine: saw?.name ?? "",
@@ -175,7 +308,7 @@
 
   function copyPlan(): void {
     if (!plan) return;
-    const lines = [`Plan de débit — ${doc.data.profile}`, ""];
+    const lines = [`Plan de débit — ${profileName}`, ""];
     groups.forEach(({ bar, count }, i) => {
       const label = bar.source === "chute" ? `chute de ${format(bar.length)}` : `barre de ${format(bar.length)}`;
       lines.push(`${i + 1}. ${count} × ${label} : ${bar.cuts.map((c) => `${c.mark} ${format(c.length)}`).join(" | ")}`);
@@ -183,12 +316,42 @@
     });
     doc.copy(lines.join("\n"));
   }
+
+  /** Contour d'une pièce sur le schéma de la barre (unités : % de la longueur, hauteur 0 à 100). */
+  function polygon(cut: CutPlan["bars"][number]["cuts"][number], barLength: number): string {
+    const x = (v: number) => ((v / barLength) * 100).toFixed(3);
+    const end = cut.start + cut.length;
+    return [
+      `${x(cut.start + cut.draw.left[0])},0`,
+      `${x(end - cut.draw.right[0])},0`,
+      `${x(end - cut.draw.right[1])},100`,
+      `${x(cut.start + cut.draw.left[1])},100`,
+    ].join(" ");
+  }
 </script>
 
 <div class="split">
   <div class="inputs">
+    <Card title="Profilé">
+      <SelectField
+        label="Type"
+        options={kindOptions}
+        bind:value={doc.data.profile.kind}
+        onchange={(kind: ProfileKind) => {
+          // Changer de type ne garde que les dimensions qui ont encore un sens.
+          const keys = PROFILE_KINDS.find((k) => k.id === kind)!.dims.map((d) => d.key);
+          for (const key of ["a", "b", "t", "e"] as const) if (!keys.includes(key)) doc.data.profile[key] = "";
+        }}
+      />
+      <div class="dims" style:--n={kindInfo.dims.length}>
+        {#each kindInfo.dims as dim (dim.key)}
+          <Field label={dim.label} unit="mm" bind:value={doc.data.profile[dim.key]} />
+        {/each}
+      </div>
+      <p class="profile-name">{profileName}</p>
+    </Card>
+
     <Card title="Barres et réglages">
-      <Field label="Profilé" numeric={false} bind:value={doc.data.profile} />
       <div class="table">
         <span class="head">Longueur des barres</span>
         <span class="head">Quantité</span>
@@ -217,7 +380,7 @@
         <!-- Réglages de la scie : modifiables dans Paramètres → Bibliothèques → Machines. -->
         <div class="two">
           <p class="machine-settings">
-            Trait de scie <b>{format(saw.kerf)} mm</b> · dressage <b>{format(saw.trim)} mm</b>
+            Trait de scie <b>{format(saw.kerf)} mm</b> · dressage <b>{format(saw.trim)} mm</b> · angle maxi <b>{format(saw.maxAngle)}°</b>
           </p>
           <Field label="Chute gardée dès" unit="mm" bind:value={doc.data.keep} />
         </div>
@@ -232,22 +395,57 @@
 
     <Card title="Pièces à couper">
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="table pieces" {onpaste}>
-        <span></span>
-        <span class="head">Repère</span>
-        <span class="head">Longueur</span>
-        <span class="head">Qté</span>
-        <span></span>
-        {#each doc.data.pieces as piece, i (i)}
-          <span class="swatch" style:background={colorOf(i)}></span>
-          <Field compact numeric={false} label="Repère" bind:value={piece.mark} />
-          <Field compact label="Longueur" unit="mm" bind:value={piece.length} />
-          <Field compact label="Quantité" bind:value={piece.quantity} />
-          <button class="remove" onclick={() => doc.data.pieces.splice(i, 1)} disabled={doc.data.pieces.length === 1} aria-label="Retirer la pièce {piece.mark}">✕</button>
+      <div class="pieces" {onpaste}>
+        <div class="prow head">
+          <span></span>
+          <span>Repère</span>
+          <span>Longueur</span>
+          <span>Qté</span>
+          <span>Angles</span>
+          <span></span>
+        </div>
+        {#each doc.data.pieces as p, i (i)}
+          <div class="prow" class:selected={i === current} onfocusin={() => (selected = i)}>
+            <span class="swatch" style:background={colorOf(i)}></span>
+            <Field compact numeric={false} label="Repère" bind:value={p.mark} />
+            <Field compact label="Longueur pointe à pointe" unit="mm" bind:value={p.length} />
+            <Field compact label="Quantité" bind:value={p.quantity} />
+            <button class="angles" class:on={i === current} onclick={() => (selected = i)} title="Régler les angles de {p.mark}">
+              {angleSummary(p)}
+            </button>
+            <button class="remove" onclick={() => removePiece(i)} disabled={doc.data.pieces.length === 1} aria-label="Retirer la pièce {p.mark}">✕</button>
+          </div>
         {/each}
       </div>
       <button class="btn" onclick={addPiece}>+ Ajouter une pièce</button>
-      <p class="hint">Astuce : collez directement des lignes copiées depuis Excel (repère, longueur, quantité).</p>
+      <p class="hint">Longueur pointe à pointe (la plus grande). Collez des lignes d'Excel : repère, longueur, quantité, angle gauche, angle droit.</p>
+
+      <div class="detail">
+        <div class="detail-head">
+          <span class="swatch" style:background={colorOf(current)}></span>
+          <b>Pièce {piece.mark || "?"}</b>
+          <span class="dim">{profileName}</span>
+        </div>
+        <Piece3D section={sec} length={num(piece.length) > 0 ? num(piece.length) : 500} shape={pieceShape} color={colorOf(current)} mark={piece.mark || "?"} />
+        <div class="ends">
+          <div class="end">
+            <Field label="Angle gauche" unit="°" bind:value={piece.angleL} />
+            {#if angle(piece.angleL) > 0 && !sec.round}
+              <Segmented label="Face de l'angle gauche" options={planeOptions} bind:value={piece.planeL} />
+            {/if}
+          </div>
+          <div class="end">
+            <Field label="Angle droit" unit="°" bind:value={piece.angleR} />
+            {#if angle(piece.angleR) > 0 && !sec.round}
+              <Segmented label="Face de l'angle droit" options={planeOptions} bind:value={piece.planeR} />
+            {/if}
+          </div>
+        </div>
+        {#if angle(piece.angleL) > 0 && angle(piece.angleR) > 0}
+          <Segmented label="Sens des deux coupes" options={SENS_OPTIONS} bind:value={piece.sens} />
+        {/if}
+        <p class="hint">Angle mesuré depuis la coupe d'équerre : 0° = coupe droite, 45° = onglet de cadre.</p>
+      </div>
     </Card>
   </div>
 
@@ -258,6 +456,9 @@
         <button class="btn primary" onclick={print}>Imprimer la fiche</button>
       {/if}
     {/snippet}
+    {#each warnings as warning (warning)}
+      <p class="warn">{warning}</p>
+    {/each}
     {#if plan && (plan.bars.length || plan.unplaced.length)}
       <div class="kpis" class:stale={computing}>
         <div class="kpi main">
@@ -272,7 +473,7 @@
         <div class="kpi">
           <span>Perte</span>
           <b>{format(plan.waste, 0)} mm</b>
-          <small>traits de scie et chutes trop courtes</small>
+          <small>traits de scie, angles et chutes trop courtes</small>
         </div>
         <div class="kpi">
           <span>Chutes à garder</span>
@@ -297,12 +498,17 @@
               <small>{format(bar.length, 0)}</small>
             </span>
             <div class="bar">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                {#each bar.cuts as cut, j (j)}
+                  <polygon points={polygon(cut, bar.length)} fill={colorOf(cut.piece)} />
+                {/each}
+              </svg>
               {#each bar.cuts as cut, j (j)}
                 <span
                   class="cut"
+                  style:left="{(cut.start / bar.length) * 100}%"
                   style:width="{(cut.length / bar.length) * 100}%"
-                  style:background={colorOf(cut.piece)}
-                  title="{cut.mark} — {format(cut.length)} mm"
+                  title="{cut.mark} — {format(cut.length)} mm{cut.shared ? ' (coupe partagée avec la précédente)' : ''}"
                 >{cut.mark} {format(cut.length, 0)}</span>
               {/each}
             </div>
@@ -312,7 +518,10 @@
           </div>
         {/each}
       </div>
-      <p class="hint">Longueurs en mm. En vert : chutes à garder (≥ {format(num(doc.data.keep) || 0, 0)} mm). Traits de scie inclus.</p>
+      <p class="hint">
+        Longueurs en mm, pointe à pointe. En vert : chutes à garder (≥ {format(num(doc.data.keep) || 0, 0)} mm). Les coupes d'angle
+        voisines sont emboîtées (tube retourné) : une seule coupe pour deux pièces.
+      </p>
     {:else}
       <p class="empty">Ajoutez les longueurs à couper : le plan de débit s'affiche ici, barre par barre.</p>
     {/if}
@@ -322,11 +531,11 @@
 <style>
   .split {
     display: grid;
-    grid-template-columns: minmax(340px, 400px) 1fr;
+    grid-template-columns: minmax(380px, 460px) 1fr;
     gap: 16px;
     align-items: start;
   }
-  @media (max-width: 820px) {
+  @media (max-width: 860px) {
     .split {
       grid-template-columns: 1fr;
     }
@@ -336,24 +545,91 @@
     flex-direction: column;
     gap: 16px;
   }
+  .dims {
+    display: grid;
+    grid-template-columns: repeat(var(--n), 1fr);
+    gap: 8px;
+  }
+  .profile-name {
+    margin: -8px 0 0;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
   .table {
     display: grid;
     grid-template-columns: 1fr 110px 28px;
     gap: 4px 6px;
     align-items: center;
   }
-  .table.pieces {
-    grid-template-columns: 10px 70px 1fr 64px 28px;
-  }
   .head {
     font-size: 11.5px;
     font-weight: 600;
     color: var(--faint);
   }
+  .pieces {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .prow {
+    display: grid;
+    grid-template-columns: 10px 64px 1fr 56px 96px 28px;
+    gap: 6px;
+    align-items: center;
+    padding: 2px 4px;
+    border-radius: var(--r-sm);
+  }
+  .prow.selected {
+    background: var(--accent-soft);
+  }
   .swatch {
     width: 10px;
     height: 10px;
     border-radius: 2px;
+  }
+  .angles {
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: 500 12.5px var(--mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .angles.on {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .detail {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .detail-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .detail-head .dim {
+    margin-left: auto;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .ends {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .end {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
   .three {
     display: grid;
@@ -378,7 +654,7 @@
   }
   .machine-settings {
     margin: 0;
-    padding-top: 30px;
+    padding-top: 24px;
     font-size: 13px;
     color: var(--muted);
   }
@@ -478,23 +754,35 @@
     color: var(--faint);
   }
   .bar {
+    position: relative;
     height: 30px;
-    display: flex;
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: repeating-linear-gradient(135deg, var(--field) 0 6px, var(--surface-2) 6px 12px);
   }
-  .cut {
+  .bar svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
     height: 100%;
+  }
+  .bar polygon {
+    stroke: var(--surface);
+    stroke-width: 1.5px;
+    vector-effect: non-scaling-stroke;
+  }
+  .cut {
+    position: absolute;
+    top: 0;
+    bottom: 0;
     display: grid;
     place-items: center;
-    min-width: 0;
     overflow: hidden;
-    border-right: 2px solid var(--surface);
     color: #fff;
     font: 600 11px var(--mono);
     white-space: nowrap;
+    pointer-events: auto;
   }
   .rest {
     text-align: right;

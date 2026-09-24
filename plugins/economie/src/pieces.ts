@@ -16,6 +16,7 @@ export function nextMark(existing: string[]): string {
 /**
  * Lignes collées depuis Excel : « repère, longueur, [largeur,] quantité », ou sans repère
  * (« longueur, quantité »). `columns` : nombre de dimensions attendues (1 pour une barre, 2 pour une tôle).
+ * Les colonnes suivantes (angles…) sont renvoyées telles quelles après la quantité.
  */
 export function rowsFromPaste(text: string, columns: 1 | 2, existing: string[]): string[][] {
   const marks = [...existing];
@@ -26,7 +27,7 @@ export function rowsFromPaste(text: string, columns: 1 | 2, existing: string[]):
     marks.push(mark);
     const dims = values.slice(0, columns);
     const quantity = values[columns] ?? "1";
-    return [mark, ...dims, quantity];
+    return [mark, ...dims, quantity, ...values.slice(columns + 1)];
   });
 }
 

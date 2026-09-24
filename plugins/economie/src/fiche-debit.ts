@@ -1,9 +1,9 @@
 // Fiche de coupe du débit de tubes (cahier des charges, section 9.3) : ce qu'il faut sortir du
 // stock, les pièces à obtenir, les réglages, puis la découpe barre par barre avec cases à cocher.
-// Première version : coupes droites. Les angles, l'ordre par angle de scie et les tolérances
-// arrivent avec le débit v2.
+// Les pièces d'angle sont dessinées avec leur forme ; les tolérances et l'ordre par angle de scie
+// arrivent ensuite.
 import type { FichePrint } from "@etabli/sdk";
-import { groupBars, type BarPlan, type CutPlan } from "./debit";
+import { groupBars, type BarPlan, type Cut, type CutPlan } from "./debit";
 import { box, esc, facts, fmt, hatch, mark, section, signature, table, tint } from "./fiche";
 
 export interface DebitFicheInput {
@@ -11,23 +11,38 @@ export interface DebitFicheInput {
   profile: string;
   plan: CutPlan;
   /** Pièces saisies, dans l'ordre de la liste (l'indice donne la couleur). */
-  pieces: { mark: string; length: number; quantity: number }[];
+  pieces: { mark: string; length: number; quantity: number; angleL?: number; angleR?: number }[];
   colors: (index: number) => string;
   settings: { kerf: number; trim: number; keepMin: number };
   machine: string;
 }
 
+const angleText = (angle: number | undefined) => (angle && angle > 0 ? `${fmt(angle)}°` : "droit");
+
+/** Angles d'une pièce telle qu'elle est posée sur la barre (bout pour bout : gauche et droite s'échangent). */
+function placedAngles(cut: Cut, input: DebitFicheInput): [number, number] {
+  const p = input.pieces[cut.piece];
+  const [l, r] = [p?.angleL ?? 0, p?.angleR ?? 0];
+  return cut.orientation === 2 || cut.orientation === 3 ? [r, l] : [l, r];
+}
+
 function scheme(bar: BarPlan, input: DebitFicheInput, id: string): string {
   const scale = 1000 / bar.length;
-  let pos = bar.source === "barre" ? input.settings.trim : 0;
   const parts = bar.cuts.map((cut) => {
-    const x = pos * scale;
-    const w = Math.max(1, cut.length * scale);
-    pos += cut.length + input.settings.kerf;
-    const color = input.colors(cut.piece);
+    const x = (v: number) => (v * scale).toFixed(1);
+    const end = cut.start + cut.length;
+    const points = [
+      `${x(cut.start + cut.draw.left[0])},10`,
+      `${x(end - cut.draw.right[0])},10`,
+      `${x(end - cut.draw.right[1])},42`,
+      `${x(cut.start + cut.draw.left[1])},42`,
+    ].join(" ");
+    const w = cut.length * scale;
     const label = w > 70 ? `${cut.mark} ${fmt(cut.length, 0)}` : w > 18 ? cut.mark : "";
-    return `<rect x="${x.toFixed(1)}" y="10" width="${w.toFixed(1)}" height="32" fill="${tint(color)}" stroke="#15181d" stroke-width="1.2"/>${
-      label ? `<text x="${(x + w / 2).toFixed(1)}" y="31" text-anchor="middle" font-family="Consolas, monospace" font-size="12" font-weight="700">${esc(label)}</text>` : ""
+    return `<polygon points="${points}" fill="${tint(input.colors(cut.piece))}" stroke="#15181d" stroke-width="1.2"/>${
+      label
+        ? `<text x="${((cut.start + cut.length / 2) * scale).toFixed(1)}" y="31" text-anchor="middle" font-family="Consolas, monospace" font-size="12" font-weight="700">${esc(label)}</text>`
+        : ""
     }`;
   });
   const rest = bar.remnant * scale;
@@ -64,7 +79,15 @@ export function debitFiche(input: DebitFicheInput): FichePrint {
     .filter((p) => p.length > 0 && p.quantity > 0)
     .map((p) => {
       const where = numbered.filter((g) => g.bar.cuts.some((c) => c.piece === p.index)).map((g) => (g.count > 1 ? `${g.first}–${g.last}` : `${g.first}`));
-      return [mark(p.mark, input.colors(p.index)), `<span class="num">${fmt(p.length)}</span>`, `<span class="num">${p.quantity}</span>`, esc(where.join(", ")), box];
+      return [
+        mark(p.mark, input.colors(p.index)),
+        `<span class="num">${fmt(p.length)}</span>`,
+        `<span class="num">${angleText(p.angleL)}</span>`,
+        `<span class="num">${angleText(p.angleR)}</span>`,
+        `<span class="num">${p.quantity}</span>`,
+        esc(where.join(", ")),
+        box,
+      ];
     });
 
   const page1 = [
@@ -83,9 +106,17 @@ export function debitFiche(input: DebitFicheInput): FichePrint {
     section(
       "Pièces à obtenir",
       table(
-        [{ label: "Rep." }, { label: "Longueur", right: true }, { label: "Qté", right: true }, { label: "Barres" }, { label: "Compté", right: true }],
+        [
+          { label: "Rep." },
+          { label: "Longueur", right: true },
+          { label: "Angle G", right: true },
+          { label: "Angle D", right: true },
+          { label: "Qté", right: true },
+          { label: "Barres" },
+          { label: "Compté", right: true },
+        ],
         pieceRows,
-      ) + '<p class="small">Longueurs en mm.</p>',
+      ) + '<p class="small">Longueurs en mm, <b>pointe à pointe</b>. Angle mesuré depuis la coupe d\'équerre : 0° = droit.</p>',
     ),
     section(
       "Réglages",
@@ -96,18 +127,39 @@ export function debitFiche(input: DebitFicheInput): FichePrint {
 
   const blocks = numbered.map((g, i) => {
     const rows: string[][] = [];
-    if (g.bar.source === "barre" && settings.trim > 0) {
-      rows.push(['<span class="num">0</span>', "—", `<span class="num">${fmt(settings.trim)}</span>`, "Dresser le bout de barre", box]);
+    const first = g.bar.cuts[0];
+    const firstAngle = first ? placedAngles(first, input)[0] : 0;
+    if (firstAngle > 0) {
+      rows.push(['<span class="num">0</span>', "—", `<span class="num">${angleText(firstAngle)}</span>`, "—", "Première coupe d'angle en bout de barre", box]);
+    } else if (g.bar.source === "barre" && settings.trim > 0) {
+      rows.push(['<span class="num">0</span>', "—", "droit", `<span class="num">${fmt(settings.trim)}</span>`, "Dresser le bout de barre", box]);
     }
     g.bar.cuts.forEach((cut, j) => {
-      rows.push([`<span class="num">${j + 1}</span>`, mark(cut.mark, input.colors(cut.piece)), `<span class="num">${fmt(cut.length)}</span>`, "", box]);
+      const [left, right] = placedAngles(cut, input);
+      const previous = g.bar.cuts[j - 1];
+      const notes: string[] = [];
+      // Le tube change de position par rapport à la pièce précédente : il faut le retourner.
+      if (previous && previous.orientation !== cut.orientation) notes.push('<span class="reserve">⟲ retourner le tube</span>');
+      if (cut.shared) notes.push("coupe partagée avec la précédente");
+      else if (j > 0 && left > 0) notes.push(`recouper à ${angleText(left)} avant de mesurer`);
+      rows.push([
+        `<span class="num">${j + 1}</span>`,
+        mark(cut.mark, input.colors(cut.piece)),
+        `<span class="num">${angleText(right)}</span>`,
+        `<span class="num">${fmt(cut.length)}</span>`,
+        notes.join(" · "),
+        box,
+      ]);
     });
     return `<article class="block">
       <div class="block-head"><h3>${esc(barLabel(g))}</h3><span class="tag">${g.bar.source === "chute" ? "stock" : "neuve"}</span>${
         g.count > 1 ? `<span class="tag">× ${g.count} identiques</span>` : ""
       }<span class="len">${fmt(g.bar.length, 0)} mm</span></div>
       ${scheme(g.bar, input, `h${i}`)}
-      ${table([{ label: "N°" }, { label: "Rep." }, { label: "Mesurer", right: true }, { label: "Remarque" }, { label: "Fait", right: true }], rows)}
+      ${table(
+        [{ label: "N°" }, { label: "Rep." }, { label: "Angle scie", right: true }, { label: "Mesurer", right: true }, { label: "Remarque" }, { label: "Fait", right: true }],
+        rows,
+      )}
       <div class="end"><span>Reste :</span><b class="num ${g.bar.reusable ? "keep" : ""}">${fmt(g.bar.remnant, 0)} mm</b><span class="${g.bar.reusable ? "keep" : "lost"}">→ ${
         g.bar.reusable ? "à garder" : "perte"
       }</span>${g.bar.reusable ? `<span class="hint">Étiqueter « ${esc(input.profile)} — ${fmt(g.bar.remnant, 0)} » avant de ranger.</span>` : ""}</div>
@@ -120,6 +172,6 @@ export function debitFiche(input: DebitFicheInput): FichePrint {
     title: input.title,
     subtitle: `${input.profile} — ${plan.bars.length} barre${plan.bars.length > 1 ? "s" : ""}, ${cuts} coupe${cuts > 1 ? "s" : ""}`,
     ident: input.machine ? [["Poste", input.machine]] : [],
-    pages: [page1, `<div class="section"><h2>Découpe barre par barre</h2><div class="legend"><span>▭ pièce</span><span>▨ perte (dressage, trait de scie)</span><span>▭ vert : chute à garder</span></div></div>${blocks.join("")}`],
+    pages: [page1, `<div class="section"><h2>Découpe barre par barre</h2><div class="legend"><span>▭ pièce</span><span>▨ perte (dressage, trait de scie, coins d'angle)</span><span>Mesurer : pointe à pointe</span><span>▭ vert : chute à garder</span></div></div>${blocks.join("")}`],
   };
 }

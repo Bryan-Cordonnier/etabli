@@ -15,15 +15,16 @@ export class MiniAppDocument<T extends object> {
   /**
    * @param defaults données d'un nouveau calcul
    * @param summary résumé affiché dans la liste des anciens calculs (« c = 370 mm »)
+   * @param migrate remet au format actuel un calcul enregistré par une version précédente
    */
-  constructor(defaults: T, summary: (data: T) => string) {
+  constructor(defaults: T, summary: (data: T) => string, migrate: (saved: Record<string, unknown>) => Partial<T> = (s) => s as Partial<T>) {
     this.data = structuredClone(defaults);
     this.#last = JSON.stringify(this.data);
 
     void connect<T>().then((host) => {
       const saved = host.document.data;
       // Les champs ajoutés dans une version plus récente de la mini-app gardent leur valeur par défaut.
-      if (saved) this.data = { ...structuredClone(defaults), ...saved };
+      if (saved) this.data = { ...structuredClone(defaults), ...migrate(saved as Record<string, unknown>) };
       this.#last = JSON.stringify(this.data);
       this.#host = host;
       this.ready = true;
