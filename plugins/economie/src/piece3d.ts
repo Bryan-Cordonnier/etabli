@@ -3,6 +3,7 @@
 // on tourne la pièce ou qu'on change une valeur : rien ne tourne en continu.
 import {
   AmbientLight,
+  Box3,
   BufferGeometry,
   Color,
   DirectionalLight,
@@ -17,6 +18,7 @@ import {
   PerspectiveCamera,
   Scene,
   ShapeUtils,
+  Sphere,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -103,25 +105,38 @@ const VIEWS: Record<View, Vector3> = {
   cote: new Vector3(0, 0.0001, 1).normalize(),
 };
 
-export class PieceViewer {
+/** Une pièce de la scène : sa géométrie (centrée), sa couleur et la position de son centre. */
+export interface Part {
+  model: Omit<PieceModel, "color" | "edgeColor">;
+  color: string;
+  /** Teinte appliquée à l'acier : 0 = acier brut, 1 = couleur pure. */
+  tint?: number;
+  position: [number, number, number];
+}
+
+export type Project = (x: number, y: number, z: number) => { x: number; y: number };
+
+/**
+ * Petite scène 3D : une ou plusieurs pièces, qu'on fait tourner à la souris. Sert à l'aperçu
+ * d'une pièce comme à la vue 3D du plan de débit (toutes les barres, pièces écartées).
+ */
+export class Viewer3D {
   #renderer: WebGLRenderer;
   #scene = new Scene();
   #camera = new PerspectiveCamera(30, 1, 1, 200000);
   #controls: OrbitControls;
-  #piece = new Group();
-  #material = new MeshLambertMaterial({ side: DoubleSide });
+  #parts = new Group();
+  #materials = new Map<string, MeshLambertMaterial>();
   #edges = new LineBasicMaterial({ transparent: true, opacity: 0.7 });
+  #center = new Vector3();
   #radius = 100;
   #observer: ResizeObserver;
-  #onRender: (project: (x: number, y: number, z: number) => { x: number; y: number }) => void;
+  #onRender: (project: Project) => void;
 
   #host: HTMLElement;
 
-  /** @param onRender appelé après chaque image : sert à placer les étiquettes (angles) sur la pièce. */
-  constructor(
-    host: HTMLElement,
-    onRender: (project: (x: number, y: number, z: number) => { x: number; y: number }) => void = () => {},
-  ) {
+  /** @param onRender appelé après chaque image : sert à placer les étiquettes (angles, repères) sur la scène. */
+  constructor(host: HTMLElement, onRender: (project: Project) => void = () => {}) {
     this.#host = host;
     this.#onRender = onRender;
     this.#renderer = new WebGLRenderer({ antialias: true, alpha: true });
@@ -133,7 +148,7 @@ export class PieceViewer {
     key.position.set(1, 2, 1.6);
     const fill = new DirectionalLight(0xffffff, 0.7);
     fill.position.set(-1.5, -0.5, -1);
-    this.#scene.add(key, fill, this.#piece);
+    this.#scene.add(key, fill, this.#parts);
 
     this.#controls = new OrbitControls(this.#camera, this.#renderer.domElement);
     this.#controls.enablePan = false;
@@ -145,21 +160,39 @@ export class PieceViewer {
     this.#resize();
   }
 
-  update(model: PieceModel): void {
-    for (const child of [...this.#piece.children]) {
-      this.#piece.remove(child);
+  /** Acier teinté de la couleur du repère : la pièce se reconnaît sans avoir l'air peinte. */
+  #material(color: string, tint: number): MeshLambertMaterial {
+    const key = `${color}|${tint}`;
+    let material = this.#materials.get(key);
+    if (!material) {
+      material = new MeshLambertMaterial({ side: DoubleSide, color: new Color("#c3cad3").lerp(new Color(color), tint) });
+      this.#materials.set(key, material);
+    }
+    return material;
+  }
+
+  show(parts: Part[], edgeColor: string): void {
+    for (const child of [...this.#parts.children]) {
+      this.#parts.remove(child);
       (child as Mesh).geometry.dispose();
     }
-    const geometry = buildGeometry(model);
-    // Acier teinté de la couleur du repère : la pièce se reconnaît sans avoir l'air peinte.
-    this.#material.color = new Color("#c3cad3").lerp(new Color(model.color), 0.45);
-    this.#edges.color = new Color(model.edgeColor);
-    this.#piece.add(new Mesh(geometry, this.#material), new LineSegments(new EdgesGeometry(geometry, 25), this.#edges));
-    geometry.computeBoundingSphere();
-    const radius = geometry.boundingSphere?.radius ?? 100;
-    // On ne recadre que si la taille change nettement : tourner puis modifier un angle garde la vue.
-    if (Math.abs(radius - this.#radius) / this.#radius > 0.15) {
+    this.#edges.color = new Color(edgeColor);
+    for (const part of parts) {
+      const geometry = buildGeometry({ ...part.model, color: part.color, edgeColor });
+      const mesh = new Mesh(geometry, this.#material(part.color, part.tint ?? 0.45));
+      const edges = new LineSegments(new EdgesGeometry(geometry, 25), this.#edges);
+      mesh.position.set(...part.position);
+      edges.position.set(...part.position);
+      this.#parts.add(mesh, edges);
+    }
+    const box = new Box3().setFromObject(this.#parts);
+    const sphere = box.isEmpty() ? null : box.getBoundingSphere(new Sphere());
+    const radius = sphere?.radius ?? 100;
+    // On ne recadre que si la scène change nettement : tourner puis modifier un angle garde la vue.
+    const moved = sphere ? sphere.center.distanceTo(this.#center) > radius * 0.15 : false;
+    if (moved || Math.abs(radius - this.#radius) / this.#radius > 0.15) {
       this.#radius = radius;
+      if (sphere) this.#center.copy(sphere.center);
       this.setView(null);
     } else {
       this.render();
@@ -168,17 +201,17 @@ export class PieceViewer {
 
   /** Vue prédéfinie, ou recadrage dans la direction actuelle (`null`). */
   setView(view: View | null): void {
-    const direction = view ? VIEWS[view].clone() : this.#camera.position.clone().normalize();
+    const direction = view ? VIEWS[view].clone() : this.#camera.position.clone().sub(this.#controls.target).normalize();
     if (direction.lengthSq() === 0) direction.copy(VIEWS["3d"]);
     const aspect = this.#camera.aspect || 1;
     const fov = (this.#camera.fov * Math.PI) / 180;
-    // Distance pour que la pièce tienne en hauteur et en largeur, avec une petite marge.
+    // Distance pour que la scène tienne en hauteur et en largeur, avec une petite marge.
     const fit = Math.max(this.#radius / Math.sin(fov / 2), this.#radius / Math.sin(Math.atan(Math.tan(fov / 2) * aspect)));
-    this.#camera.position.copy(direction.multiplyScalar(fit * 1.02));
+    this.#camera.position.copy(this.#center).add(direction.multiplyScalar(fit * 1.02));
     this.#camera.near = fit / 50;
     this.#camera.far = fit * 10;
     this.#camera.updateProjectionMatrix();
-    this.#controls.target.set(0, 0, 0);
+    this.#controls.target.copy(this.#center);
     this.#controls.update();
     this.render();
   }
@@ -204,8 +237,8 @@ export class PieceViewer {
   dispose(): void {
     this.#observer.disconnect();
     this.#controls.dispose();
-    for (const child of this.#piece.children) (child as Mesh).geometry.dispose();
-    this.#material.dispose();
+    for (const child of this.#parts.children) (child as Mesh).geometry.dispose();
+    for (const material of this.#materials.values()) material.dispose();
     this.#edges.dispose();
     this.#renderer.dispose();
     this.#renderer.domElement.remove();

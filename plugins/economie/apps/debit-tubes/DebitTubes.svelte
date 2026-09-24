@@ -5,6 +5,7 @@
   import { groupBars, planCuts, type CutPlan, type CutSettings } from "../../src/debit";
   import { debitFiche } from "../../src/fiche-debit";
   import Piece3D from "../../src/Piece3D.svelte";
+  import Plan3D from "../../src/Plan3D.svelte";
   import { nextMark, num, quantity, rowsFromPaste } from "../../src/pieces";
   import {
     DEFAULT_PROFILE,
@@ -139,6 +140,13 @@
     [...new Set(newBars.map((b) => b.length))].map((length) => ({ length, count: newBars.filter((b) => b.length === length).length })),
   );
   const kept = $derived(plan ? plan.bars.filter((b) => b.reusable).map((b) => b.remnant) : []);
+
+  /** Plan vu en 2D (schéma à l'échelle) ou en 3D (barres en relief, pièces écartées). */
+  let planView = $state<"2d" | "3d">("2d");
+  const PLAN_VIEWS: { value: "2d" | "3d"; label: string }[] = [
+    { value: "2d", label: "2D" },
+    { value: "3d", label: "3D" },
+  ];
 
   // ——— Profilé ———
   const profile = $derived(parseProfile(doc.data.profile));
@@ -452,6 +460,7 @@
   <Card title="Plan de débit">
     {#snippet actions()}
       {#if plan?.bars.length}
+        <Segmented label="Vue du plan" options={PLAN_VIEWS} bind:value={planView} />
         <button class="btn" onclick={copyPlan}>Copier le plan</button>
         <button class="btn primary" onclick={print}>Imprimer la fiche</button>
       {/if}
@@ -489,6 +498,11 @@
         </p>
       {/if}
 
+      {#if planView === "3d"}
+        <div class:stale={computing}>
+          <Plan3D {groups} shapes={doc.data.pieces.map(shapeOf)} section={sec} colors={colorOf} />
+        </div>
+      {:else}
       <div class="bars" class:stale={computing}>
         {#each groups as { bar, count }, i (i)}
           <div class="row">
@@ -518,6 +532,7 @@
           </div>
         {/each}
       </div>
+      {/if}
       <p class="hint">
         Longueurs en mm, pointe à pointe. En vert : chutes à garder (≥ {format(num(doc.data.keep) || 0, 0)} mm). Les coupes d'angle
         voisines sont emboîtées (tube retourné) : une seule coupe pour deux pièces.

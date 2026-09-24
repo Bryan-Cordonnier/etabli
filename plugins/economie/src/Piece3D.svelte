@@ -2,7 +2,7 @@
   // Mini écran 3D de la pièce sélectionnée : on règle avec les valeurs, on tourne pour vérifier.
   import { onMount } from "svelte";
   import { ends, type PieceShape } from "./coupe";
-  import type { PieceViewer, View } from "./piece3d";
+  import type { View, Viewer3D } from "./piece3d";
   import type { Section } from "./profil";
 
   interface Props {
@@ -18,7 +18,7 @@
   let host: HTMLDivElement;
   let labelLeft = $state<HTMLSpanElement>();
   let labelRight = $state<HTMLSpanElement>();
-  let viewer = $state<PieceViewer | null>(null);
+  let viewer = $state<Viewer3D | null>(null);
   let failed = $state(false);
   let view = $state<View>("3d");
 
@@ -39,10 +39,10 @@
   const angleText = (angle: number) => (angle > 0 ? `${angle.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}°` : "droit");
 
   onMount(() => {
-    let current: PieceViewer | null = null;
+    let current: Viewer3D | null = null;
     import("./piece3d")
-      .then(({ PieceViewer }) => {
-        current = new PieceViewer(host, (project) => {
+      .then(({ Viewer3D }) => {
+        current = new Viewer3D(host, (project) => {
           // Étiquettes des angles au-dessus de chaque bout.
           const top = section.height / 2 + size * 0.35;
           const place = (el: HTMLElement | undefined, x: number) => {
@@ -62,7 +62,7 @@
   $effect(() => {
     if (!viewer || !section.valid) return;
     const edgeColor = getComputedStyle(document.documentElement).getPropertyValue("--text").trim() || "#141b24";
-    viewer.update({ section, length: shown, ends: pieceEnds, color, edgeColor });
+    viewer.show([{ model: { section, length: shown, ends: pieceEnds }, color, position: [0, 0, 0] }], edgeColor);
   });
 
   function setView(next: View): void {
