@@ -452,9 +452,9 @@
                   <rect x={p.x} y={p.y} width={p.length} height={p.width} fill={colorOf(p.piece)} class="piece">
                     <title>{p.mark} — {format(p.length)} × {format(p.width)}{p.rotated ? " (tournée)" : ""}</title>
                   </rect>
-                  {#if p.length > fs * 4 && p.width > fs * 1.6}
+                  {#if p.length > fs * 7 && p.width > fs * 1.6}
                     <text x={p.x + p.length / 2} y={p.y + p.width / 2} font-size={fs} dominant-baseline="middle" text-anchor="middle">
-                      {p.mark}{p.length > fs * 9 ? ` ${format(p.length, 0)}×${format(p.width, 0)}` : ""}
+                      {format(p.length, 0)}×{format(p.width, 0)}
                     </text>
                   {/if}
                 </g>

@@ -523,7 +523,7 @@
                   style:left="{(cut.start / bar.length) * 100}%"
                   style:width="{(cut.length / bar.length) * 100}%"
                   title="{cut.mark} — {format(cut.length)} mm{cut.shared ? ' (coupe partagée avec la précédente)' : ''}"
-                >{cut.mark} {format(cut.length, 0)}</span>
+                >{format(cut.length, 0)}</span>
               {/each}
             </div>
             <span class="rest" class:keep={bar.reusable} title={bar.reusable ? "Chute à garder" : "Perte"}>

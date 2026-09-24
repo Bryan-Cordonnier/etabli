@@ -35,8 +35,7 @@
             const el = labelElements[i];
             if (!el) return;
             const p = project(...label.position);
-            el.style.transform =
-              label.kind === "bar" ? `translate(${p.x}px, ${p.y}px) translate(-100%, -50%)` : `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
+            el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-100%, -50%)`;
           });
         });
         viewer = current;
@@ -65,7 +64,7 @@
     <p class="empty">Vue 3D indisponible sur cet ordinateur (WebGL désactivé).</p>
   {:else}
     {#each scene.labels as label, i (i)}
-      <span class="label {label.kind}" bind:this={labelElements[i]}>{label.text}</span>
+      <span class="label" bind:this={labelElements[i]}>{label.text}</span>
     {/each}
   {/if}
   <div class="views" role="group" aria-label="Vue">
@@ -96,17 +95,11 @@
     position: absolute;
     top: 0;
     left: 0;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  .label.bar {
     padding-right: 4px;
     font: 500 11.5px var(--font);
     color: var(--muted);
-  }
-  .label.piece {
-    font: 700 11px var(--mono);
-    color: var(--text);
+    pointer-events: none;
+    white-space: nowrap;
   }
   .views {
     position: absolute;

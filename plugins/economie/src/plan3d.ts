@@ -13,10 +13,10 @@ export interface ScenePart {
   position: [number, number, number];
 }
 
+/** Nom d'une ligne de barres, placé à sa gauche. */
 export interface SceneLabel {
   text: string;
   position: [number, number, number];
-  kind: "bar" | "piece";
 }
 
 const KEEP = "#1f9d63";
@@ -45,14 +45,12 @@ export function planScene(
 
   const parts: ScenePart[] = [];
   const labels: SceneLabel[] = [];
-  const showMarks = groups.reduce((n, g) => n + g.bar.cuts.length, 0) <= 80;
 
   groups.forEach(({ bar, count }, row) => {
     const y = -row * rowStep;
     labels.push({
       text: `${count > 1 ? `${count} × ` : ""}${bar.source === "chute" ? "chute" : "barre"} ${fmt(bar.length)}`,
       position: [-0.6 * size, y, 0],
-      kind: "bar",
     });
 
     let x = 0;
@@ -61,8 +59,8 @@ export function planScene(
       const e = oriented(ends(shapes[cut.piece] ?? { angleL: 0, angleR: 0, planeL: "grande", planeR: "grande", sens: "oppose" }, bounds), cut.orientation);
       const [left, right] = [span(e.left), span(e.right)];
       const length = left + right + Math.max((cut.length - left - right) * scale, minBody);
+      // Pas de repère sur les pièces : la couleur suffit à l'écran (la fiche imprimée, elle, les écrit).
       parts.push({ model: { section, length, ends: e }, color: colors(cut.piece), tint: 0.55, position: [x + length / 2, y, 0] });
-      if (showMarks) labels.push({ text: cut.mark, position: [x + length / 2, y + section.height / 2 + 0.2 * size, 0], kind: "piece" });
       x += length + spacing;
       lastRight = e.right;
     }

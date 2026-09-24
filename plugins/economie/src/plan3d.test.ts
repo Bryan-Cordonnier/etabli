@@ -41,7 +41,7 @@ describe("planScene", () => {
   it("une ligne par groupe de barres identiques, avec son étiquette", () => {
     // 3 × 2 000 + 2 traits de 2 mm dépassent 6 000 : deux pièces par barre, quatre barres pareilles et une dernière.
     const { labels } = scene([{ mark: "A", length: 2000, quantity: 9, shape: { ...trapeze45, angleL: 0, angleR: 0 } }]);
-    const bars = labels.filter((l) => l.kind === "bar").map((l) => l.text.replace(/\s/g, " "));
+    const bars = labels.map((l) => l.text.replace(/\s/g, " "));
     expect(bars).toEqual(["4 × barre 6 000", "barre 6 000"]);
   });
 });
