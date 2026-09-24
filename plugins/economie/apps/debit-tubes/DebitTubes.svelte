@@ -572,15 +572,32 @@
     gap: 2px;
   }
   .prow {
+    position: relative;
     display: grid;
     grid-template-columns: 10px 64px 1fr 56px 96px 28px;
     gap: 6px;
     align-items: center;
-    padding: 2px 4px;
-    border-radius: var(--r-sm);
+    padding: 2px 4px 2px 10px;
   }
-  .prow.selected {
-    background: var(--accent-soft);
+  /* Pièce affichée dans le panneau : une barre d'accent à gauche, comme la colonne des plugins.
+     Pas de fond coloré : les champs de la ligne resteraient noyés dedans. */
+  .prow::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+  .prow.selected::before {
+    opacity: 1;
+  }
+  .prow.head::before {
+    display: none;
   }
   .swatch {
     width: 10px;
@@ -599,6 +616,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
+    /* Plusieurs clics de suite ne surlignent pas le texte du bouton. */
+    user-select: none;
+    transition:
+      border-color 0.12s,
+      color 0.12s;
+  }
+  .angles:hover {
+    border-color: var(--faint);
   }
   .angles.on {
     border-color: var(--accent);
