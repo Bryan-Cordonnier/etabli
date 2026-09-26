@@ -31,8 +31,8 @@ Briques communes du moteur (lot 1). Un plugin s'en sert s'il veut ; il fonctionn
 ## Réglages d'un plugin
 
 `PluginSettings` (`@etabli/ui`) : un objet réactif partagé par toutes les mini-apps d'un plugin,
-enregistré dans `donnees/plugin.<id>.json`. Disponible mais **pas encore utilisé** (les machines ont
-été déplacées dans la bibliothèque de l'application).
+enregistré dans `donnees/plugin.<id>.json`. Exemple : Matériaux et fixation y garde les vitesses de
+la perceuse de l'atelier (`vitessesMachine`), communes à tous les calculs de vitesse de coupe.
 
 ## Fiches d'atelier imprimées
 
@@ -51,10 +51,26 @@ cocher, cadre de signature.
   (repère, couleur `--fill`), `box` (case à cocher), `settings`, `tag`, `legend`, `tip`, `block`
   (un bloc par barre ou tôle, jamais coupé), `block-head`, `end`, `keep`/`lost`/`reserve`,
   `svg.scheme`, `sign`, `small`, `num`.
-- Aides pour écrire les pages : `plugins/economie/src/fiche.ts` (`esc`, `fmt`, `tint`, `mark`, `box`,
-  `section`, `facts`, `table`, `signature`, `hatch`). À déplacer dans `@etabli/ui` quand un deuxième
-  plugin en aura besoin.
-- Exemples complets : `plugins/economie/src/fiche-debit.ts` et `fiche-calepinage.ts`.
+- Aides pour écrire les pages : `packages/ui/src/fiche.ts`, exportées par `@etabli/ui` (`esc`, `fmt`,
+  `tint`, `mark`, `box`, `section`, `facts`, `table`, `signature`, `hatch`).
+- Exemples complets : `plugins/economie/src/fiche-debit.ts`, `fiche-calepinage.ts` et
+  `plugins/tracage/src/export.ts` (`tracageFiche` : résultats, tableau de traçage, gabarit).
+
+## Export DXF
+
+`toDxf(drawing)` (`packages/ui/src/dxf.ts`) écrit un DXF **R12 (AC1009)**, en mm (`$INSUNITS` 4),
+lu par SolidWorks, LibreCAD, DraftSight et les logiciels de découpe. Calques : `CONTOUR` (blanc/noir,
+trait de découpe), `PLI` (rouge, pliage léger ou arête), `TRACE` (cyan, génératrices, repères),
+`TEXTE` (vert). La mini-app enregistre le texte avec `saveFile({ name, content, extension: "dxf",
+description: "Dessin DXF" })`. Tests : `packages/ui/src/dxf.test.ts`.
+
+## Gabarits à l'échelle 1
+
+`gabaritPages(shapes, labels, title)` (`packages/ui/src/gabarit.ts`) découpe un développé en feuilles
+A4 (zone utile 180 × 250 mm, marge 10 mm) repérées A1, A2, B1…, avec des croix d'assemblage et une
+**règle de 100 mm** pour vérifier l'échelle. Les pages s'ajoutent aux `pages` d'une fiche : il faut
+imprimer à **100 % (taille réelle)**, sans « ajuster à la page ». Types de traits : `contour`, `pli`
+(tirets rouges), `trace` (pointillés).
 
 ## Envoi entre mini-apps
 

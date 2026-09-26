@@ -35,10 +35,11 @@ facultatifs, nouveaux messages) ne changent pas la version ; le SDK tolère un c
 | `print` `{ fiche }` | imprime une fiche d'atelier (`FichePrint`) |
 | `addMachine` `{ kind }` | crée une machine et ouvre Paramètres → Bibliothèques |
 | `send` `{ kind, data }` | ouvre une mini-app qui accepte ce type, dans un nouvel onglet, avec ces données |
+| `saveFile` `{ file }` | boîte « Enregistrer sous » de Windows puis écriture (`SavedFile` : `name`, `content` texte, `extension` sans point, `description` du filtre) ; notification « Enregistré : chemin » |
 
 Types partagés dans `protocol.ts` : `Supplier`, `SupplierItem`, `StockKind` (+ `STOCK_KINDS`),
 `Saw`, `Shear`, `Machine`, `MachineKind`, `SAW_TYPES`, `Libraries`, `FichePrint`, `Incoming`,
-`ThemeTokens`.
+`SavedFile`, `ThemeTokens`.
 
 ## `@etabli/sdk` (bas niveau)
 
@@ -55,6 +56,7 @@ etabli.libraries.current;                 // { suppliers, machines }
 etabli.libraries.onChange(fn); etabli.libraries.addMachine("scie" | "cisaille");
 etabli.settings.data; etabli.settings.update(d); etabli.settings.onChange(fn);   // réglages du plugin
 etabli.print(fiche);                      // fiche d'atelier
+etabli.saveFile({ name, content, extension: "dxf", description: "Dessin DXF" });  // export
 etabli.send("piece-plate", donnees); etabli.incoming;                            // envoi entre mini-apps
 etabli.onThemeChange(fn);
 ```
@@ -73,7 +75,16 @@ directement (seul `Pythagore` le fait encore, par ancienneté).
 | `PluginSettings<S>(defaults, clean?)` | réglages partagés par les mini-apps d'un plugin, `data` réactif enregistré automatiquement |
 | `Libraries` | `suppliers`, `machines` réactifs ; `addMachine(kind)` |
 | `printFiche(fiche)` | impression d'une fiche d'atelier |
+| `saveFile(file)` | enregistrement d'un fichier texte (DXF, CSV…) par la boîte « Enregistrer sous » |
 | `sendTo(kind, data)` / `onIncoming(kind, handler)` | envoi et réception entre mini-apps (appeler `onIncoming` **après** avoir créé le `MiniAppDocument`) |
+
+**Outils sans interface** (`packages/ui/src/*.ts`, voir [09](09-bibliotheques-fiches-envoi.md))
+
+| Export | Usage |
+| --- | --- |
+| `esc`, `fmt`, `tint`, `mark`, `box`, `section`, `facts`, `table`, `signature`, `hatch`, `type Column` | écrire les pages HTML d'une fiche d'atelier |
+| `toDxf(drawing)` | texte DXF R12 d'un dessin en mm (polylignes, lignes, textes, calques `CONTOUR`, `PLI`, `TRACE`, `TEXTE`) |
+| `gabaritPages(shapes, labels, title)` | pages A4 d'un gabarit à l'échelle 1, à ajouter aux `pages` d'une fiche |
 
 **Composants**
 

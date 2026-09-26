@@ -3,21 +3,22 @@
 Les spécifications détaillées (formules, cas de test) sont recopiées dans
 [13-specs-a-venir.md](13-specs-a-venir.md). Rappel : **faire valider la spécification par Bryan avant de coder**.
 
-## Économie de matière — fin du débit de tubes v2 (lot 1)
+## À vérifier à l'écran par Bryan (codé fin septembre 2026, jamais vu dans l'application)
 
-Spécification décidée (section 9.3 du cahier des plugins), pas encore codée :
-- **Tolérance des barres** (−/+, préremplie depuis le fournisseur) : calcul sur la longueur la plus
-  courte, restes et pertes affichés **en plage** (déjà fait pour les tôles dans `cisaille.ts`).
-- **Matière et poids** : matière choisie (masse volumique) + section du profilé (`sectionArea` dans
-  `profil.ts`) → kg/m, poids des barres, pièces, chutes, perte.
-- **Mode besoin** : sans barre saisie, calcul avec la longueur du fournisseur et « À acheter : N barres »
-  (ou en plus des chutes).
-- **Chutes réservées** : longueur, angles, projet de destination ; si la réservation coûte une barre
-  de plus, afficher **les deux résultats** et laisser choisir. Même règle pour les tôles.
-- **Ordre de coupe groupé par angle de scie** (comme la butée de la cisaille) et fiche complète
-  fidèle à la maquette validée (réglages de butée si la scie en a une, reste en plage, étiquettes).
-- Butée de longueur de la scie (`stopMax`) et longueur mini (`minLength`) : seulement signalées pour
-  l'instant.
+- **Conversions** en tableau (Maths).
+- **Débit de tubes v2** : tolérances et restes en plage, poids, mode besoin, chutes réservées (choix
+  entre deux résultats), priorité matière ou temps (comparaison), fiche avec l'ordre par angle de scie.
+- **Export DXF** (boîte « Enregistrer sous », ouverture dans SolidWorks ou LibreCAD) et **gabarit à
+  l'échelle 1** imprimé à 100 % (mesurer la règle de 100 mm).
+- **Traçage** : les 5 mini-apps ; la trémie carré-rond est à contrôler sur une vraie pièce.
+- **Matériaux et fixation** : les 4 mini-apps.
+
+## Économie de matière
+
+- Chutes réservées des **tôles** (même règle que les tubes : deux résultats si la réservation coûte
+  une tôle de plus) : pas faites.
+- Butée maxi de la scie (`stopMax`) : seulement une étiquette « butée » sur la fiche ; longueur mini
+  (`minLength`) : seulement signalée.
 
 ## Moteur (lot 1)
 
@@ -33,10 +34,9 @@ Spécification décidée (section 9.3 du cahier des plugins), pas encore codée 
 
 ## Plugins des lots suivants (spécifiés dans le cahier des plugins)
 
-- **Matériaux et fixation** (sections 5.x) : masse d'une pièce ou d'un profilé, perçage avant
-  taraudage et trous de passage, vitesses de coupe, couples de serrage.
-- **Chaudronnerie** (6.x) : virole, tronçon de cône, piquage cylindre sur cylindre, coude à
-  segments, trémie carré-rond ; tableaux de traçage, gabarits PDF à l'échelle 1, export DXF.
+- **Traçage**, pistes pour la suite (façon Logitrace) : piquage cône sur cylindre, cylindre sur cône,
+  réduction excentrée, culotte (Y), trémie rond-rond décalée, virole à pas de vis ; surfaces des
+  profilés laminés (peinture) dans Matériaux.
 - **Soudage** (7.x, proposé) : cordon d'angle, chanfrein, consommables et coût, préchauffage.
 - **Tolérances et ajustements** (8.x, proposé) : ISO 286, ISO 2768, ISO 13920 (tables à vérifier sur
   la norme avant publication).
@@ -55,7 +55,8 @@ Spécification décidée (section 9.3 du cahier des plugins), pas encore codée 
 
 - Beaucoup d'écrans récents n'ont été vérifiés que par les types et les tests, pas à l'écran par un
   agent : l'outil de prévisualisation n'était pas disponible (voir [02-environnement.md](02-environnement.md)).
-- `files::fichier_enregistrer` existe côté Rust mais aucune mini-app ne l'appelle encore.
-- `PluginSettings` existe mais n'est utilisé par aucun plugin.
+- Masses des tubes et cornières (Matériaux) en angles vifs : 1 à 3 % au-dessus du catalogue.
+- Vitesses de la machine (Matériaux) : séparées par des espaces, donc sans espace dans les milliers
+  (« 1120 », pas « 1 120 »).
 - Le commit `8360f99` a un caractère BOM au début de son titre (sans conséquence).
 - `Pythagore.svelte` n'utilise pas encore `MiniAppDocument` (fonctionne, mais style ancien).

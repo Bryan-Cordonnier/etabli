@@ -43,8 +43,8 @@ packages/ui/              @etabli/ui : composants et outils communs des mini-app
 plugins/maths/            7 mini-apps de géométrie
 plugins/economie/         débit de tubes (angles, 3D), calepinage de tôles à la cisaille
 plugins/tolerie/          développé de pliage, vé et effort de pliage
-plugins/materiaux/        manifeste seul (à faire)
-plugins/chaudronnerie/    manifeste seul (à faire)
+plugins/tracage/          développés façon Logitrace : virole, cône, piquage, coude, trémie
+plugins/materiaux/        masse, taraudage et passages, vitesse de coupe, couple de serrage
 docs/                     cette documentation
 ```
 

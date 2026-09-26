@@ -1,7 +1,7 @@
 # Établi
 
 Boîte à outils de bureau pour la chaudronnerie (BTS CRCI) : calculs d'atelier, débit de tubes,
-calepinage de tôles à la cisaille, développés de pliage… Légère, pensée pour tourner à côté de
+calepinage de tôles à la cisaille, développés de pliage et de traçage… Légère, pensée pour tourner à côté de
 SolidWorks sur des PC modestes, 100 % locale, et extensible par plugins.
 
 > Documentation complète pour reprendre le code : **[AGENTS.md](AGENTS.md)** (sommaire) et le dossier [`docs/`](docs/).
@@ -15,7 +15,8 @@ packages/ui/      @etabli/ui : champs, résultats copiables, cartes, document en
 plugins/maths/    Pythagore, triangle, arc, perçage sur cercle, polygone, volumes, conversions
 plugins/economie/ débit de tubes (coupes d'angle, 3D), calepinage de tôles à la cisaille
 plugins/tolerie/  développé de pliage, vé et effort de pliage
-plugins/*/        autres plugins officiels (manifeste seul pour l'instant)
+plugins/tracage/  développés de traçage : virole, cône, piquage, coude, trémie (DXF, gabarits)
+plugins/materiaux/ masse, taraudage et passages, vitesse de coupe, couple de serrage
 docs/             documentation technique
 ```
 
