@@ -2,16 +2,20 @@
   // Tronçon de cône droit (cahier des charges des plugins, section 6.2) : rayons de traçage, angle
   // du développé, corde et flèche pour tracer sans compas géant, secteurs, gabarit et DXF.
   import { Card, Field, MiniAppDocument, Result, Segmented, SelectField, evaluate, format, printFiche, saveFile } from "@etabli/ui";
+  import Apercu from "../../src/Apercu.svelte";
+  import CoteField from "../../src/CoteField.svelte";
   import { cone, type Cone, type DiameterKind } from "../../src/developpes";
   import { MATIERES, patternDxf, plateMass, tracageFiche } from "../../src/export";
   import Flat from "../../src/Flat.svelte";
+  import { coneModel } from "../../src/modele3d";
 
   type Given = "height" | "slant" | "halfAngle";
 
   interface Data {
     big: string;
     small: string;
-    kind: DiameterKind;
+    bigKind: DiameterKind;
+    smallKind: DiameterKind;
     thickness: string;
     given: Given;
     value: string;
@@ -19,11 +23,6 @@
     material: string;
   }
 
-  const KINDS: { value: DiameterKind; label: string }[] = [
-    { value: "int", label: "Ø intérieurs" },
-    { value: "moy", label: "Ø moyens" },
-    { value: "ext", label: "Ø extérieurs" },
-  ];
   const GIVEN: { value: Given; label: string }[] = [
     { value: "height", label: "Hauteur" },
     { value: "slant", label: "Génératrice" },
@@ -38,7 +37,8 @@
     return cone({
       big: num(d.big),
       small: num(d.small) || 0,
-      kind: d.kind,
+      bigKind: d.bigKind,
+      smallKind: d.smallKind,
       thickness: num(d.thickness) || 0,
       height: d.given === "height" ? v : 0,
       slant: d.given === "slant" ? v : 0,
@@ -49,10 +49,15 @@
   }
 
   const doc = new MiniAppDocument<Data>(
-    { big: "", small: "", kind: "moy", thickness: "3", given: "height", value: "", sectors: "1", material: "acier" },
+    { big: "", small: "", bigKind: "moy", smallKind: "moy", thickness: "3", given: "height", value: "", sectors: "1", material: "acier" },
     (d) => {
       const c = solve(d);
       return typeof c === "string" ? "" : `ρ ${format(c.rho)} · θ ${format(c.theta)}°`;
+    },
+    // Première version : un seul choix pour les deux diamètres.
+    (saved) => {
+      const kind = (saved.kind as DiameterKind | undefined) ?? "moy";
+      return { ...saved, bigKind: (saved.bigKind as DiameterKind | undefined) ?? kind, smallKind: (saved.smallKind as DiameterKind | undefined) ?? kind };
     },
   );
 
@@ -92,19 +97,19 @@
 
 <div class="split">
   <Card title="Tronçon de cône">
-    <Segmented label="Diamètres saisis" options={KINDS} bind:value={doc.data.kind} />
-    <div class="three">
-      <Field label="Grand Ø" unit="mm" bind:value={doc.data.big} />
-      <Field label="Petit Ø" unit="mm" bind:value={doc.data.small} placeholder="0 : pointe" />
-      <Field label="Épaisseur" unit="mm" bind:value={doc.data.thickness} />
-    </div>
+    <CoteField label="Grand Ø" bind:value={doc.data.big} bind:kind={doc.data.bigKind} thickness={e} />
+    <CoteField label="Petit Ø" bind:value={doc.data.small} bind:kind={doc.data.smallKind} thickness={e} placeholder="0 : pointe" />
+    <Field label="Épaisseur" unit="mm" bind:value={doc.data.thickness} />
     <Segmented label="Donnée connue" options={GIVEN} bind:value={doc.data.given} />
     <Field label={GIVEN.find((g) => g.value === doc.data.given)!.label} unit={doc.data.given === "halfAngle" ? "°" : "mm"} bind:value={doc.data.value} />
     <div class="two">
       <Field label="Nombre de secteurs" bind:value={doc.data.sectors} />
       <SelectField label="Matière" options={MATIERES.map((m) => ({ value: m.id, label: m.label }))} bind:value={doc.data.material} />
     </div>
-    <p class="hint">Développé à la fibre moyenne. Plusieurs secteurs quand la tôle est trop petite pour le flan entier.</p>
+    <p class="hint">
+      Int / Moy / Ext pour chaque diamètre : intérieur, fibre moyenne ou extérieur de la tôle. Développé à la fibre moyenne.
+      Plusieurs secteurs quand la tôle est trop petite pour le flan entier.
+    </p>
   </Card>
 
   <Card title="Développé">
@@ -129,7 +134,9 @@
         <Result label="Corde du petit arc" value={c.chordSmall} unit="mm" oncopy={doc.copy} />
         <Result label="Masse" value={plateMass(c.area, e, density)} unit="kg" decimals={1} oncopy={doc.copy} />
       </div>
-      <Flat pattern={c.pattern} />
+      <Apercu model={() => coneModel(c!, e, sectors)}>
+        {#snippet flat()}<Flat pattern={c!.pattern} />{/snippet}
+      </Apercu>
       <p class="hint">
         Traçage : pointe du compas au sommet, arcs de rayon ρ et ρ', angle {format(c.sectorAngle, 2)}° — ou, sans compas assez grand, la corde
         et la flèche du grand arc. Lignes rouges : génératrices (roulage).
@@ -155,11 +162,6 @@
   .two {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .three {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
   }
   .grid {

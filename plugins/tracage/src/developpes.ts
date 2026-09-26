@@ -8,9 +8,17 @@ const DEG = Math.PI / 180;
 
 export type DiameterKind = "int" | "moy" | "ext";
 
-/** Diamètre à la fibre moyenne depuis un diamètre intérieur, moyen ou extérieur. */
+/**
+ * Cote à la fibre moyenne depuis une cote intérieure, moyenne ou extérieure : diamètre, ou côté
+ * d'un rectangle (la tôle est de part et d'autre, d'une demi-épaisseur de chaque côté).
+ */
 export function meanDiameter(d: number, thickness: number, kind: DiameterKind): number {
   return kind === "int" ? d + thickness : kind === "ext" ? d - thickness : d;
+}
+
+/** Cote extérieure depuis une cote intérieure, moyenne ou extérieure. */
+export function outerDiameter(d: number, thickness: number, kind: DiameterKind): number {
+  return kind === "int" ? d + 2 * thickness : kind === "moy" ? d + thickness : d;
 }
 
 export type Point = [number, number];
@@ -118,10 +126,11 @@ export function virole(input: ViroleInput): Virole | string {
 // ——— Tronçon de cône droit ———
 
 export interface ConeInput {
-  /** Grand et petit diamètre (petit = 0 : cône complet). */
+  /** Grand et petit diamètre (petit = 0 : cône complet), chacun intérieur, moyen ou extérieur. */
   big: number;
   small: number;
-  kind: DiameterKind;
+  bigKind: DiameterKind;
+  smallKind: DiameterKind;
   thickness: number;
   /** Une seule des trois : hauteur, génératrice ou demi-angle au sommet. */
   height: number;
@@ -154,8 +163,8 @@ export interface Cone {
 export function cone(input: ConeInput): Cone | string {
   const error = positive("Le grand diamètre", input.big) ?? (input.small >= 0 ? null : "Le petit diamètre ne peut pas être négatif.");
   if (error) return error;
-  const R = meanDiameter(input.big, input.thickness, input.kind) / 2;
-  const r = input.small > 0 ? meanDiameter(input.small, input.thickness, input.kind) / 2 : 0;
+  const R = meanDiameter(input.big, input.thickness, input.bigKind) / 2;
+  const r = input.small > 0 ? meanDiameter(input.small, input.thickness, input.smallKind) / 2 : 0;
   if (!(R > r)) return "Le grand diamètre doit être plus grand que le petit (sinon c'est une virole).";
   let height: number;
   if (input.height > 0) height = input.height;
@@ -209,8 +218,10 @@ export function cone(input: ConeInput): Cone | string {
 // ——— Piquage cylindre sur cylindre ———
 
 export interface PiquageInput {
-  /** Tube principal : diamètre extérieur. */
+  /** Tube principal : diamètre intérieur, moyen ou extérieur, et épaisseur. */
   mainDiameter: number;
+  mainKind: DiameterKind;
+  mainThickness: number;
   /** Piquage : diamètre et épaisseur. */
   diameter: number;
   kind: DiameterKind;
@@ -228,6 +239,8 @@ export interface Piquage {
   dm: number;
   /** Rayon utilisé pour la courbe (intérieur du piquage, posé sur l'extérieur du tube principal). */
   contactRadius: number;
+  /** Rayon extérieur du tube principal. */
+  mainRadius: number;
   developed: number;
   table: (TraceRow & { rise: number })[];
   /** Gabarit du trou dans le tube principal : développé sur son diamètre extérieur. */
@@ -235,25 +248,30 @@ export interface Piquage {
   pattern: FlatPattern;
 }
 
+/**
+ * Point du piquage (rayon r, axe incliné de β sur l'axe du tube principal, décalé de `offset`) où
+ * la génératrice d'angle φ touche le tube principal de rayon extérieur R. Repère : x le long du tube
+ * principal, z vers le haut ; t = distance le long de l'axe du piquage depuis l'axe principal.
+ */
+export function contactPiquage(R: number, r: number, offset: number, beta: number, phi: number): { t: number; x: number; y: number; z: number } {
+  const y = offset + r * Math.cos(phi);
+  const z = Math.sqrt(Math.max(0, R * R - y * y));
+  const t = (z - r * Math.sin(phi) * Math.cos(beta)) / Math.sin(beta);
+  return { t, y, z, x: -r * Math.sin(phi) * Math.sin(beta) + t * Math.cos(beta) };
+}
+
 export function piquage(input: PiquageInput): Piquage | string {
-  const error = positive("Les diamètres et la longueur", input.mainDiameter, input.diameter, input.length) ?? (input.thickness >= 0 ? null : "L'épaisseur ne peut pas être négative.");
+  const error = positive("Les diamètres et la longueur", input.mainDiameter, input.diameter, input.length) ?? (input.thickness >= 0 && input.mainThickness >= 0 ? null : "L'épaisseur ne peut pas être négative.");
   if (error) return error;
   if (!(input.angle > 0 && input.angle <= 90)) return "L'angle entre les axes doit être compris entre 0 et 90°.";
   const dm = meanDiameter(input.diameter, input.thickness, input.kind);
   const inner = input.kind === "int" ? input.diameter : input.kind === "ext" ? input.diameter - 2 * input.thickness : input.diameter - input.thickness;
   const r = inner / 2;
-  const R = input.mainDiameter / 2;
+  const R = outerDiameter(input.mainDiameter, input.mainThickness, input.mainKind) / 2;
   if (!(r > 0) || !(dm > 0)) return "L'épaisseur du piquage est trop grande pour son diamètre.";
   if (Math.abs(input.offset) + r > R + 1e-9) return "Le piquage déborde du tube principal : réduisez son diamètre ou le décalage.";
   const beta = input.angle * DEG;
-  const [sinB, cosB] = [Math.sin(beta), Math.cos(beta)];
-  // Point du piquage à l'angle φ : hauteur t le long de son axe où il touche le tube principal.
-  const contact = (phi: number) => {
-    const y = input.offset + r * Math.cos(phi);
-    const z = Math.sqrt(Math.max(0, R * R - y * y));
-    const t = (z - r * Math.sin(phi) * cosB) / sinB;
-    return { t, y, z, x: -r * Math.sin(phi) * sinB + t * cosB };
-  };
+  const contact = (phi: number) => contactPiquage(R, r, input.offset, beta, phi);
   const n = Math.max(4, Math.round(input.divisions));
   const rm = dm / 2;
   const samples = Array.from({ length: n + 1 }, (_, k) => ({ k, phi: (2 * Math.PI * k) / n, ...contact((2 * Math.PI * k) / n) }));
@@ -277,6 +295,7 @@ export function piquage(input: PiquageInput): Piquage | string {
   return {
     dm,
     contactRadius: r,
+    mainRadius: R,
     developed,
     table,
     hole,

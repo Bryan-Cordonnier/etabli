@@ -1,10 +1,13 @@
 <script lang="ts">
   // Virole (cahier des charges des plugins, section 6.1) : développé d'un cylindre, avec bout
   // coupé en biais si besoin, découpe en plusieurs tôles, masse, gabarit et DXF.
-  import { Card, Field, MiniAppDocument, Result, Segmented, SelectField, evaluate, format, printFiche, saveFile } from "@etabli/ui";
+  import { Card, Field, MiniAppDocument, Result, SelectField, evaluate, format, printFiche, saveFile } from "@etabli/ui";
+  import Apercu from "../../src/Apercu.svelte";
+  import CoteField from "../../src/CoteField.svelte";
   import { virole, type DiameterKind, type Virole } from "../../src/developpes";
   import { MATIERES, patternDxf, plateMass, tracageFiche } from "../../src/export";
   import Flat from "../../src/Flat.svelte";
+  import { viroleModel } from "../../src/modele3d";
   import TraceTable from "../../src/TraceTable.svelte";
 
   interface Data {
@@ -17,12 +20,6 @@
     divisions: string;
     material: string;
   }
-
-  const KINDS: { value: DiameterKind; label: string }[] = [
-    { value: "int", label: "Ø intérieur" },
-    { value: "moy", label: "Ø moyen" },
-    { value: "ext", label: "Ø extérieur" },
-  ];
 
   const num = (t: string) => (t.trim() === "" ? NaN : evaluate(t));
 
@@ -80,9 +77,8 @@
 
 <div class="split">
   <Card title="Virole">
-    <Segmented label="Diamètre saisi" options={KINDS} bind:value={doc.data.kind} />
-    <div class="two">
-      <Field label="Diamètre" unit="mm" bind:value={doc.data.diameter} />
+    <div class="cote">
+      <CoteField label="Diamètre" bind:value={doc.data.diameter} bind:kind={doc.data.kind} thickness={e} />
       <Field label="Épaisseur" unit="mm" bind:value={doc.data.thickness} />
     </div>
     <div class="two">
@@ -94,7 +90,8 @@
       <Field label="Génératrices" bind:value={doc.data.divisions} />
     </div>
     <SelectField label="Matière" options={MATIERES.map((m) => ({ value: m.id, label: m.label }))} bind:value={doc.data.material} />
-    <p class="hint">Développé à la fibre moyenne : π × (Ø intérieur + épaisseur). Bout en biais : angle du plan de coupe depuis l'horizontale, hauteur mesurée à l'axe ; soudure sur la génératrice la plus courte.</p>
+    <p class="hint">Int / Moy / Ext : le diamètre saisi est l'intérieur, la fibre moyenne ou l'extérieur de la tôle ; le développé se
+      calcule à la fibre moyenne (π × Ø moyen). Bout en biais : angle du plan de coupe depuis l'horizontale, hauteur mesurée à l'axe ; soudure sur la génératrice la plus courte.</p>
   </Card>
 
   <Card title="Développé">
@@ -117,7 +114,9 @@
         {/if}
         <Result label="Masse" value={plateMass(v.area, e, density)} unit="kg" decimals={1} oncopy={doc.copy} />
       </div>
-      <Flat pattern={v.pattern} />
+      <Apercu model={() => viroleModel(v!, e, bevel)}>
+        {#snippet flat()}<Flat pattern={v!.pattern} />{/snippet}
+      </Apercu>
       {#if bevel}
         <TraceTable rows={v.table} headers={["Génératrice", "Angle (°)", "Abscisse (mm)", "Hauteur (mm)"]} oncopy={doc.copy} />
       {/if}
@@ -142,6 +141,11 @@
   .two {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .cote {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
     gap: 8px;
   }
   .grid {

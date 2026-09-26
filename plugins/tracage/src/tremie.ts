@@ -3,8 +3,9 @@
 // besoin. Chaque coin du rectangle est relié à un quart des points du cercle (triangles en
 // éventail, « pliage léger ») ; chaque côté forme un triangle plan avec le point du cercle en face.
 // On calcule la vraie grandeur de chaque arête, puis on déplie les triangles un à un, en partant
-// d'une soudure au milieu d'un côté. Dimensions à la fibre moyenne, en mm.
-import type { FlatPattern, Point } from "./developpes";
+// d'une soudure au milieu d'un côté. Chaque cote est saisie intérieure, moyenne ou extérieure ;
+// le calcul se fait à la fibre moyenne, en mm.
+import { meanDiameter, type DiameterKind, type FlatPattern, type Point } from "./developpes";
 
 export interface TremieInput {
   /** Rectangle du bas : longueur (le long de x) et largeur (le long de y). */
@@ -12,6 +13,10 @@ export interface TremieInput {
   width: number;
   /** Cercle du haut : diamètre. */
   diameter: number;
+  lengthKind: DiameterKind;
+  widthKind: DiameterKind;
+  diameterKind: DiameterKind;
+  thickness: number;
   height: number;
   /** Décalage du centre du cercle par rapport au centre du rectangle. */
   offsetX: number;
@@ -20,9 +25,11 @@ export interface TremieInput {
   divisions: number;
 }
 
-type P3 = [number, number, number];
+export type P3 = [number, number, number];
 
 export interface Tremie {
+  /** Cotes à la fibre moyenne. */
+  mean: { length: number; width: number; diameter: number };
   /** Vraies grandeurs : pour chaque coin, la longueur vers chacun de ses points du cercle. */
   trueLengths: { corner: string; point: number; length: number }[];
   /** Longueur de la soudure (du milieu du côté au cercle). */
@@ -31,6 +38,11 @@ export interface Tremie {
   area: number;
   divisions: number;
   pattern: FlatPattern;
+  /**
+   * Pièce en volume (repère du calcul, z vers le haut) : génératrices (bas, haut) dans l'ordre du
+   * dépliage, de la soudure au milieu du côté jusqu'au dernier coin ; coins et points du cercle.
+   */
+  solid: { rulings: [P3, P3][]; corners: Record<string, P3>; circle: P3[]; seam: P3 };
 }
 
 const dist = (a: P3, b: P3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -47,8 +59,15 @@ function place(A: Point, B: Point, dA: number, dB: number, side: 1 | -1): Point 
 }
 
 export function tremie(input: TremieInput): Tremie | string {
-  const { length: a, width: b, diameter, height: H } = input;
-  if (![a, b, diameter, H].every((v) => v > 0 && Number.isFinite(v))) return "Les dimensions du rectangle, le diamètre et la hauteur doivent être positifs.";
+  const e = input.thickness || 0;
+  if (!(e >= 0)) return "L'épaisseur ne peut pas être négative.";
+  if (![input.length, input.width, input.diameter, input.height].every((v) => v > 0 && Number.isFinite(v)))
+    return "Les dimensions du rectangle, le diamètre et la hauteur doivent être positifs.";
+  const a = meanDiameter(input.length, e, input.lengthKind);
+  const b = meanDiameter(input.width, e, input.widthKind);
+  const diameter = meanDiameter(input.diameter, e, input.diameterKind);
+  const H = input.height;
+  if (!(a > 0 && b > 0 && diameter > 0)) return "L'épaisseur est trop grande pour ces cotes.";
   const n = Math.max(8, Math.round(input.divisions / 4) * 4);
   const q = n / 4;
   const r = diameter / 2;
@@ -95,12 +114,14 @@ export function tremie(input: TremieInput): Tremie | string {
   const order = ["C1", "C2", "C3", "C4"] as const;
   let previousThird = "M";
   const fold: [string, string][] = [];
+  const rulings: [P3, P3][] = [[M, P(0)]];
   order.forEach((corner, ci) => {
     const c3 = corners[corner]!;
     // Éventail du coin : points ci·q à (ci + 1)·q.
     for (let k = ci * q; k <= (ci + 1) * q; k++) {
       trueLengths.push({ corner, point: k % n, length: dist(c3, P(k)) });
       fold.push([corner, `P${k}`]);
+      rulings.push([c3, P(k)]);
       if (k === ci * q) continue;
       unfold(corner, `P${k - 1}`, `P${k}`, c3, P(k - 1), P(k), previousThird);
       previousThird = `P${k - 1}`;
@@ -119,6 +140,7 @@ export function tremie(input: TremieInput): Tremie | string {
   const top = Array.from({ length: n + 1 }, (_, k) => get(`P${n - k}`));
   const contour: Point[] = [get("M"), get("C1"), get("C2"), get("C3"), get("C4"), get("M'"), ...top];
   return {
+    mean: { length: a, width: b, diameter },
     trueLengths,
     seam: dist(M, P(0)),
     area: area.value,
@@ -131,5 +153,6 @@ export function tremie(input: TremieInput): Tremie | string {
         { at: get("M"), text: "soudure" },
       ],
     },
+    solid: { rulings, corners, circle: Array.from({ length: n }, (_, k) => P(k)), seam: M },
   };
 }

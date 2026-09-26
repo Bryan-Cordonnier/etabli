@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cone, coude, meanDiameter, piquage, virole, type Point } from "./developpes";
+import { cone, coude, meanDiameter, outerDiameter, piquage, virole, type Point } from "./developpes";
 import { tremie } from "./tremie";
 
 const ok = <T>(value: T | string): T => {
@@ -37,7 +37,7 @@ describe("virole", () => {
 });
 
 describe("cone", () => {
-  const base = { big: 400, small: 200, kind: "moy" as const, thickness: 0, height: 300, slant: 0, halfAngle: 0, sectors: 1, divisions: 12 };
+  const base = { big: 400, small: 200, bigKind: "moy" as const, smallKind: "moy" as const, thickness: 0, height: 300, slant: 0, halfAngle: 0, sectors: 1, divisions: 12 };
 
   it("Ø 200 et Ø 400 moyens, H 300 : génératrice 316,23, ρ 632,46, ρ' 316,23, θ 113,84° (cas du cahier)", () => {
     const c = ok(cone(base));
@@ -58,13 +58,19 @@ describe("cone", () => {
     expect(c.chord).toBeCloseTo(2 * 632.456 * Math.sin((56.921 / 2) * (Math.PI / 180)), 2);
   });
 
+  it("chaque diamètre a son côté de tôle : grand Ø intérieur, petit Ø extérieur", () => {
+    const c = ok(cone({ ...base, big: 400, bigKind: "int", small: 200, smallKind: "ext", thickness: 4 }));
+    expect(c.R).toBe(202);
+    expect(c.r).toBe(98);
+  });
+
   it("refuse une virole déguisée en cône", () => {
     expect(typeof cone({ ...base, small: 400 })).toBe("string");
   });
 });
 
 describe("piquage", () => {
-  const base = { mainDiameter: 200, diameter: 100, kind: "int" as const, thickness: 0, angle: 90, offset: 0, length: 200, divisions: 12 };
+  const base = { mainDiameter: 200, mainKind: "ext" as const, mainThickness: 0, diameter: 100, kind: "int" as const, thickness: 0, angle: 90, offset: 0, length: 200, divisions: 12 };
 
   it("Ø 100 sur Ø 200 à 90° : 13,40 mm entre le point le plus haut et le plus bas de la coupe (cas du cahier)", () => {
     const p = ok(piquage(base));
@@ -82,6 +88,13 @@ describe("piquage", () => {
     const incline = ok(piquage({ ...base, angle: 45, length: 400 }));
     const span = (p: typeof droit) => Math.max(...p.table.map((r) => r.rise));
     expect(span(incline)).toBeGreaterThan(span(droit));
+  });
+
+  it("tube principal saisi à l'intérieur : même coupe qu'avec son Ø extérieur", () => {
+    const ext = ok(piquage(base));
+    const int = ok(piquage({ ...base, mainDiameter: 192, mainKind: "int", mainThickness: 4 }));
+    expect(int.mainRadius).toBe(100);
+    int.table.forEach((row, i) => expect(row.y).toBeCloseTo(ext.table[i]!.y, 9));
   });
 
   it("refuse un piquage qui déborde du tube principal", () => {
@@ -113,7 +126,7 @@ describe("coude", () => {
 
 describe("trémie carré-rond", () => {
   const length = (a: Point, b: Point) => Math.hypot(a[0] - b[0], a[1] - b[1]);
-  const base = { length: 600, width: 400, diameter: 300, height: 400, offsetX: 0, offsetY: 0, divisions: 24 };
+  const base = { length: 600, width: 400, diameter: 300, lengthKind: "moy" as const, widthKind: "moy" as const, diameterKind: "moy" as const, thickness: 0, height: 400, offsetX: 0, offsetY: 0, divisions: 24 };
 
   it("le bas déplié mesure le périmètre du rectangle, le haut celui du cercle (en cordes)", () => {
     const t = ok(tremie(base));
@@ -143,5 +156,13 @@ describe("trémie carré-rond", () => {
     expect(ok(tremie({ ...base, offsetX: 100 })).area).toBeGreaterThan(0);
     expect(typeof tremie({ ...base, height: 0 })).toBe("string");
     expect(meanDiameter(500, 5, "ext")).toBe(495);
+    expect(outerDiameter(500, 5, "int")).toBe(510);
+    expect(outerDiameter(500, 5, "moy")).toBe(505);
+  });
+
+  it("cotes intérieures ou extérieures ramenées à la fibre moyenne, chacune à son choix", () => {
+    const t = ok(tremie({ ...base, length: 596, lengthKind: "int", width: 404, widthKind: "ext", diameter: 296, diameterKind: "int", thickness: 4 }));
+    expect(t.mean).toEqual({ length: 600, width: 400, diameter: 300 });
+    expect(t.seam).toBeCloseTo(ok(tremie(base)).seam, 9);
   });
 });

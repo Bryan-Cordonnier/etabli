@@ -1,7 +1,7 @@
 {
   "name": "@etabli/plugin-tracage",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -10,12 +10,14 @@
   },
   "dependencies": {
     "@etabli/sdk": "*",
-    "@etabli/ui": "^0.1.0"
+    "@etabli/ui": "^0.1.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.13.6",
+    "@types/three": "^0.186.0",
     "svelte": "^5.57.1",
     "svelte-check": "^4.7.6",
     "typescript": "^6.0.3",

@@ -2,14 +2,21 @@
   // Trémie carré-rond (cahier des charges des plugins, section 6.5) : triangulation, vraies
   // grandeurs, flan développé avec ses lignes de pliage léger, gabarit et DXF.
   import { Card, Field, MiniAppDocument, Result, SelectField, evaluate, format, printFiche, saveFile } from "@etabli/ui";
+  import Apercu from "../../src/Apercu.svelte";
+  import CoteField from "../../src/CoteField.svelte";
+  import type { DiameterKind } from "../../src/developpes";
   import { MATIERES, patternDxf, plateMass, tracageFiche } from "../../src/export";
   import Flat from "../../src/Flat.svelte";
+  import { tremieModel } from "../../src/modele3d";
   import { tremie, type Tremie } from "../../src/tremie";
 
   interface Data {
     length: string;
     width: string;
     diameter: string;
+    lengthKind: DiameterKind;
+    widthKind: DiameterKind;
+    diameterKind: DiameterKind;
     height: string;
     offsetX: string;
     offsetY: string;
@@ -26,6 +33,10 @@
       length: num(d.length),
       width: num(d.width),
       diameter: num(d.diameter),
+      lengthKind: d.lengthKind,
+      widthKind: d.widthKind,
+      diameterKind: d.diameterKind,
+      thickness: num(d.thickness) || 0,
       height: num(d.height),
       offsetX: num(d.offsetX) || 0,
       offsetY: num(d.offsetY) || 0,
@@ -34,11 +45,31 @@
   }
 
   const doc = new MiniAppDocument<Data>(
-    { length: "", width: "", diameter: "", height: "", offsetX: "0", offsetY: "0", divisions: "24", thickness: "3", material: "acier" },
+    {
+      length: "",
+      width: "",
+      diameter: "",
+      lengthKind: "int",
+      widthKind: "int",
+      diameterKind: "int",
+      height: "",
+      offsetX: "0",
+      offsetY: "0",
+      divisions: "24",
+      thickness: "3",
+      material: "acier",
+    },
     (d) => {
       const t = solve(d);
       return typeof t === "string" ? "" : `Carré-rond ${format(num(d.length))} × ${format(num(d.width))} → Ø ${format(num(d.diameter))}`;
     },
+    // Première version : cotes saisies à la fibre moyenne.
+    (saved) => ({
+      ...saved,
+      lengthKind: (saved.lengthKind as DiameterKind | undefined) ?? "moy",
+      widthKind: (saved.widthKind as DiameterKind | undefined) ?? "moy",
+      diameterKind: (saved.diameterKind as DiameterKind | undefined) ?? "moy",
+    }),
   );
 
   const result = $derived(solve(doc.data));
@@ -64,6 +95,7 @@
         kind: "Trémie carré-rond",
         subtitle: `${format(num(doc.data.length))} × ${format(num(doc.data.width))} → Ø ${format(num(doc.data.diameter))} · hauteur ${format(num(doc.data.height))} mm`,
         results: [
+          { label: "Cotes à la fibre moyenne", value: `${format(t.mean.length, 1)} × ${format(t.mean.width, 1)}`, detail: `Ø ${format(t.mean.diameter, 1)}` },
           { label: "Surface de tôle", value: `${format(t.area / 1e6, 3)} m²` },
           { label: "Masse", value: `${format(plateMass(t.area, e, density), 1)} kg` },
           { label: "Soudure", value: `${format(t.seam, 1)} mm`, detail: "milieu d'un côté → cercle" },
@@ -83,14 +115,10 @@
 
 <div class="split">
   <Card title="Trémie carré-rond">
-    <div class="two">
-      <Field label="Longueur du rectangle" unit="mm" bind:value={doc.data.length} />
-      <Field label="Largeur du rectangle" unit="mm" bind:value={doc.data.width} />
-    </div>
-    <div class="two">
-      <Field label="Ø du cercle" unit="mm" bind:value={doc.data.diameter} />
-      <Field label="Hauteur" unit="mm" bind:value={doc.data.height} />
-    </div>
+    <CoteField label="Longueur du rectangle" bind:value={doc.data.length} bind:kind={doc.data.lengthKind} thickness={e} />
+    <CoteField label="Largeur du rectangle" bind:value={doc.data.width} bind:kind={doc.data.widthKind} thickness={e} />
+    <CoteField label="Ø du cercle" bind:value={doc.data.diameter} bind:kind={doc.data.diameterKind} thickness={e} />
+    <Field label="Hauteur" unit="mm" bind:value={doc.data.height} />
     <div class="two">
       <Field label="Décalage du cercle en longueur" unit="mm" bind:value={doc.data.offsetX} />
       <Field label="Décalage en largeur" unit="mm" bind:value={doc.data.offsetY} />
@@ -101,7 +129,8 @@
       <SelectField label="Matière" options={MATIERES.map((m) => ({ value: m.id, label: m.label }))} bind:value={doc.data.material} />
     </div>
     <p class="hint">
-      Dimensions à la fibre moyenne. Divisions : un multiple de 4 (24 conseillé). Soudure au milieu du côté en bout de longueur.
+      Int / Moy / Ext pour chaque cote : intérieur, fibre moyenne ou extérieur de la tôle ; le développé se calcule à la fibre
+      moyenne. Divisions : un multiple de 4 (24 conseillé). Soudure au milieu du côté en bout de longueur.
       La plus complexe des formes : vérifier la première pièce (gabarit papier ou maquette).
     </p>
   </Card>
@@ -119,7 +148,9 @@
         <Result label="Masse" value={plateMass(t.area, e, density)} unit="kg" decimals={1} big oncopy={doc.copy} />
       </div>
       <Result label="Longueur de la soudure" value={t.seam} unit="mm" oncopy={doc.copy} />
-      <Flat pattern={t.pattern} height={320} />
+      <Apercu model={() => tremieModel(t!, e)} height={340}>
+        {#snippet flat()}<Flat pattern={t!.pattern} height={320} />{/snippet}
+      </Apercu>
       <div class="head">
         <b>Vraies grandeurs</b>
         <button class="btn" onclick={copyLengths}>Copier</button>

@@ -1,14 +1,19 @@
 <script lang="ts">
   // Piquage cylindre sur cylindre (cahier des charges des plugins, section 6.3) : développé du
   // piquage (droit ou incliné, centré ou excentré) et gabarit du trou dans le tube principal.
-  import { Card, Field, MiniAppDocument, Result, Segmented, evaluate, format, printFiche, saveFile } from "@etabli/ui";
+  import { Card, Field, MiniAppDocument, Result, evaluate, format, printFiche, saveFile } from "@etabli/ui";
+  import Apercu from "../../src/Apercu.svelte";
+  import CoteField from "../../src/CoteField.svelte";
   import { bounds, piquage, type DiameterKind, type Piquage, type Point } from "../../src/developpes";
   import { patternDxf, tracageFiche } from "../../src/export";
   import Flat from "../../src/Flat.svelte";
+  import { piquageModel } from "../../src/modele3d";
   import TraceTable from "../../src/TraceTable.svelte";
 
   interface Data {
     main: string;
+    mainKind: DiameterKind;
+    mainThickness: string;
     diameter: string;
     kind: DiameterKind;
     thickness: string;
@@ -18,11 +23,6 @@
     divisions: string;
   }
 
-  const KINDS: { value: DiameterKind; label: string }[] = [
-    { value: "int", label: "Ø intérieur" },
-    { value: "moy", label: "Ø moyen" },
-    { value: "ext", label: "Ø extérieur" },
-  ];
   const HEADERS: [string, string, string, string] = ["Génératrice", "Angle (°)", "Abscisse (mm)", "Longueur (mm)"];
 
   const num = (t: string) => (t.trim() === "" ? NaN : evaluate(t));
@@ -31,6 +31,8 @@
     if ([d.main, d.diameter, d.length].some((t) => t.trim() === "")) return "Renseignez le Ø du tube principal, le Ø du piquage et sa longueur.";
     return piquage({
       mainDiameter: num(d.main),
+      mainKind: d.mainKind,
+      mainThickness: num(d.mainThickness) || 0,
       diameter: num(d.diameter),
       kind: d.kind,
       thickness: num(d.thickness) || 0,
@@ -42,7 +44,7 @@
   }
 
   const doc = new MiniAppDocument<Data>(
-    { main: "", diameter: "", kind: "ext", thickness: "3", angle: "90", offset: "0", length: "", divisions: "24" },
+    { main: "", mainKind: "ext", mainThickness: "3", diameter: "", kind: "ext", thickness: "3", angle: "90", offset: "0", length: "", divisions: "24" },
     (d) => {
       const p = solve(d);
       return typeof p === "string" ? "" : `Piquage Ø ${format(num(d.diameter))} sur Ø ${format(num(d.main))}`;
@@ -51,6 +53,10 @@
 
   const result = $derived(solve(doc.data));
   const p = $derived(typeof result === "string" ? null : result);
+  const e = $derived(num(doc.data.thickness) || 0);
+  const mainE = $derived(num(doc.data.mainThickness) || 0);
+  const model = () =>
+    piquageModel(p!, { angle: num(doc.data.angle) || 90, offset: num(doc.data.offset) || 0, length: num(doc.data.length), thickness: e, mainThickness: mainE });
   const rise = $derived(p ? Math.max(...p.table.map((r) => r.rise)) : 0);
   /** Gabarit du trou, placé à droite du flan du piquage (pour le gabarit papier). */
   const holeBeside = $derived.by((): Point[] => {
@@ -93,11 +99,13 @@
 
 <div class="split">
   <Card title="Piquage">
-    <Field label="Ø extérieur du tube principal" unit="mm" bind:value={doc.data.main} />
-    <Segmented label="Diamètre du piquage" options={KINDS} bind:value={doc.data.kind} />
-    <div class="two">
-      <Field label="Ø du piquage" unit="mm" bind:value={doc.data.diameter} />
-      <Field label="Épaisseur du piquage" unit="mm" bind:value={doc.data.thickness} />
+    <div class="cote">
+      <CoteField label="Ø du tube principal" bind:value={doc.data.main} bind:kind={doc.data.mainKind} thickness={mainE} />
+      <Field label="Épaisseur" unit="mm" bind:value={doc.data.mainThickness} />
+    </div>
+    <div class="cote">
+      <CoteField label="Ø du piquage" bind:value={doc.data.diameter} bind:kind={doc.data.kind} thickness={e} />
+      <Field label="Épaisseur" unit="mm" bind:value={doc.data.thickness} />
     </div>
     <div class="two">
       <Field label="Angle entre les axes" unit="°" bind:value={doc.data.angle} />
@@ -108,8 +116,9 @@
       <Field label="Génératrices" bind:value={doc.data.divisions} />
     </div>
     <p class="hint">
-      Piquage posé : la coupe est calculée avec le rayon intérieur du piquage sur le diamètre extérieur du tube principal ; le
-      développé se trace sur la fibre moyenne du piquage. Longueur : de l'axe du tube principal au bout libre, le long de l'axe du
+      Int / Moy / Ext : chaque diamètre est saisi à l'intérieur, à la fibre moyenne ou à l'extérieur de la tôle. Piquage posé :
+      la coupe est calculée avec le rayon intérieur du piquage sur le diamètre extérieur du tube principal ; le développé se
+      trace sur la fibre moyenne du piquage. Longueur : de l'axe du tube principal au bout libre, le long de l'axe du
       piquage.
     </p>
   </Card>
@@ -129,10 +138,14 @@
         <Result label="Génératrice la plus courte" value={Math.min(...p.table.map((r) => r.y))} unit="mm" oncopy={doc.copy} />
         <Result label="Génératrice la plus longue" value={Math.max(...p.table.map((r) => r.y))} unit="mm" oncopy={doc.copy} />
       </div>
-      <h4>Flan du piquage</h4>
-      <Flat pattern={p.pattern} />
-      <h4>Gabarit du trou dans le tube principal</h4>
-      <Flat pattern={{ contour: p.hole, lines: [], labels: [] }} height={180} />
+      <Apercu {model}>
+        {#snippet flat()}
+          <h4>Flan du piquage</h4>
+          <Flat pattern={p!.pattern} />
+          <h4>Gabarit du trou dans le tube principal</h4>
+          <Flat pattern={{ contour: p!.hole, lines: [], labels: [] }} height={180} />
+        {/snippet}
+      </Apercu>
       <TraceTable rows={p.table} headers={HEADERS} oncopy={doc.copy} />
     {:else}
       <p class="empty">{result}</p>
@@ -155,6 +168,11 @@
   .two {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .cote {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
     gap: 8px;
   }
   .grid {

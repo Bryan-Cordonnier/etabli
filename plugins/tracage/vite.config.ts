@@ -13,6 +13,8 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     target: "chrome120",
+    // three.js (aperçu 3D, ~560 ko) : chargé à part, seulement quand on choisit la vue 3D.
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       input: {
         virole: app("virole"),

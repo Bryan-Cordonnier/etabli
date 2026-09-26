@@ -1,10 +1,13 @@
 <script lang="ts">
   // Coude à segments (cahier des charges des plugins, section 6.4) : angle de coupe, longueurs à
   // l'extrados et à l'intrados, tableau de traçage, développé d'un segment, longueur de tube.
-  import { Card, Field, MiniAppDocument, Result, Segmented, evaluate, format, printFiche, saveFile } from "@etabli/ui";
+  import { Card, Field, MiniAppDocument, Result, evaluate, format, printFiche, saveFile } from "@etabli/ui";
+  import Apercu from "../../src/Apercu.svelte";
+  import CoteField from "../../src/CoteField.svelte";
   import { coude, type Coude, type DiameterKind } from "../../src/developpes";
   import { patternDxf, tracageFiche } from "../../src/export";
   import Flat from "../../src/Flat.svelte";
+  import { coudeModel } from "../../src/modele3d";
   import TraceTable from "../../src/TraceTable.svelte";
 
   interface Data {
@@ -18,11 +21,6 @@
     divisions: string;
   }
 
-  const KINDS: { value: DiameterKind; label: string }[] = [
-    { value: "int", label: "Ø intérieur" },
-    { value: "moy", label: "Ø moyen" },
-    { value: "ext", label: "Ø extérieur" },
-  ];
   const HEADERS: [string, string, string, string] = ["Génératrice", "Angle (°)", "Abscisse (mm)", "Ordonnée (mm)"];
 
   const num = (t: string) => (t.trim() === "" ? NaN : evaluate(t));
@@ -51,6 +49,15 @@
 
   const result = $derived(solve(doc.data));
   const c = $derived(typeof result === "string" ? null : result);
+  const e = $derived(num(doc.data.thickness) || 0);
+  const model = () =>
+    coudeModel(c!, {
+      bendRadius: num(doc.data.radius),
+      angle: num(doc.data.angle),
+      joints: num(doc.data.joints) || 1,
+      straight: num(doc.data.straight) || 0,
+      thickness: e,
+    });
 
   function exportDxf(): void {
     if (!c) return;
@@ -82,9 +89,8 @@
 
 <div class="split">
   <Card title="Coude à segments">
-    <Segmented label="Diamètre saisi" options={KINDS} bind:value={doc.data.kind} />
-    <div class="two">
-      <Field label="Diamètre" unit="mm" bind:value={doc.data.diameter} />
+    <div class="cote">
+      <CoteField label="Diamètre" bind:value={doc.data.diameter} bind:kind={doc.data.kind} thickness={e} />
       <Field label="Épaisseur" unit="mm" bind:value={doc.data.thickness} />
     </div>
     <div class="two">
@@ -116,8 +122,12 @@
         <Result label="Longueur de tube (emboîtés)" value={c.tubeLength} unit="mm" oncopy={doc.copy} />
       </div>
       <p class="hint">{c.full.count} segment{c.full.count > 1 ? "s" : ""} entier{c.full.count > 1 ? "s" : ""} + 2 demi-segments. Couper à la suite dans un même tube en retournant chaque segment d'un demi-tour : les coupes s'emboîtent, sans chute.</p>
-      <h4>Développé d'un segment entier</h4>
-      <Flat pattern={c.pattern} />
+      <Apercu {model}>
+        {#snippet flat()}
+          <h4>Développé d'un segment entier</h4>
+          <Flat pattern={c!.pattern} />
+        {/snippet}
+      </Apercu>
       <TraceTable rows={c.table} headers={HEADERS} oncopy={doc.copy} />
     {:else}
       <p class="empty">{result}</p>
@@ -145,6 +155,11 @@
   .three {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .cote {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
     gap: 8px;
   }
   .grid {
