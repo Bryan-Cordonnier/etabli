@@ -11,10 +11,11 @@
     type PluginToHost,
     type ThemeTokens,
   } from "@etabli/sdk/protocol";
-  import { inTauri } from "$lib/api";
+  import { api, inTauri } from "$lib/api";
   import { printFiche } from "$lib/print/print";
   import { libraries } from "$lib/state/libraries.svelte";
   import { settings } from "$lib/state/settings.svelte";
+  import { ui } from "$lib/state/ui.svelte";
   import { THEME_TOKENS } from "$lib/themes";
 
   // Dans l'application : origine opaque, isolation totale. Dans l'aperçu navigateur de développement
@@ -73,6 +74,12 @@
         case "pluginData":
           sentPluginData = JSON.stringify(message.data);
           libraries.setPluginData(pluginId, message.data);
+          break;
+        case "saveFile":
+          api.saveFile(message.file).then(
+            (path) => path && ui.notify(`Enregistré : ${path}`),
+            (err) => ui.notify(`Enregistrement impossible : ${err}`),
+          );
           break;
         case "print":
           printFiche(

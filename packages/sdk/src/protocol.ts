@@ -173,7 +173,20 @@ export type PluginToHost =
   | { type: "pluginData"; data: unknown }
   | { type: "print"; fiche: FichePrint }
   | { type: "addMachine"; kind: MachineKind }
-  | { type: "send"; kind: string; data: unknown };
+  | { type: "send"; kind: string; data: unknown }
+  | { type: "saveFile"; file: SavedFile };
+
+/** Fichier produit par une mini-app (DXF, CSV…) : le moteur ouvre « Enregistrer sous » puis l'écrit. */
+export interface SavedFile {
+  /** Nom proposé, sans chemin (« virole-500.dxf »). */
+  name: string;
+  /** Contenu texte. */
+  content: string;
+  /** Extension sans point (« dxf »). */
+  extension: string;
+  /** Libellé du type de fichier dans la boîte de dialogue (« Dessin DXF »). */
+  description: string;
+}
 
 /**
  * Envoi d'une mini-app vers une autre (cahier des charges des plugins, section 3) : le moteur

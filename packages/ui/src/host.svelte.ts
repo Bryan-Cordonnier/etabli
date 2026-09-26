@@ -10,6 +10,7 @@ import {
   type Libraries as HostLibraries,
   type Machine,
   type MachineKind,
+  type SavedFile,
   type Supplier,
 } from "@etabli/sdk";
 
@@ -79,6 +80,11 @@ export class Libraries {
 /** Ouvre la fenêtre d'impression de la fiche (le moteur ajoute l'en-tête et le pied de page). */
 export function printFiche(fiche: FichePrint): void {
   void connect().then((host) => host.print(fiche));
+}
+
+/** Enregistre un fichier (DXF, CSV…) : « Enregistrer sous » de Windows, puis écriture par le moteur. */
+export function saveFile(file: SavedFile): void {
+  void connect().then((host) => host.saveFile(file));
 }
 
 /** Envoie des données à une autre mini-app (« Envoyer au calepinage »). */

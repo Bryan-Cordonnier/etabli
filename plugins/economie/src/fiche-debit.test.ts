@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { planCuts } from "./debit";
 import { debitFiche } from "./fiche-debit";
-import { tint } from "./fiche";
+import { tint } from "@etabli/ui";
 
 const pieces = [
   { mark: "A", length: 2300, quantity: 2 },

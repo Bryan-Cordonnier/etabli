@@ -3,7 +3,7 @@
 // angle de scie), puis la découpe barre par barre avec cases à cocher et restes en plage.
 import type { FichePrint } from "@etabli/sdk";
 import { groupBars, type BarPlan, type CutPlan } from "./debit";
-import { box, esc, facts, fmt, hatch, mark, section, signature, table, tint } from "./fiche";
+import { box, esc, facts, fmt, hatch, mark, section, signature, table, tint } from "@etabli/ui";
 import { barOps, placedAngles, sawOrder, type SawOp } from "./ordre";
 
 export interface DebitFicheInput {

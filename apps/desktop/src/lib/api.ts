@@ -133,6 +133,26 @@ export const api = {
 
   storeSave: (value: Record<string, unknown>): Promise<void> => invoke("store_save", { value }),
 
+  /**
+   * Fichier produit par une mini-app : « Enregistrer sous » puis écriture par Rust. Renvoie le chemin
+   * choisi, ou null si l'utilisateur annule. Dans un navigateur : téléchargement.
+   */
+  saveFile: async (file: { name: string; content: string; extension: string; description: string }): Promise<string | null> => {
+    if (inTauri) {
+      return invoke<string | null>("fichier_enregistrer", {
+        nom: file.name,
+        contenu: file.content,
+        extension: file.extension,
+        description: file.description,
+      });
+    }
+    const url = URL.createObjectURL(new Blob([file.content], { type: "application/octet-stream" }));
+    const link = Object.assign(document.createElement("a"), { href: url, download: file.name });
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return file.name;
+  },
+
   /** Bibliothèques et réglages de plugin : `null` si rien n'est encore enregistré. */
   dataRead: (nom: string): Promise<unknown> => (inTauri ? invoke("donnees_lire", { nom }) : Promise.resolve(preview.dataRead(nom))),
 

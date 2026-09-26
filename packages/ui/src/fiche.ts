@@ -1,5 +1,6 @@
-// Petits morceaux de HTML des fiches d'atelier (cahier des charges, section 3.2). Les classes
-// (`facts`, `mark`, `block`…) viennent de la feuille commune fournie par le moteur à l'impression.
+// Petits morceaux de HTML des fiches d'atelier (cahier des charges, section 3.2), communs à tous
+// les plugins. Les classes (`facts`, `mark`, `block`…) viennent de la feuille commune fournie par
+// le moteur à l'impression (apps/desktop/src/lib/print/fiche.css).
 
 /** Texte sûr dans le HTML de la fiche. */
 export const esc = (text: string | number): string =>

@@ -19,6 +19,7 @@ import {
   type Libraries,
   type MachineKind,
   type PluginToHost,
+  type SavedFile,
   type ThemeTokens,
 } from "./protocol";
 
@@ -31,6 +32,7 @@ export type {
   Libraries,
   Machine,
   MachineKind,
+  SavedFile,
   Saw,
   SawType,
   Shear,
@@ -84,6 +86,8 @@ export interface Etabli<T> {
   print(fiche: FichePrint): void;
   /** Envoie des données à une autre mini-app (voir `Incoming`), ouverte dans un nouvel onglet. */
   send(kind: string, data: unknown): void;
+  /** Enregistre un fichier (DXF, CSV…) : boîte « Enregistrer sous » de Windows, puis écriture. */
+  saveFile(file: SavedFile): void;
   /** Données reçues d'une autre mini-app à l'ouverture, ou `null`. */
   readonly incoming: Incoming | null;
   /** Appelé quand l'utilisateur change de thème. Renvoie une fonction pour se désabonner. */
@@ -193,6 +197,9 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
     },
     send(kind, data) {
       send({ type: "send", kind, data: JSON.parse(JSON.stringify(data)) });
+    },
+    saveFile(file) {
+      send({ type: "saveFile", file: { ...file } });
     },
     get incoming() {
       return incoming;

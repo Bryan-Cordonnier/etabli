@@ -3,7 +3,7 @@
 // coté et ses coupes numérotées, groupées par réglage de butée.
 import type { FichePrint } from "@etabli/sdk";
 import { groupPlates, type Chute, type CutOp, type PlatePlan, type SheetPlan, type ShearSettings } from "./cisaille";
-import { box, esc, facts, fmt, hatch, mark, section, signature, table, tint } from "./fiche";
+import { box, esc, facts, fmt, hatch, mark, section, signature, table, tint } from "@etabli/ui";
 import { plateWeight } from "./matiere";
 
 export interface CalepinageFicheInput {
