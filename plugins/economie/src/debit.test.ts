@@ -82,6 +82,18 @@ describe("planCuts", () => {
     expect(plan.waste).toBe(3);
   });
 
+  it("calcule sur la barre la plus courte possible et donne le reste en plage", () => {
+    // Barre de 6 000 (−10 / +20) : calcul sur 5 990. 3 × 1 900 + 2 traits de 3 = 5 706, reste 281 à 311 (un trait en plus).
+    const plan = planCuts([{ length: 6000, quantity: null, tolMinus: 10, tolPlus: 20 }], [], [{ mark: "A", length: 1900, quantity: 3 }], settings);
+    const bar = plan.bars[0]!;
+    expect(bar.length).toBe(5990);
+    expect(bar.nominal).toBe(6000);
+    expect(bar.grow).toBe(30);
+    expect(bar.remnant).toBe(5990 - 5706 - 3);
+    // 6 200 de pièces ne tiennent pas dans 5 990, même si la barre peut mesurer 6 020.
+    expect(planCuts([{ length: 6000, quantity: 1, tolMinus: 10, tolPlus: 20 }], [], [{ mark: "B", length: 6000, quantity: 1 }], settings).unplaced).toHaveLength(1);
+  });
+
   it("reste rapide sur 200 pièces", () => {
     const pieces: CutPiece[] = Array.from({ length: 20 }, (_, i) => ({ mark: `P${i}`, length: 300 + i * 97, quantity: 10 }));
     const start = performance.now();

@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { STOCK_KINDS, type Saw } from "@etabli/sdk";
-  import { Card, Field, Libraries, MiniAppDocument, Segmented, SelectField, colorOf, format, printFiche } from "@etabli/ui";
+  import { STOCK_KINDS, type Saw, type StockKind } from "@etabli/sdk";
+  import { Card, Check, Field, Libraries, MiniAppDocument, Segmented, SelectField, colorOf, format, printFiche } from "@etabli/ui";
   import { ends, type PieceShape, type Plane, type Sens } from "../../src/coupe";
-  import { groupBars, planCuts, type CutPlan, type CutSettings } from "../../src/debit";
+  import { groupBars, planCuts, type CutPlan, type CutSettings, type StockBar } from "../../src/debit";
   import { debitFiche } from "../../src/fiche-debit";
+  import { MATERIALS, materialOf, type MaterialId } from "../../src/matiere";
+  import { barOps, sawOrder } from "../../src/ordre";
   import Piece3D from "../../src/Piece3D.svelte";
   import Plan3D from "../../src/Plan3D.svelte";
   import { nextMark, num, quantity, rowsFromPaste } from "../../src/pieces";
@@ -14,6 +16,7 @@
     profileFromText,
     profileLabel,
     section,
+    sectionArea,
     type ProfileInput,
     type ProfileKind,
   } from "../../src/profil";
@@ -28,13 +31,32 @@
     planeL: Plane;
     planeR: Plane;
     sens: Sens;
+    /** Chute réservée : un bout à garder pour un autre projet, placé comme une pièce. */
+    reserved: boolean;
+    /** Projet ou usage de la chute réservée (écrit sur l'étiquette). */
+    dest: string;
   }
+
+  interface StockRow {
+    length: string;
+    /** Vide : autant que nécessaire (barres à acheter). */
+    quantity: string;
+    tolMinus: string;
+    tolPlus: string;
+  }
+
+  type Priority = "matiere" | "temps";
 
   interface Data {
     /** Scie de la bibliothèque Machines ; vide : réglages saisis à la main. */
     machine: string;
     profile: ProfileInput;
-    stock: { length: string; quantity: string }[];
+    material: MaterialId;
+    /** Matière : le moins de tube ; temps : le moins de réglages de scie et de recoupes. */
+    priority: Priority;
+    /** Si garder les chutes réservées coûte une barre de plus : les garder quand même. */
+    useReserved: boolean;
+    stock: StockRow[];
     /** Longueurs des chutes déjà en stock, séparées par des espaces ou des points-virgules. */
     offcuts: string;
     kerf: string;
@@ -52,13 +74,20 @@
     planeL: "grande",
     planeR: "grande",
     sens: "oppose",
+    reserved: false,
+    dest: "",
     ...rest,
   });
+
+  const newStock = (rest: Partial<StockRow> = {}): StockRow => ({ length: "", quantity: "", tolMinus: "0", tolPlus: "0", ...rest });
 
   const DEFAULTS: Data = {
     machine: "",
     profile: DEFAULT_PROFILE,
-    stock: [{ length: "6000", quantity: "" }],
+    material: "acier",
+    priority: "matiere",
+    useReserved: true,
+    stock: [newStock({ length: "6000" })],
     offcuts: "",
     kerf: "3",
     trim: "0",
@@ -66,16 +95,31 @@
     pieces: [newPiece("A")],
   };
 
-  /** Calculs enregistrés avant les angles : profilé en texte libre, pièces sans angles. */
+  /** Calculs enregistrés par les versions précédentes : profilé en texte libre, pièces sans angles, barres sans tolérance. */
   function migrate(saved: Record<string, unknown>): Partial<Data> {
     const profile = saved.profile;
     const pieces = Array.isArray(saved.pieces) ? (saved.pieces as Partial<PieceRow>[]) : DEFAULTS.pieces;
+    const stock = Array.isArray(saved.stock) ? (saved.stock as Partial<StockRow>[]) : DEFAULTS.stock;
     return {
       ...(saved as Partial<Data>),
       profile: typeof profile === "string" ? profileFromText(profile) : { ...DEFAULT_PROFILE, ...(profile as Partial<ProfileInput>) },
       pieces: pieces.map((p) => newPiece(p.mark ?? "?", p)),
+      stock: stock.map((s) => newStock(s)),
     };
   }
+
+  /** Type de barre des fournisseurs qui correspond au profilé (pour le mode besoin). */
+  const STOCK_KIND_OF: Record<ProfileKind, StockKind> = {
+    "tube-carre": "tube-carre",
+    "tube-rect": "tube-rect",
+    "tube-rond": "tube-rond",
+    "carre-plein": "carre-plein",
+    "rond-plein": "rond-plein",
+    plat: "plat",
+    corniere: "corniere",
+    ipe: "poutrelle",
+    upn: "poutrelle",
+  };
 
   const angle = (text: string) => Math.min(89, Math.max(0, num(text) || 0));
   const shapeOf = (p: PieceRow): PieceShape => ({
@@ -98,16 +142,46 @@
     };
   }
 
-  function compute(data: Data, settings = cutSettings(data)): CutPlan | null {
+  /**
+   * Barres disponibles. Mode besoin : sans aucune barre saisie, on prend la barre du fournisseur qui
+   * correspond au profilé (sinon 6 000 mm), en quantité illimitée : le plan dit combien en acheter.
+   */
+  function stockOf(data: Data): { bars: StockBar[]; auto: string | null } {
+    const bars = data.stock
+      .map((b) => ({ length: num(b.length), quantity: quantity(b.quantity), tolMinus: Math.max(0, num(b.tolMinus) || 0), tolPlus: Math.max(0, num(b.tolPlus) || 0) }))
+      .filter((b) => b.length > 0);
+    if (bars.length) return { bars, auto: null };
+    const kind = STOCK_KIND_OF[data.profile.kind];
+    for (const supplier of libraries.suppliers) {
+      const item = supplier.items.find((i) => i.kind === kind && i.length > 0);
+      if (item) {
+        return {
+          bars: [{ length: item.length, quantity: null, tolMinus: item.tolMinus, tolPlus: item.tolPlus }],
+          auto: `${format(item.length, 0)} mm de ${supplier.name || "votre fournisseur"}`,
+        };
+      }
+    }
+    return { bars: [{ length: 6000, quantity: null }], auto: "6 000 mm (longueur courante)" };
+  }
+
+  const hasReserved = (data: Data) => data.pieces.some((p) => p.reserved && num(p.length) > 0 && (num(p.quantity) || 0) > 0);
+
+  function compute(
+    data: Data,
+    settings = cutSettings(data),
+    useReserved = data.useReserved || !hasReserved(data),
+    priority: Priority = data.priority,
+    budgetMs = 250,
+  ): CutPlan | null {
     // Les lignes vides gardent leur place : l'indice de la pièce sert à sa couleur.
-    const all = data.pieces.map((p) => ({ mark: p.mark || "?", length: num(p.length), quantity: num(p.quantity) || 0, shape: shapeOf(p) }));
+    const all = data.pieces.map((p) => ({
+      mark: p.mark || "?",
+      length: num(p.length),
+      quantity: p.reserved && !useReserved ? 0 : num(p.quantity) || 0,
+      shape: shapeOf(p),
+    }));
     if (!all.some((p) => p.length > 0 && p.quantity > 0)) return null;
-    return planCuts(
-      data.stock.map((b) => ({ length: num(b.length), quantity: quantity(b.quantity) })).filter((b) => b.length > 0),
-      data.offcuts.split(/[\s;]+/).map(num).filter((l) => l > 0),
-      all,
-      settings,
-    );
+    return planCuts(stockOf(data).bars, data.offcuts.split(/[\s;]+/).map(num).filter((l) => l > 0), all, { ...settings, priority, budgetMs });
   }
 
   const summarize = (plan: CutPlan | null) => {
@@ -117,18 +191,47 @@
     return `${bars} barre${bars > 1 ? "s" : ""} · ${rate} % utilisé`;
   };
 
-  const doc = new MiniAppDocument<Data>(DEFAULTS, (data) => summarize(compute(data)), migrate);
+  const doc = new MiniAppDocument<Data>(DEFAULTS, (data) => summarize(compute(data, cutSettings(data), undefined, undefined, 60)), migrate);
+
+  /** Barres neuves, réglages de scie et nombre de coupes d'un plan : pour comparer matière et temps. */
+  function stats(p: CutPlan, data: Data, trim: number) {
+    const angles = (i: number): [number, number] => {
+      const row = data.pieces[i];
+      return row ? [angle(row.angleL), angle(row.angleR)] : [0, 0];
+    };
+    const ops = groupBars(p.bars).flatMap((g) => Array.from({ length: g.count }, () => barOps(g.bar, angles, trim)));
+    return {
+      bars: p.bars.filter((b) => b.source === "barre").length,
+      settings: new Set(sawOrder(ops).map((s) => s.angle)).size,
+      cuts: ops.reduce((n, o) => n + o.length, 0),
+    };
+  }
 
   // Calcul un peu après la dernière frappe : la saisie reste fluide même avec beaucoup de pièces.
+  // Plan retenu, plus deux variantes pour aider à choisir : l'autre priorité, et l'autre choix
+  // pour les chutes réservées (si les garder coûte une barre).
   let plan = $state<CutPlan | null>(null);
+  let otherPriority = $state<CutPlan | null>(null);
+  let otherReserved = $state<CutPlan | null>(null);
   let computing = $state(false);
   $effect(() => {
     const snapshot = JSON.parse(JSON.stringify(doc.data)) as Data;
-    // Lu ici : une scie modifiée dans les Paramètres relance aussi le calcul.
+    // Lu ici : une scie ou un fournisseur modifié dans les Paramètres relance aussi le calcul.
     const settings = cutSettings(snapshot);
+    void libraries.suppliers.length;
     computing = true;
     const timer = setTimeout(() => {
-      plan = compute(snapshot, settings);
+      const reserved = hasReserved(snapshot);
+      const useReserved = snapshot.useReserved || !reserved;
+      // Plusieurs familles d'angles : c'est seulement là que la priorité change quelque chose.
+      const families = new Set(
+        snapshot.pieces.filter((p) => num(p.length) > 0).map((p) => [angle(p.angleL), angle(p.angleR)].sort((a, b) => a - b).join("|")),
+      );
+      const compare = families.size > 1 && !!settings.section;
+      const budget = compare || reserved ? 120 : 250;
+      plan = compute(snapshot, settings, useReserved, snapshot.priority, budget);
+      otherPriority = compare ? compute(snapshot, settings, useReserved, snapshot.priority === "temps" ? "matiere" : "temps", budget) : null;
+      otherReserved = reserved ? compute(snapshot, settings, !useReserved, snapshot.priority, budget) : null;
       computing = false;
     }, 250);
     return () => clearTimeout(timer);
@@ -137,9 +240,25 @@
   const groups = $derived(plan ? groupBars(plan.bars) : []);
   const newBars = $derived(plan ? plan.bars.filter((b) => b.source === "barre") : []);
   const byLength = $derived(
-    [...new Set(newBars.map((b) => b.length))].map((length) => ({ length, count: newBars.filter((b) => b.length === length).length })),
+    [...new Set(newBars.map((b) => b.nominal))].map((length) => ({ length, count: newBars.filter((b) => b.nominal === length).length })),
   );
-  const kept = $derived(plan ? plan.bars.filter((b) => b.reusable).map((b) => b.remnant) : []);
+  const keptBars = $derived(plan ? plan.bars.filter((b) => b.reusable) : []);
+  const wasteGrow = $derived(plan ? plan.bars.filter((b) => !b.reusable).reduce((sum, b) => sum + b.grow, 0) : 0);
+  const stock = $derived(stockOf(doc.data));
+  /** Une barre de longueur commerciale donnée vient d'une ligne sans quantité : elle est à acheter. */
+  const isPurchase = (nominal: number) => stock.bars.some((b) => b.length === nominal && b.quantity === null);
+  const trimOf = () => cutSettings(doc.data).trim;
+  const currentStats = $derived(plan ? stats(plan, doc.data, trimOf()) : null);
+  const otherStats = $derived(otherPriority ? stats(otherPriority, doc.data, trimOf()) : null);
+  /** Garder les chutes réservées coûte des barres : on montre les deux résultats. */
+  const reservedCost = $derived.by(() => {
+    if (!plan || !otherReserved) return null;
+    const count = (p: CutPlan) => p.bars.filter((b) => b.source === "barre").length;
+    const [withR, withoutR] = doc.data.useReserved ? [plan, otherReserved] : [otherReserved, plan];
+    return count(withR) > count(withoutR) ? { with: count(withR), without: count(withoutR) } : null;
+  });
+
+  const rangeText = (value: number, grow: number) => (grow > 0.05 ? `${format(value, 0)} à ${format(value + grow, 0)}` : format(value, 0));
 
   /** Plan vu en 2D (schéma à l'échelle) ou en 3D (barres en relief, pièces écartées). */
   let planView = $state<"2d" | "3d">("2d");
@@ -152,6 +271,10 @@
   const profile = $derived(parseProfile(doc.data.profile));
   const sec = $derived(section(profile));
   const profileName = $derived(profileLabel(profile));
+  /** Poids approximatif au mètre du profilé, dans la matière choisie. */
+  const material = $derived(materialOf(doc.data.material));
+  const kgPerM = $derived(sec.valid ? (sectionArea(sec) * material.density) / 1000 : 0);
+  const kg = (lengthMm: number) => (lengthMm / 1000) * kgPerM;
   const kindInfo = $derived(PROFILE_KINDS.find((k) => k.id === doc.data.profile.kind) ?? PROFILE_KINDS[0]!);
   const kindOptions = PROFILE_KINDS.map((k) => ({ value: k.id, label: k.label }));
 
@@ -278,19 +401,22 @@
           value: `${s.id}/${item.id}`,
           label: `${s.name || "Fournisseur"} — ${[kindLabel(item.kind), item.material, item.designation].filter(Boolean).join(" ")} · ${format(item.length, 0)} mm`,
           length: item.length,
+          tolMinus: item.tolMinus,
+          tolPlus: item.tolPlus,
         })),
     ),
   );
   let offer = $state("");
 
-  /** Longueur de barre du fournisseur : remplace la ligne vide, sinon s'ajoute. */
+  /** Barre du fournisseur (longueur et tolérance) : remplace la ligne vide, sinon s'ajoute. */
   function pickOffer(value: string): void {
     const found = barOffers.find((o) => o.value === value);
     offer = "";
     if (!found) return;
+    const row = { length: String(found.length), tolMinus: String(found.tolMinus), tolPlus: String(found.tolPlus) };
     const empty = doc.data.stock.find((b) => num(b.length) <= 0 || doc.data.stock.length === 1);
-    if (empty) empty.length = String(found.length);
-    else doc.data.stock.push({ length: String(found.length), quantity: "" });
+    if (empty) Object.assign(empty, row);
+    else doc.data.stock.push(newStock(row));
   }
 
   function print(): void {
@@ -306,10 +432,17 @@
           quantity: num(p.quantity) || 0,
           angleL: angle(p.angleL),
           angleR: angle(p.angleR),
+          reserved: p.reserved,
+          dest: p.dest,
         })),
         colors: colorOf,
         settings: cutSettings(doc.data),
         machine: saw?.name ?? "",
+        stopMax: saw?.stopMax ?? null,
+        material: material.label,
+        kgPerM: kgPerM || undefined,
+        isPurchase,
+        priority: doc.data.priority,
       }),
     );
   }
@@ -318,9 +451,9 @@
     if (!plan) return;
     const lines = [`Plan de débit — ${profileName}`, ""];
     groups.forEach(({ bar, count }, i) => {
-      const label = bar.source === "chute" ? `chute de ${format(bar.length)}` : `barre de ${format(bar.length)}`;
+      const label = bar.source === "chute" ? `chute de ${format(bar.nominal)}` : `barre de ${format(bar.nominal)}`;
       lines.push(`${i + 1}. ${count} × ${label} : ${bar.cuts.map((c) => `${c.mark} ${format(c.length)}`).join(" | ")}`);
-      lines.push(`   reste ${format(bar.remnant)} mm${bar.reusable ? " (à garder)" : ""}`);
+      lines.push(`   reste ${rangeText(bar.remnant, bar.grow)} mm${bar.reusable ? " (à garder)" : ""}`);
     });
     doc.copy(lines.join("\n"));
   }
@@ -356,22 +489,31 @@
           <Field label={dim.label} unit="mm" bind:value={doc.data.profile[dim.key]} />
         {/each}
       </div>
-      <p class="profile-name">{profileName}</p>
+      <SelectField label="Matière" options={MATERIALS.map((m) => ({ value: m.id, label: m.label }))} bind:value={doc.data.material} />
+      <p class="profile-name">{profileName}{kgPerM ? ` · ${format(kgPerM, 3)} kg/m (approximatif)` : ""}</p>
     </Card>
 
     <Card title="Barres et réglages">
-      <div class="table">
+      <div class="table stock">
         <span class="head">Longueur des barres</span>
         <span class="head">Quantité</span>
+        <span class="head" title="Tolérance de la longueur commerciale">Tol. − / +</span>
         <span></span>
         {#each doc.data.stock as bar, i (i)}
           <Field compact label="Longueur de barre" unit="mm" bind:value={bar.length} />
-          <Field compact label="Quantité de barres" placeholder="illimitée" bind:value={bar.quantity} />
-          <button class="remove" onclick={() => doc.data.stock.splice(i, 1)} disabled={doc.data.stock.length === 1} aria-label="Retirer cette longueur">✕</button>
+          <Field compact label="Quantité de barres" placeholder="à acheter" bind:value={bar.quantity} />
+          <span class="tol">
+            <Field compact label="Tolérance en moins" bind:value={bar.tolMinus} />
+            <Field compact label="Tolérance en plus" bind:value={bar.tolPlus} />
+          </span>
+          <button class="remove" onclick={() => doc.data.stock.splice(i, 1)} aria-label="Retirer cette longueur">✕</button>
         {/each}
       </div>
+      {#if stock.auto}
+        <p class="note">Aucune barre saisie : calcul avec des barres de {stock.auto}, le plan dit combien en acheter.</p>
+      {/if}
       <div class="row-actions">
-        <button class="btn" onclick={() => doc.data.stock.push({ length: "", quantity: "" })}>+ Autre longueur de barre</button>
+        <button class="btn" onclick={() => doc.data.stock.push(newStock())}>+ Autre longueur de barre</button>
         {#if barOffers.length}
           <SelectField
             compact
@@ -382,6 +524,7 @@
           />
         {/if}
       </div>
+      <p class="hint">Quantité vide : autant que nécessaire, à acheter. Le calcul se fait sur la barre la plus courte (longueur − tolérance) : les restes s'affichent en plage.</p>
       <Field label="Chutes déjà en stock (utilisées en premier)" numeric={false} placeholder="ex. 1200 850 640" unit="mm" bind:value={doc.data.offcuts} />
       <SelectField label="Scie" options={sawOptions} bind:value={doc.data.machine} onchange={pickSaw} />
       {#if saw}
@@ -414,7 +557,7 @@
         </div>
         {#each doc.data.pieces as p, i (i)}
           <div class="prow" class:selected={i === current} onfocusin={() => (selected = i)}>
-            <span class="swatch" style:background={colorOf(i)}></span>
+            <span class="swatch" class:reserved={p.reserved} style:background={colorOf(i)} title={p.reserved ? `Chute réservée${p.dest ? ` — ${p.dest}` : ""}` : undefined}></span>
             <Field compact numeric={false} label="Repère" bind:value={p.mark} />
             <Field compact label="Longueur pointe à pointe" unit="mm" bind:value={p.length} />
             <Field compact label="Quantité" bind:value={p.quantity} />
@@ -453,6 +596,14 @@
           <Segmented label="Sens des deux coupes" options={SENS_OPTIONS} bind:value={piece.sens} />
         {/if}
         <p class="hint">Angle mesuré depuis la coupe d'équerre : 0° = coupe droite, 45° = onglet de cadre.</p>
+        <Check
+          label="Chute réservée"
+          hint="Un bout à garder pour un autre projet : placé comme une pièce, étiqueté sur la fiche."
+          bind:checked={piece.reserved}
+        />
+        {#if piece.reserved}
+          <Field label="Pour quel projet ?" numeric={false} placeholder="ex. Garde-corps" bind:value={piece.dest} />
+        {/if}
       </div>
     </Card>
   </div>
@@ -469,25 +620,55 @@
       <p class="warn">{warning}</p>
     {/each}
     {#if plan && (plan.bars.length || plan.unplaced.length)}
+      {#if currentStats && otherStats}
+        <!-- Priorité : matière (le moins de tube) ou temps (le moins de réglages de scie et de recoupes). -->
+        {@const [matiere, temps] = doc.data.priority === "matiere" ? [currentStats, otherStats] : [otherStats, currentStats]}
+        <div class="choice" role="radiogroup" aria-label="Priorité du débit">
+          <button class:on={doc.data.priority === "matiere"} role="radio" aria-checked={doc.data.priority === "matiere"} onclick={() => (doc.data.priority = "matiere")}>
+            <b>Priorité matière</b>
+            <small>{matiere.bars} barre{matiere.bars > 1 ? "s" : ""} · {matiere.settings} réglage{matiere.settings > 1 ? "s" : ""} de scie · {matiere.cuts} coupes</small>
+          </button>
+          <button class:on={doc.data.priority === "temps"} role="radio" aria-checked={doc.data.priority === "temps"} onclick={() => (doc.data.priority = "temps")}>
+            <b>Priorité temps</b>
+            <small>{temps.bars} barre{temps.bars > 1 ? "s" : ""} · {temps.settings} réglage{temps.settings > 1 ? "s" : ""} de scie · {temps.cuts} coupes</small>
+          </button>
+        </div>
+      {/if}
+
+      {#if reservedCost}
+        <div class="reserved-choice">
+          <p>Garder les chutes réservées demande <b>{reservedCost.with - reservedCost.without} barre{reservedCost.with - reservedCost.without > 1 ? "s" : ""} de plus</b>.</p>
+          <div class="choice" role="radiogroup" aria-label="Chutes réservées">
+            <button class:on={doc.data.useReserved} role="radio" aria-checked={doc.data.useReserved} onclick={() => (doc.data.useReserved = true)}>
+              <b>Les garder</b><small>{reservedCost.with} barres</small>
+            </button>
+            <button class:on={!doc.data.useReserved} role="radio" aria-checked={!doc.data.useReserved} onclick={() => (doc.data.useReserved = false)}>
+              <b>Ne pas les couper</b><small>{reservedCost.without} barres</small>
+            </button>
+          </div>
+        </div>
+      {/if}
+
       <div class="kpis" class:stale={computing}>
         <div class="kpi main">
-          <span>Barres neuves</span>
+          <span>{newBars.length && newBars.every((b) => isPurchase(b.nominal)) ? "À acheter" : "Barres neuves"}</span>
           <b>{newBars.length}</b>
-          <small>{byLength.map((g) => `${g.count} × ${format(g.length)} mm`).join(" + ") || "aucune"}</small>
+          <small>{byLength.map((g) => `${g.count} × ${format(g.length)} mm${isPurchase(g.length) && !newBars.every((b) => isPurchase(b.nominal)) ? " à acheter" : ""}`).join(" + ") || "aucune"}</small>
         </div>
         <div class="kpi">
           <span>Utilisation</span>
           <b>{plan.usedLength ? format((plan.piecesLength / plan.usedLength) * 100, 1) : "—"} %</b>
+          {#if kgPerM}<small>{format(kg(newBars.reduce((s, b) => s + b.nominal, 0)), 1)} kg de barres · {format(kg(plan.piecesLength), 1)} kg de pièces</small>{/if}
         </div>
         <div class="kpi">
           <span>Perte</span>
-          <b>{format(plan.waste, 0)} mm</b>
-          <small>traits de scie, angles et chutes trop courtes</small>
+          <b>{rangeText(plan.waste, wasteGrow)} mm</b>
+          <small>traits de scie, angles, restes courts{kgPerM ? ` · ${format(kg(plan.waste), 2)} kg` : ""}</small>
         </div>
         <div class="kpi">
           <span>Chutes à garder</span>
-          <b>{kept.length}</b>
-          <small>{kept.map((l) => format(l, 0)).join(", ") || "aucune"}</small>
+          <b>{keptBars.length}</b>
+          <small>{keptBars.map((b) => rangeText(b.remnant, b.grow)).join(" ; ") || "aucune"}</small>
         </div>
       </div>
 
@@ -509,12 +690,12 @@
             <span class="label">
               {count > 1 ? `${count} ×` : ""}
               {bar.source === "chute" ? "chute" : "barre"}
-              <small>{format(bar.length, 0)}</small>
+              <small>{format(bar.nominal, 0)}</small>
             </span>
             <div class="bar">
               <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                 {#each bar.cuts as cut, j (j)}
-                  <polygon points={polygon(cut, bar.length)} fill={colorOf(cut.piece)} />
+                  <polygon points={polygon(cut, bar.length)} fill={colorOf(cut.piece)} class:reserved={doc.data.pieces[cut.piece]?.reserved} />
                 {/each}
               </svg>
               {#each bar.cuts as cut, j (j)}
@@ -527,15 +708,16 @@
               {/each}
             </div>
             <span class="rest" class:keep={bar.reusable} title={bar.reusable ? "Chute à garder" : "Perte"}>
-              {format(bar.remnant, 0)}
+              {format(bar.remnant, 0)}{#if bar.grow > 0.05}<small>+{format(bar.grow, 0)}</small>{/if}
             </span>
           </div>
         {/each}
       </div>
       {/if}
       <p class="hint">
-        Longueurs en mm, pointe à pointe. En vert : chutes à garder (≥ {format(num(doc.data.keep) || 0, 0)} mm). Les coupes d'angle
-        voisines sont emboîtées (tube retourné) : une seule coupe pour deux pièces.
+        Longueurs en mm, pointe à pointe. En vert : chutes à garder (≥ {format(num(doc.data.keep) || 0, 0)} mm) ; « +30 » : ce que
+        la tolérance de la barre peut ajouter au reste. Pièces hachurées : chutes réservées. Les coupes d'angle voisines sont
+        emboîtées (tube retourné) : une seule coupe pour deux pièces.
       </p>
     {:else}
       <p class="empty">Ajoutez les longueurs à couper : le plan de débit s'affiche ici, barre par barre.</p>
@@ -575,6 +757,79 @@
     grid-template-columns: 1fr 110px 28px;
     gap: 4px 6px;
     align-items: center;
+  }
+  .table.stock {
+    grid-template-columns: 1fr 86px 100px 28px;
+  }
+  .tol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .note {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    background: var(--accent-soft);
+    font-size: 12.5px;
+  }
+  /* Deux résultats côte à côte : l'utilisateur choisit (priorité, chutes réservées). */
+  .choice {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .choice button {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    color: var(--muted);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.12s;
+  }
+  .choice button b {
+    font-size: 13.5px;
+  }
+  .choice button small {
+    font-size: 12px;
+  }
+  .choice button.on {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+  .choice button.on b {
+    color: var(--accent);
+  }
+  .reserved-choice {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--warn) 12%, transparent);
+  }
+  .reserved-choice p {
+    margin: 0;
+    font-size: 13px;
+  }
+  .swatch.reserved {
+    outline: 2px dashed var(--warn);
+    outline-offset: 1px;
+  }
+  .bar polygon.reserved {
+    fill-opacity: 0.45;
+  }
+  .rest small {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--faint);
   }
   .head {
     font-size: 11.5px;

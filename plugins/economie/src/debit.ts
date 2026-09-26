@@ -12,9 +12,13 @@
 import { STRAIGHT, arrange, ends, oriented, type Bounds, type Lin, type Orientation, type PieceShape } from "./coupe";
 
 export interface StockBar {
+  /** Longueur commerciale (nominale). */
   length: number;
-  /** null : quantité illimitée. */
+  /** null : quantité illimitée (barres à acheter). */
   quantity: number | null;
+  /** Tolérance de la longueur : le calcul se fait sur la barre la plus courte possible. */
+  tolMinus?: number;
+  tolPlus?: number;
 }
 
 export interface CutPiece {
@@ -35,6 +39,14 @@ export interface CutSettings {
   keepMin: number;
   /** Encombrement de la section du profilé : nécessaire pour les coupes d'angle. */
   section?: Bounds;
+  /**
+   * « matiere » (défaut) : le moins de barres et de perte. « temps » : les pièces sont réparties par
+   * famille d'angles (une barre ne porte qu'une famille), pour régler la scie moins souvent et
+   * faire moins de recoupes, quitte à utiliser un peu plus de tube.
+   */
+  priority?: "matiere" | "temps";
+  /** Temps de recherche maximal, en ms (250 par défaut). */
+  budgetMs?: number;
 }
 
 export interface Cut {
@@ -52,11 +64,15 @@ export interface Cut {
 }
 
 export interface BarPlan {
-  /** Longueur de la barre (ou de la chute) utilisée. */
+  /** Longueur de calcul : la plus courte possible (longueur commerciale − tolérance). */
   length: number;
+  /** Longueur commerciale (celle du fournisseur), ou longueur mesurée d'une chute. */
+  nominal: number;
+  /** Ce que la tolérance peut ajouter au reste : tolérance en moins + tolérance en plus. */
+  grow: number;
   source: "barre" | "chute";
   cuts: Cut[];
-  /** Longueur restante après la dernière coupe. */
+  /** Longueur restante après la dernière coupe (au moins ; jusqu'à remnant + grow). */
   remnant: number;
   reusable: boolean;
 }
@@ -188,7 +204,14 @@ function drawn(e: Lin, b: Bounds): [number, number] {
   return [e.c, e.c];
 }
 
-function makeBar(length: number, source: BarPlan["source"], placed: Layout, s: CutSettings): BarPlan {
+function makeBar(
+  length: number,
+  source: BarPlan["source"],
+  placed: Layout,
+  s: CutSettings,
+  nominal = length,
+  grow = 0,
+): BarPlan {
   const available = length - s.trim;
   const used = placed.length;
   // Il reste de la matière : un dernier trait la sépare de la dernière pièce.
@@ -196,6 +219,8 @@ function makeBar(length: number, source: BarPlan["source"], placed: Layout, s: C
   const bounds = s.section ?? NO_SECTION;
   return {
     length,
+    nominal,
+    grow,
     source,
     cuts: placed.placed.map(({ item, orientation, start, shared }) => {
       const e = oriented(item.ends, orientation);
@@ -218,11 +243,56 @@ function makeBar(length: number, source: BarPlan["source"], placed: Layout, s: C
 const SEARCH_BUDGET_MS = 250;
 
 /**
- * Plan de débit. Le remplissage barre par barre est relancé plusieurs fois en changeant l'ordre
- * des pièces (qui départage les combinaisons de même longueur) ; le meilleur plan est gardé :
- * le moins de pièces non placées, puis le moins de longueur de barres, puis la plus grande chute.
+ * Plan de débit. En priorité « temps », chaque famille d'angles (mêmes angles de scie aux deux
+ * bouts, quel que soit l'ordre) est débitée à part, sur les barres et chutes qui restent.
  */
 export function planCuts(stock: StockBar[], offcuts: number[], pieces: CutPiece[], s: CutSettings): CutPlan {
+  if (s.priority !== "temps" || !s.section) return planGroup(stock, offcuts, pieces, s);
+
+  const family = (p: CutPiece) => {
+    const angles = [p.shape?.angleL ?? 0, p.shape?.angleR ?? 0].map((a) => Math.round(a * 100) / 100).sort((a, b) => a - b);
+    return angles.join("|");
+  };
+  const keys = [...new Set(pieces.filter((p) => p.length > 0 && p.quantity > 0).map(family))];
+  if (keys.length <= 1) return planGroup(stock, offcuts, pieces, s);
+
+  // Familles les plus longues d'abord : elles ont le plus besoin des grandes barres et chutes.
+  const total = (key: string) => pieces.filter((p) => family(p) === key).reduce((sum, p) => sum + p.length * p.quantity, 0);
+  keys.sort((a, b) => total(b) - total(a));
+  const budget = (s.budgetMs ?? SEARCH_BUDGET_MS) / keys.length;
+  let stockLeft = stock.map((b) => ({ ...b }));
+  let offcutsLeft = [...offcuts];
+  const merged: CutPlan = { bars: [], unplaced: [], piecesLength: 0, usedLength: 0, waste: 0 };
+  for (const key of keys) {
+    // Les autres familles gardent leur place dans la liste (l'indice sert à la couleur), quantité nulle.
+    const only = pieces.map((p) => (family(p) === key ? p : { ...p, quantity: 0 }));
+    const plan = planGroup(stockLeft, offcutsLeft, only, { ...s, budgetMs: budget });
+    merged.bars.push(...plan.bars);
+    merged.unplaced.push(...plan.unplaced);
+    merged.piecesLength += plan.piecesLength;
+    merged.usedLength += plan.usedLength;
+    merged.waste += plan.waste;
+    // Barres et chutes consommées : retirées du stock pour la famille suivante.
+    for (const bar of plan.bars) {
+      if (bar.source === "chute") {
+        const i = offcutsLeft.indexOf(bar.nominal);
+        if (i >= 0) offcutsLeft = [...offcutsLeft.slice(0, i), ...offcutsLeft.slice(i + 1)];
+      } else {
+        const row = stockLeft.find((b) => b.length === bar.nominal && (b.quantity === null || b.quantity > 0));
+        if (row && row.quantity !== null) row.quantity--;
+      }
+    }
+    stockLeft = stockLeft.filter((b) => b.quantity === null || b.quantity > 0);
+  }
+  return merged;
+}
+
+/**
+ * Plan d'un groupe de pièces. Le remplissage barre par barre est relancé plusieurs fois en changeant
+ * l'ordre des pièces (qui départage les combinaisons de même longueur) ; le meilleur plan est gardé :
+ * le moins de pièces non placées, puis le moins de longueur de barres, puis la plus grande chute.
+ */
+function planGroup(stock: StockBar[], offcuts: number[], pieces: CutPiece[], s: CutSettings): CutPlan {
   const items: Item[] = [];
   pieces.forEach((p, piece) => {
     if (!(p.length > 0)) return;
@@ -244,7 +314,8 @@ export function planCuts(stock: StockBar[], offcuts: number[], pieces: CutPiece[
   let seed = 1;
   // Mélange reproductible (même saisie, même plan) : générateur pseudo-aléatoire simple.
   const random = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
-  for (let round = 0; round < 60 && Date.now() - start < SEARCH_BUDGET_MS; round++) {
+  const budget = s.budgetMs ?? SEARCH_BUDGET_MS;
+  for (let round = 0; round < 60 && Date.now() - start < budget; round++) {
     // Petit mélange : des pièces de longueurs voisines échangent leur place.
     const shuffled = items.map((item, i) => ({ item, key: i + random() * 6 })).sort((a, b) => a.key - b.key);
     const plan = planOnce(stock, offcuts, shuffled.map((x) => x.item), s);
@@ -279,21 +350,24 @@ function planOnce(stock: StockBar[], offcuts: number[], sorted: Item[], s: CutSe
     bars.push(makeBar(length, "chute", placed, offcutSettings));
   }
 
-  // 2. Puis des barres neuves : à chaque barre, la longueur la mieux remplie.
-  const remaining = stock.filter((b) => b.length > 0).map((b) => ({ ...b }));
+  // 2. Puis des barres neuves : à chaque barre, la longueur la mieux remplie. Le calcul se fait sur
+  // la barre la plus courte possible (tolérance en moins) : tout tient toujours, le reste varie.
+  const remaining = stock
+    .filter((b) => b.length > 0)
+    .map((b) => ({ ...b, calc: b.length - Math.max(0, b.tolMinus ?? 0), grow: Math.max(0, b.tolMinus ?? 0) + Math.max(0, b.tolPlus ?? 0) }));
   while (items.length) {
     let best: { bar: (typeof remaining)[number]; chosen: Item[]; placed: Layout; ratio: number } | null = null;
     for (const bar of remaining) {
       if (bar.quantity !== null && bar.quantity <= 0) continue;
-      const { chosen, layout: placed } = fillBar(items, bar.length - s.trim, s);
+      const { chosen, layout: placed } = fillBar(items, bar.calc - s.trim, s);
       if (!chosen.length) continue;
-      const ratio = chosen.reduce((sum, c) => sum + c.length, 0) / bar.length;
+      const ratio = chosen.reduce((sum, c) => sum + c.length, 0) / bar.calc;
       if (!best || ratio > best.ratio + 1e-9) best = { bar, chosen, placed, ratio };
     }
     if (!best) break;
     if (best.bar.quantity !== null) best.bar.quantity--;
     remove(best.chosen);
-    bars.push(makeBar(best.bar.length, "barre", best.placed, s));
+    bars.push(makeBar(best.bar.calc, "barre", best.placed, s, best.bar.length, best.bar.grow));
   }
 
   const piecesLength = bars.reduce((sum, b) => sum + b.cuts.reduce((t, c) => t + c.length, 0), 0);
@@ -312,7 +386,7 @@ function planOnce(stock: StockBar[], offcuts: number[], sorted: Item[], s: CutSe
 export function groupBars(bars: BarPlan[]): BarGroup[] {
   const groups: BarGroup[] = [];
   const keyOf = (bar: BarPlan) =>
-    `${bar.source}|${bar.length}|${bar.cuts.map((c) => `${c.piece}:${c.length}:${c.orientation}:${c.start}`).join(",")}`;
+    `${bar.source}|${bar.nominal}|${bar.length}|${bar.cuts.map((c) => `${c.piece}:${c.length}:${c.orientation}:${c.start}`).join(",")}`;
   for (const bar of bars) {
     const key = keyOf(bar);
     const group = groups.find((g) => keyOf(g.bar) === key);

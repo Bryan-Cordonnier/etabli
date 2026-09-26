@@ -45,6 +45,35 @@ describe("planCuts avec des coupes d'angle", () => {
     expect(left[1]).toBeCloseTo(right[1]);
   });
 
+  it("priorité temps : une seule famille d'angles par barre, quitte à prendre une barre de plus", () => {
+    const pieces = [
+      { mark: "A", length: 1000, quantity: 3 },
+      { mark: "B", length: 850, quantity: 3, shape: trapeze45 },
+    ];
+    const base = { kerf: 3, trim: 0, keepMin: 300, section };
+    const matiere = planCuts([{ length: 6000, quantity: null }], [], pieces, base);
+    const temps = planCuts([{ length: 6000, quantity: null }], [], pieces, { ...base, priority: "temps" });
+    expect(matiere.bars).toHaveLength(1);
+    expect(temps.bars).toHaveLength(2);
+    for (const bar of temps.bars) expect(new Set(bar.cuts.map((c) => c.piece)).size).toBe(1);
+    expect(temps.unplaced).toEqual([]);
+  });
+
+  it("priorité temps : partage correctement une quantité de barres limitée", () => {
+    const plan = planCuts(
+      [{ length: 6000, quantity: 1 }],
+      [],
+      [
+        { mark: "A", length: 1000, quantity: 2 },
+        { mark: "B", length: 850, quantity: 2, shape: trapeze45 },
+      ],
+      { kerf: 3, trim: 0, keepMin: 300, section, priority: "temps" },
+    );
+    // Une seule barre en stock : la deuxième famille n'a plus rien.
+    expect(plan.bars).toHaveLength(1);
+    expect(plan.unplaced).toHaveLength(2);
+  });
+
   it("ne met pas de dressage sur les chutes du stock", () => {
     const plan = planCuts([{ length: 6000, quantity: null }], [1000], [{ mark: "A", length: 1000, quantity: 1 }], {
       kerf: 3,
