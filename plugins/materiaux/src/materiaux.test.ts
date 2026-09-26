@@ -11,7 +11,7 @@ import {
 } from "./filetage";
 import { ACIER, FAMILLES, aireFromKgPerM, kgPerM, pesee, profileKgPerM, section, tailles } from "./masse";
 import { CLASSES, DIAMETRES, classe, cle, serrage } from "./serrage";
-import { MATIERES_USINAGE, OPERATIONS, OUTILS, avance, avanceConseillee, rotation, temps, vcConseillee, vitesseCoupe, vitesseMachine } from "./vitesse";
+import { MATIERES_USINAGE, OPERATIONS, OUTILS, avance, avanceConseillee, rotation, temps, vcConseillee, vcPlage, vitesseCoupe, vitesseMachine } from "./vitesse";
 
 describe("masse", () => {
   it("tube carré 40 × 40 × 2 acier, 6 m (cas du cahier des charges)", () => {
@@ -134,11 +134,28 @@ describe("vitesses de coupe", () => {
     expect(vitesseMachine("180;280;450;710;1120", 1100)).toBe(1120);
     expect(vitesseMachine("180 280", 50)).toBe(180);
     expect(vitesseMachine("", 796)).toBeNaN();
+    // Dans la plage mini-maxi, la plus proche de la vitesse théorique, même au-dessus.
+    expect(vitesseMachine("180 280 450 710 900 1120", 796, 637, 955)).toBe(710);
+    expect(vitesseMachine("180 280 450 850 1120", 796, 637, 955)).toBe(850);
+    expect(vitesseMachine("180 280 450 1120", 796, 637, 955)).toBe(450);
   });
 
-  it("la table couvre toutes les combinaisons", () => {
-    for (const o of OPERATIONS) for (const t of OUTILS) for (const m of MATIERES_USINAGE) expect(vcConseillee(o.id, t.id, m.id)).toBeGreaterThan(0);
+  it("la table couvre toutes les combinaisons, mini ≤ conseillée ≤ maxi", () => {
+    for (const o of OPERATIONS)
+      for (const t of OUTILS)
+        for (const m of MATIERES_USINAGE) {
+          const p = vcPlage(o.id, t.id, m.id);
+          expect(p.min).toBeGreaterThan(0);
+          expect(p.min <= p.conseillee && p.conseillee <= p.max).toBe(true);
+        }
     expect(vcConseillee("percage", "hss", "acier-doux")).toBe(25);
+    expect(vcPlage("percage", "hss", "acier-doux")).toEqual({ min: 20, conseillee: 25, max: 30 });
+  });
+
+  it("foret Ø 10 en acier doux, HSS : 796 tr/min, de 637 à 955", () => {
+    const p = vcPlage("percage", "hss", "acier-doux");
+    expect(Math.round(rotation(p.min, 10))).toBe(637);
+    expect(Math.round(rotation(p.max, 10))).toBe(955);
   });
 });
 

@@ -33,7 +33,7 @@
     {
       "id": "rotation",
       "name": "Vitesse de coupe",
-      "description": "N = 1000·Vc / (π·D), avance, temps",
+      "description": "Ø du trou → tr/min, mini et maxi",
       "icon": "gauge",
       "emoji": "⚙️",
       "dataVersion": 1,
