@@ -22,7 +22,7 @@ export async function loadPlugins(): Promise<void> {
 }
 
 /** Ordre par défaut de la colonne : les plugins officiels dans l'ordre du cahier des charges, puis les autres. */
-const OFFICIAL_ORDER = ["maths", "economie", "tolerie", "materiaux", "chaudronnerie"];
+const OFFICIAL_ORDER = ["maths", "economie", "tolerie", "tracage", "materiaux"];
 const rank = (plugin: PluginManifest) => {
   const index = OFFICIAL_ORDER.indexOf(plugin.id);
   return plugin.official && index >= 0 ? index : OFFICIAL_ORDER.length;

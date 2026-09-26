@@ -1,0 +1,64 @@
+{
+  "id": "tracage",
+  "name": "Traçage",
+  "version": "1.0.0",
+  "apiVersion": "^1",
+  "author": "Établi",
+  "description": "Développés de chaudronnerie : tableaux de traçage, gabarits 1:1 et DXF",
+  "color": "#e0483e",
+  "emoji": "📐",
+  "icon": "compass",
+  "permissions": [],
+  "miniApps": [
+    {
+      "id": "virole",
+      "name": "Virole",
+      "description": "Cylindre, bout en biais, plusieurs tôles",
+      "icon": "cylinder",
+      "emoji": "🥫",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/virole/index.html"
+    },
+    {
+      "id": "cone",
+      "name": "Tronçon de cône",
+      "description": "Rayons de traçage, corde et flèche, secteurs",
+      "icon": "cone",
+      "emoji": "🔶",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/cone/index.html"
+    },
+    {
+      "id": "piquage",
+      "name": "Piquage",
+      "description": "Cylindre sur cylindre, incliné ou excentré",
+      "icon": "merge",
+      "emoji": "➕",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/piquage/index.html"
+    },
+    {
+      "id": "coude",
+      "name": "Coude à segments",
+      "description": "Angle de coupe, extrados, intrados",
+      "icon": "spline",
+      "emoji": "↪️",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/coude/index.html"
+    },
+    {
+      "id": "tremie",
+      "name": "Trémie carré-rond",
+      "description": "Triangulation, vraies grandeurs",
+      "icon": "funnel",
+      "emoji": "🔻",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/tremie/index.html"
+    }
+  ]
+}
