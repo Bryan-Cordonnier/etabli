@@ -40,6 +40,24 @@ describe("planCuts", () => {
     expect(plan.bars[1]!.source).toBe("barre");
   });
 
+  it("liste unique : les tubes en stock passent avant les barres à acheter", () => {
+    const plan = planCuts(
+      [
+        { length: 6000, quantity: null },
+        { length: 1300, quantity: 1 },
+        { length: 6000, quantity: 1 },
+      ],
+      [],
+      [{ mark: "A", length: 1200, quantity: 7 }],
+      settings,
+    );
+    // Stock : le 1 300 (1 pièce) et le 6 000 (4 pièces) ; les 2 pièces qui restent sur une barre achetée.
+    const fromStock = plan.bars.filter((b) => !b.purchase);
+    expect(fromStock.map((b) => b.nominal).sort((a, b) => a - b)).toEqual([1300, 6000]);
+    expect(plan.bars.filter((b) => b.purchase)).toHaveLength(1);
+    expect(plan.bars.find((b) => b.purchase)!.cuts).toHaveLength(2);
+  });
+
   it("déduit le dressage en bout de barre", () => {
     const plan = planCuts([{ length: 6000, quantity: null }], [], [{ mark: "A", length: 3000, quantity: 2 }], {
       ...settings,

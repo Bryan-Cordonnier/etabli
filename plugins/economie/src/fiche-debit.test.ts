@@ -60,10 +60,10 @@ describe("debitFiche : tolérance, butée et chute réservée", () => {
       stopMax: 1500,
       material: "Acier",
       kgPerM: 2.386,
-      isPurchase: () => true,
     });
     const html = f.pages.join("");
     expect(html).toContain("Barres à acheter");
+    expect(html).toContain("à acheter</span>");
     // Reste en plage (tolérance de 30 mm) ; les milliers sont séparés par une espace fine.
     expect(html.replace(/ /g, " ")).toContain("2 479 à 2 509");
     expect(html).toContain("butée");

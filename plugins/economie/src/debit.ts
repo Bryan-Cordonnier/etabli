@@ -71,6 +71,8 @@ export interface BarPlan {
   /** Ce que la tolérance peut ajouter au reste : tolérance en moins + tolérance en plus. */
   grow: number;
   source: "barre" | "chute";
+  /** Barre à acheter (ligne sans quantité) plutôt que tube sorti du stock. */
+  purchase: boolean;
   cuts: Cut[];
   /** Longueur restante après la dernière coupe (au moins ; jusqu'à remnant + grow). */
   remnant: number;
@@ -211,6 +213,7 @@ function makeBar(
   s: CutSettings,
   nominal = length,
   grow = 0,
+  purchase = false,
 ): BarPlan {
   const available = length - s.trim;
   const used = placed.length;
@@ -222,6 +225,7 @@ function makeBar(
     nominal,
     grow,
     source,
+    purchase,
     cuts: placed.placed.map(({ item, orientation, start, shared }) => {
       const e = oriented(item.ends, orientation);
       return {
@@ -277,9 +281,9 @@ export function planCuts(stock: StockBar[], offcuts: number[], pieces: CutPiece[
       if (bar.source === "chute") {
         const i = offcutsLeft.indexOf(bar.nominal);
         if (i >= 0) offcutsLeft = [...offcutsLeft.slice(0, i), ...offcutsLeft.slice(i + 1)];
-      } else {
-        const row = stockLeft.find((b) => b.length === bar.nominal && (b.quantity === null || b.quantity > 0));
-        if (row && row.quantity !== null) row.quantity--;
+      } else if (!bar.purchase) {
+        const row = stockLeft.find((b) => b.length === bar.nominal && b.quantity !== null && b.quantity > 0);
+        if (row) row.quantity!--;
       }
     }
     stockLeft = stockLeft.filter((b) => b.quantity === null || b.quantity > 0);
@@ -350,24 +354,30 @@ function planOnce(stock: StockBar[], offcuts: number[], sorted: Item[], s: CutSe
     bars.push(makeBar(length, "chute", placed, offcutSettings));
   }
 
-  // 2. Puis des barres neuves : à chaque barre, la longueur la mieux remplie. Le calcul se fait sur
-  // la barre la plus courte possible (tolérance en moins) : tout tient toujours, le reste varie.
+  // 2. Puis les tubes du stock (lignes avec une quantité), et seulement ensuite les barres à acheter
+  // (lignes sans quantité) : à chaque barre, la longueur la mieux remplie. Le calcul se fait sur la
+  // barre la plus courte possible (tolérance en moins) : tout tient toujours, le reste varie.
   const remaining = stock
     .filter((b) => b.length > 0)
     .map((b) => ({ ...b, calc: b.length - Math.max(0, b.tolMinus ?? 0), grow: Math.max(0, b.tolMinus ?? 0) + Math.max(0, b.tolPlus ?? 0) }));
   while (items.length) {
     let best: { bar: (typeof remaining)[number]; chosen: Item[]; placed: Layout; ratio: number } | null = null;
-    for (const bar of remaining) {
-      if (bar.quantity !== null && bar.quantity <= 0) continue;
-      const { chosen, layout: placed } = fillBar(items, bar.calc - s.trim, s);
-      if (!chosen.length) continue;
-      const ratio = chosen.reduce((sum, c) => sum + c.length, 0) / bar.calc;
-      if (!best || ratio > best.ratio + 1e-9) best = { bar, chosen, placed, ratio };
+    for (const purchase of [false, true]) {
+      for (const bar of remaining) {
+        if ((bar.quantity === null) !== purchase) continue;
+        if (bar.quantity !== null && bar.quantity <= 0) continue;
+        const { chosen, layout: placed } = fillBar(items, bar.calc - s.trim, s);
+        if (!chosen.length) continue;
+        const ratio = chosen.reduce((sum, c) => sum + c.length, 0) / bar.calc;
+        if (!best || ratio > best.ratio + 1e-9) best = { bar, chosen, placed, ratio };
+      }
+      if (best) break;
     }
     if (!best) break;
+    const purchase = best.bar.quantity === null;
     if (best.bar.quantity !== null) best.bar.quantity--;
     remove(best.chosen);
-    bars.push(makeBar(best.bar.calc, "barre", best.placed, s, best.bar.length, best.bar.grow));
+    bars.push(makeBar(best.bar.calc, "barre", best.placed, s, best.bar.length, best.bar.grow, purchase));
   }
 
   const piecesLength = bars.reduce((sum, b) => sum + b.cuts.reduce((t, c) => t + c.length, 0), 0);
@@ -386,7 +396,7 @@ function planOnce(stock: StockBar[], offcuts: number[], sorted: Item[], s: CutSe
 export function groupBars(bars: BarPlan[]): BarGroup[] {
   const groups: BarGroup[] = [];
   const keyOf = (bar: BarPlan) =>
-    `${bar.source}|${bar.nominal}|${bar.length}|${bar.cuts.map((c) => `${c.piece}:${c.length}:${c.orientation}:${c.start}`).join(",")}`;
+    `${bar.source}|${bar.purchase}|${bar.nominal}|${bar.length}|${bar.cuts.map((c) => `${c.piece}:${c.length}:${c.orientation}:${c.start}`).join(",")}`;
   for (const bar of bars) {
     const key = keyOf(bar);
     const group = groups.find((g) => keyOf(g.bar) === key);

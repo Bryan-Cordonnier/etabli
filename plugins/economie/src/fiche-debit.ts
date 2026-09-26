@@ -20,8 +20,6 @@ export interface DebitFicheInput {
   /** Matière et poids au mètre du profilé, si connus. */
   material?: string;
   kgPerM?: number;
-  /** Barres neuves à acheter (quantité non limitée) plutôt qu'à sortir du stock. */
-  isPurchase?: (nominal: number) => boolean;
   priority?: "matiere" | "temps";
 }
 
@@ -68,8 +66,8 @@ export function debitFiche(input: DebitFicheInput): FichePrint {
   const newBars = plan.bars.filter((b) => b.source === "barre");
   const offcuts = plan.bars.filter((b) => b.source === "chute");
   const kept = plan.bars.filter((b) => b.reusable);
-  const toBuy = newBars.filter((b) => input.isPurchase?.(b.nominal));
-  const fromStock = newBars.filter((b) => !input.isPurchase?.(b.nominal));
+  const toBuy = newBars.filter((b) => b.purchase);
+  const fromStock = [...newBars.filter((b) => !b.purchase), ...offcuts];
   const byLength = (bars: BarPlan[]) =>
     [...new Set(bars.map((b) => b.nominal))].map((length) => `${bars.filter((b) => b.nominal === length).length} × ${fmt(length, 0)}`).join(" + ");
   const wasteGrow = plan.bars.filter((b) => !b.reusable).reduce((sum, b) => sum + b.grow, 0);
@@ -124,15 +122,14 @@ export function debitFiche(input: DebitFicheInput): FichePrint {
     section(
       "À sortir du stock",
       facts([
-        { label: toBuy.length && !fromStock.length ? "Barres à acheter" : "Barres neuves", value: String(newBars.length), detail: byLength(newBars) || "aucune" },
-        { label: "Chutes du stock", value: String(offcuts.length), detail: offcuts.map((b) => fmt(b.nominal, 0)).join(", ") || "aucune" },
+        { label: "Tubes du stock", value: String(fromStock.length), detail: byLength(fromStock) || "aucun" },
+        { label: "Barres à acheter", value: String(toBuy.length), detail: byLength(toBuy) || "aucune" },
         { label: "Chutes à garder", value: String(kept.length), detail: kept.map((b) => range(b.remnant, b.grow)).join(" ; ") || "aucune" },
         { label: "Perte", value: `${range(plan.waste, wasteGrow)} mm`, detail: "traits de scie, dressage, coins d'angle, restes courts" },
       ]),
     ) +
-      (toBuy.length && fromStock.length ? `<p class="small">Dont <b>à acheter : ${esc(byLength(toBuy))}</b> ; en stock : ${esc(byLength(fromStock))}.</p>` : "") +
       (input.kgPerM
-        ? `<p class="small">${esc(input.material ?? "")} · ${fmt(input.kgPerM, 3)} kg/m · barres ${fmt((newBars.reduce((s, b) => s + b.nominal, 0) / 1000) * input.kgPerM, 1)} kg · pièces ${fmt((plan.piecesLength / 1000) * input.kgPerM, 1)} kg (poids approximatif).</p>`
+        ? `<p class="small">${esc(input.material ?? "")} · ${fmt(input.kgPerM, 3)} kg/m · tubes ${fmt((plan.bars.reduce((s, b) => s + b.nominal, 0) / 1000) * input.kgPerM, 1)} kg · pièces ${fmt((plan.piecesLength / 1000) * input.kgPerM, 1)} kg (poids approximatif).</p>`
         : ""),
     plan.unplaced.length ? `<p class="tip">Pièces non placées : ${esc(plan.unplaced.map((c) => `${c.mark} ${fmt(c.length)}`).join(", "))}.</p>` : "",
     section(
@@ -191,9 +188,8 @@ export function debitFiche(input: DebitFicheInput): FichePrint {
       ];
     });
     const tol = g.bar.grow > 0 ? ` (−${fmt(g.bar.nominal - g.bar.length)} / +${fmt(g.bar.grow - (g.bar.nominal - g.bar.length))})` : "";
-    const buy = g.bar.source === "barre" && input.isPurchase?.(g.bar.nominal);
     return `<article class="block">
-      <div class="block-head"><h3>${esc(barLabel(g))}</h3><span class="tag">${g.bar.source === "chute" ? "stock" : buy ? "à acheter" : "neuve"}</span>${
+      <div class="block-head"><h3>${esc(barLabel(g))}</h3><span class="tag">${g.bar.purchase ? "à acheter" : "stock"}</span>${
         g.count > 1 ? `<span class="tag">× ${g.count} identiques</span>` : ""
       }<span class="len">${fmt(g.bar.nominal, 0)} mm${tol}${kg(g.bar.nominal)}</span></div>
       ${scheme(g.bar, input, `h${i}`)}

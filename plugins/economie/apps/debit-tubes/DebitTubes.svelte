@@ -37,6 +37,7 @@
     dest: string;
   }
 
+  /** Tube disponible (barre neuve ou chute) ; sans quantité : longueur à acheter. */
   interface StockRow {
     length: string;
     /** Vide : autant que nécessaire (barres à acheter). */
@@ -56,9 +57,8 @@
     priority: Priority;
     /** Si garder les chutes réservées coûte une barre de plus : les garder quand même. */
     useReserved: boolean;
+    /** Une seule liste : tous les tubes qu'on a (barres et chutes), plus les longueurs à acheter. */
     stock: StockRow[];
-    /** Longueurs des chutes déjà en stock, séparées par des espaces ou des points-virgules. */
-    offcuts: string;
     kerf: string;
     trim: string;
     keep: string;
@@ -88,23 +88,28 @@
     priority: "matiere",
     useReserved: true,
     stock: [newStock({ length: "6000" })],
-    offcuts: "",
     kerf: "3",
     trim: "0",
     keep: "300",
     pieces: [newPiece("A")],
   };
 
-  /** Calculs enregistrés par les versions précédentes : profilé en texte libre, pièces sans angles, barres sans tolérance. */
+  /**
+   * Calculs enregistrés par les versions précédentes : profilé en texte libre, pièces sans angles,
+   * barres sans tolérance, chutes du stock saisies à part (« 1200 850 ») : ajoutées à la liste des tubes.
+   */
   function migrate(saved: Record<string, unknown>): Partial<Data> {
+    const { offcuts, ...rest } = saved;
     const profile = saved.profile;
     const pieces = Array.isArray(saved.pieces) ? (saved.pieces as Partial<PieceRow>[]) : DEFAULTS.pieces;
-    const stock = Array.isArray(saved.stock) ? (saved.stock as Partial<StockRow>[]) : DEFAULTS.stock;
+    const stock = (Array.isArray(saved.stock) ? (saved.stock as Partial<StockRow>[]) : DEFAULTS.stock).map((s) => newStock(s));
+    const lengths = typeof offcuts === "string" ? offcuts.split(/[\s;]+/).filter((t) => num(t) > 0) : [];
+    for (const length of new Set(lengths)) stock.push(newStock({ length, quantity: String(lengths.filter((l) => l === length).length) }));
     return {
-      ...(saved as Partial<Data>),
+      ...(rest as Partial<Data>),
       profile: typeof profile === "string" ? profileFromText(profile) : { ...DEFAULT_PROFILE, ...(profile as Partial<ProfileInput>) },
       pieces: pieces.map((p) => newPiece(p.mark ?? "?", p)),
-      stock: stock.map((s) => newStock(s)),
+      stock,
     };
   }
 
@@ -181,14 +186,14 @@
       shape: shapeOf(p),
     }));
     if (!all.some((p) => p.length > 0 && p.quantity > 0)) return null;
-    return planCuts(stockOf(data).bars, data.offcuts.split(/[\s;]+/).map(num).filter((l) => l > 0), all, { ...settings, priority, budgetMs });
+    return planCuts(stockOf(data).bars, [], all, { ...settings, priority, budgetMs });
   }
 
   const summarize = (plan: CutPlan | null) => {
     if (!plan?.bars.length) return "";
-    const bars = plan.bars.filter((b) => b.source === "barre").length;
+    const bars = plan.bars.length;
     const rate = Math.round((plan.piecesLength / plan.usedLength) * 100);
-    return `${bars} barre${bars > 1 ? "s" : ""} · ${rate} % utilisé`;
+    return `${bars} tube${bars > 1 ? "s" : ""} · ${rate} % utilisé`;
   };
 
   const doc = new MiniAppDocument<Data>(DEFAULTS, (data) => summarize(compute(data, cutSettings(data), undefined, undefined, 60)), migrate);
@@ -239,14 +244,17 @@
 
   const groups = $derived(plan ? groupBars(plan.bars) : []);
   const newBars = $derived(plan ? plan.bars.filter((b) => b.source === "barre") : []);
+  /** Tubes utilisés par longueur : sortis du stock, puis à acheter. */
   const byLength = $derived(
-    [...new Set(newBars.map((b) => b.nominal))].map((length) => ({ length, count: newBars.filter((b) => b.nominal === length).length })),
+    [false, true].flatMap((purchase) => {
+      const bars = newBars.filter((b) => b.purchase === purchase);
+      return [...new Set(bars.map((b) => b.nominal))].map((length) => ({ length, purchase, count: bars.filter((b) => b.nominal === length).length }));
+    }),
   );
+  const buying = $derived(newBars.filter((b) => b.purchase).length);
   const keptBars = $derived(plan ? plan.bars.filter((b) => b.reusable) : []);
   const wasteGrow = $derived(plan ? plan.bars.filter((b) => !b.reusable).reduce((sum, b) => sum + b.grow, 0) : 0);
   const stock = $derived(stockOf(doc.data));
-  /** Une barre de longueur commerciale donnée vient d'une ligne sans quantité : elle est à acheter. */
-  const isPurchase = (nominal: number) => stock.bars.some((b) => b.length === nominal && b.quantity === null);
   const trimOf = () => cutSettings(doc.data).trim;
   const currentStats = $derived(plan ? stats(plan, doc.data, trimOf()) : null);
   const otherStats = $derived(otherPriority ? stats(otherPriority, doc.data, trimOf()) : null);
@@ -441,7 +449,6 @@
         stopMax: saw?.stopMax ?? null,
         material: material.label,
         kgPerM: kgPerM || undefined,
-        isPurchase,
         priority: doc.data.priority,
       }),
     );
@@ -451,7 +458,7 @@
     if (!plan) return;
     const lines = [`Plan de débit — ${profileName}`, ""];
     groups.forEach(({ bar, count }, i) => {
-      const label = bar.source === "chute" ? `chute de ${format(bar.nominal)}` : `barre de ${format(bar.nominal)}`;
+      const label = `tube de ${format(bar.nominal)}${bar.purchase ? " (à acheter)" : ""}`;
       lines.push(`${i + 1}. ${count} × ${label} : ${bar.cuts.map((c) => `${c.mark} ${format(c.length)}`).join(" | ")}`);
       lines.push(`   reste ${rangeText(bar.remnant, bar.grow)} mm${bar.reusable ? " (à garder)" : ""}`);
     });
@@ -493,27 +500,27 @@
       <p class="profile-name">{profileName}{kgPerM ? ` · ${format(kgPerM, 3)} kg/m (approximatif)` : ""}</p>
     </Card>
 
-    <Card title="Barres et réglages">
+    <Card title="Tubes et réglages">
       <div class="table stock">
-        <span class="head">Longueur des barres</span>
+        <span class="head">Tubes disponibles</span>
         <span class="head">Quantité</span>
         <span class="head" title="Tolérance de la longueur commerciale">Tol. − / +</span>
         <span></span>
         {#each doc.data.stock as bar, i (i)}
-          <Field compact label="Longueur de barre" unit="mm" bind:value={bar.length} />
-          <Field compact label="Quantité de barres" placeholder="à acheter" bind:value={bar.quantity} />
+          <Field compact label="Longueur du tube" unit="mm" bind:value={bar.length} />
+          <Field compact label="Quantité" placeholder="à acheter" bind:value={bar.quantity} />
           <span class="tol">
             <Field compact label="Tolérance en moins" bind:value={bar.tolMinus} />
             <Field compact label="Tolérance en plus" bind:value={bar.tolPlus} />
           </span>
-          <button class="remove" onclick={() => doc.data.stock.splice(i, 1)} aria-label="Retirer cette longueur">✕</button>
+          <button class="remove" onclick={() => doc.data.stock.splice(i, 1)} aria-label="Retirer ce tube">✕</button>
         {/each}
       </div>
       {#if stock.auto}
-        <p class="note">Aucune barre saisie : calcul avec des barres de {stock.auto}, le plan dit combien en acheter.</p>
+        <p class="note">Aucun tube saisi : calcul avec des barres de {stock.auto}, le plan dit combien en acheter.</p>
       {/if}
       <div class="row-actions">
-        <button class="btn" onclick={() => doc.data.stock.push(newStock())}>+ Autre longueur de barre</button>
+        <button class="btn" onclick={() => doc.data.stock.push(newStock())}>+ Ajouter un tube</button>
         {#if barOffers.length}
           <SelectField
             compact
@@ -524,8 +531,11 @@
           />
         {/if}
       </div>
-      <p class="hint">Quantité vide : autant que nécessaire, à acheter. Le calcul se fait sur la barre la plus courte (longueur − tolérance) : les restes s'affichent en plage.</p>
-      <Field label="Chutes déjà en stock (utilisées en premier)" numeric={false} placeholder="ex. 1200 850 640" unit="mm" bind:value={doc.data.offcuts} />
+      <p class="hint">
+        Entrez tous vos tubes, barres entières comme chutes, avec leur quantité : ils sont utilisés en premier. Quantité vide :
+        longueur à acheter, autant que nécessaire. Le calcul se fait sur le tube le plus court (longueur − tolérance) : les
+        restes s'affichent en plage.
+      </p>
       <SelectField label="Scie" options={sawOptions} bind:value={doc.data.machine} onchange={pickSaw} />
       {#if saw}
         <!-- Réglages de la scie : modifiables dans Paramètres → Bibliothèques → Machines. -->
@@ -651,14 +661,16 @@
 
       <div class="kpis" class:stale={computing}>
         <div class="kpi main">
-          <span>{newBars.length && newBars.every((b) => isPurchase(b.nominal)) ? "À acheter" : "Barres neuves"}</span>
+          <span>{buying === 0 ? "Tubes du stock" : buying === newBars.length ? "Barres à acheter" : "Tubes utilisés"}</span>
           <b>{newBars.length}</b>
-          <small>{byLength.map((g) => `${g.count} × ${format(g.length)} mm${isPurchase(g.length) && !newBars.every((b) => isPurchase(b.nominal)) ? " à acheter" : ""}`).join(" + ") || "aucune"}</small>
+          <small>
+            {byLength.map((g) => `${g.count} × ${format(g.length)} mm${buying > 0 && buying < newBars.length ? (g.purchase ? " à acheter" : " du stock") : ""}`).join(" + ") || "aucun"}
+          </small>
         </div>
         <div class="kpi">
           <span>Utilisation</span>
           <b>{plan.usedLength ? format((plan.piecesLength / plan.usedLength) * 100, 1) : "—"} %</b>
-          {#if kgPerM}<small>{format(kg(newBars.reduce((s, b) => s + b.nominal, 0)), 1)} kg de barres · {format(kg(plan.piecesLength), 1)} kg de pièces</small>{/if}
+          {#if kgPerM}<small>{format(kg(newBars.reduce((s, b) => s + b.nominal, 0)), 1)} kg de tubes ·{format(kg(plan.piecesLength), 1)} kg de pièces</small>{/if}
         </div>
         <div class="kpi">
           <span>Perte</span>
@@ -689,7 +701,7 @@
           <div class="row">
             <span class="label">
               {count > 1 ? `${count} ×` : ""}
-              {bar.source === "chute" ? "chute" : "barre"}
+              {bar.purchase ? "à acheter" : "tube"}
               <small>{format(bar.nominal, 0)}</small>
             </span>
             <div class="bar">
