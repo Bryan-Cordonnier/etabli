@@ -104,5 +104,7 @@ describe("conversions", () => {
     expect(toDegrees(100, "percent")).toBeCloseTo(45, 9);
     expect(toDegrees(20, "mmPerM")).toBeCloseTo(1.1458, 3);
     expect(toDegrees(Math.PI, "rad")).toBeCloseTo(180, 9);
+    expect(toDegrees(1, "ratio")).toBeCloseTo(45, 9);
+    expect(toDegrees(50, "ratio")).toBeCloseTo(slopeFromDegrees(toDegrees(2, "percent")).deg, 9);
   });
 });

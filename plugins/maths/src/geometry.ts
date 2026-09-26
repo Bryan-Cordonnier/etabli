@@ -231,7 +231,7 @@ export function toFraction(inches: number, denominator = 64): string {
   return whole ? `${sign}${whole} ${num}/${den}"` : `${sign}${num}/${den}"`;
 }
 
-export type SlopeUnit = "deg" | "rad" | "percent" | "mmPerM";
+export type SlopeUnit = "deg" | "rad" | "percent" | "mmPerM" | "ratio";
 
 /** Angle en degrés depuis une pente ou un angle exprimé dans une autre unité. */
 export function toDegrees(value: number, unit: SlopeUnit): number {
@@ -244,6 +244,9 @@ export function toDegrees(value: number, unit: SlopeUnit): number {
       return Math.atan(value / 100) / DEG;
     case "mmPerM":
       return Math.atan(value / 1000) / DEG;
+    case "ratio":
+      // Pente « 1 : n » : on monte de 1 pour n de long.
+      return Math.atan(1 / value) / DEG;
   }
 }
 
