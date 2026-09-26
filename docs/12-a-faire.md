@@ -3,15 +3,20 @@
 Les spécifications détaillées (formules, cas de test) sont recopiées dans
 [13-specs-a-venir.md](13-specs-a-venir.md). Rappel : **faire valider la spécification par Bryan avant de coder**.
 
-## À vérifier à l'écran par Bryan (codé fin septembre 2026, jamais vu dans l'application)
+## À vérifier à l'écran par Bryan (codé fin septembre 2026)
 
+Bryan a déjà vu Traçage, Matériaux et le débit v2 et a demandé les changements ci-dessous (faits le
+26 septembre 2026, vérifiés par l'agent dans le navigateur, plugin seul, pas dans l'application) :
+- **Traçage** : aperçu 3D (Flan / 3D) et choix Int / Moy / Ext à côté de chaque cote ; la trémie
+  carré-rond reste à contrôler sur une vraie pièce.
+- **Vitesse de coupe** simplifiée (Ø du trou → théorique, mini, maxi ; « Plus de paramètres »).
+- **Débit de tubes** : une seule liste des tubes disponibles (plus de champ « chutes » à part).
+
+Jamais vus :
 - **Conversions** en tableau (Maths).
-- **Débit de tubes v2** : tolérances et restes en plage, poids, mode besoin, chutes réservées (choix
-  entre deux résultats), priorité matière ou temps (comparaison), fiche avec l'ordre par angle de scie.
 - **Export DXF** (boîte « Enregistrer sous », ouverture dans SolidWorks ou LibreCAD) et **gabarit à
   l'échelle 1** imprimé à 100 % (mesurer la règle de 100 mm).
-- **Traçage** : les 5 mini-apps ; la trémie carré-rond est à contrôler sur une vraie pièce.
-- **Matériaux et fixation** : les 4 mini-apps.
+- Fiche de coupe du débit v2 (ordre par angle de scie, « Tubes du stock » / « Barres à acheter »).
 
 ## Économie de matière
 
@@ -53,8 +58,11 @@ Les spécifications détaillées (formules, cas de test) sont recopiées dans
 
 ## Limites connues
 
-- Beaucoup d'écrans récents n'ont été vérifiés que par les types et les tests, pas à l'écran par un
-  agent : l'outil de prévisualisation n'était pas disponible (voir [02-environnement.md](02-environnement.md)).
+- Beaucoup d'écrans récents n'ont été vérifiés que par les types et les tests. Un agent peut
+  maintenant ouvrir une mini-app seule dans le navigateur (voir [02-environnement.md](02-environnement.md)),
+  mais pas dans l'application Tauri (impression, boîtes « Enregistrer sous », réglages enregistrés).
+- Aperçu 3D du Traçage : les couleurs suivent le thème au moment du calcul ; changer de thème ne
+  les met à jour qu'à la prochaine modification d'une cote.
 - Masses des tubes et cornières (Matériaux) en angles vifs : 1 à 3 % au-dessus du catalogue.
 - Vitesses de la machine (Matériaux) : séparées par des espaces, donc sans espace dans les milliers
   (« 1120 », pas « 1 120 »).

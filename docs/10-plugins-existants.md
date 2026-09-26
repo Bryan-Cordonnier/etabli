@@ -3,10 +3,10 @@
 | Plugin | Version | Mini-apps | Tests |
 | --- | --- | --- | --- |
 | `maths` Maths et géométrie | 1.0.0 | 7 | 31 |
-| `economie` Économie de matière | 0.3.0 | 2 | 59 |
+| `economie` Économie de matière | 0.3.0 | 2 | 60 |
 | `tolerie` Tôlerie | 1.0.0 | 2 | 11 |
-| `tracage` Traçage (ex-« Chaudronnerie ») | 1.0.0 | 5 | 22 |
-| `materiaux` Matériaux et fixation | 1.0.0 | 4 | 20 |
+| `tracage` Traçage (ex-« Chaudronnerie ») | 1.1.0 | 5 | 32 |
+| `materiaux` Matériaux et fixation | 1.0.0 | 4 | 21 |
 
 Le kit `@etabli/ui` a 12 tests (calculs saisis, format, collage Excel, DXF).
 
@@ -34,9 +34,11 @@ utilisent `MiniAppDocument`.
 ### Débit de tubes (`apps/debit-tubes/DebitTubes.svelte`)
 
 But : le moins de barres possible, puis les chutes les plus longues. Saisie : profilé, matière
-(kg/m), barres (longueurs, quantités, **tolérance −/+**, longueur d'un fournisseur), chutes du stock,
-scie (bibliothèque Machines) ou réglages à la main, pièces (repère, longueur **pointe à pointe**,
-quantité, angles, **chute réservée** avec sa destination).
+(kg/m), **une seule liste des tubes disponibles** (barres entières et chutes : longueur, quantité,
+**tolérance −/+** ; sans quantité = longueur à acheter ; longueur d'un fournisseur), scie
+(bibliothèque Machines) ou réglages à la main, pièces (repère, longueur **pointe à pointe**,
+quantité, angles, **chute réservée** avec sa destination). Bryan a demandé de supprimer le champ
+séparé « chutes déjà en stock » : les anciens calculs y versent leurs chutes (`migrate`).
 
 Débit v2 (fait) :
 - **Tolérance** : calcul sur la barre la plus courte (longueur − tol−), reste affiché en plage
@@ -54,7 +56,7 @@ Débit v2 (fait) :
 | --- | --- |
 | `src/profil.ts` | types de profilés (tubes carré/rect/rond, pleins, plat, cornière, IPE/HEA, UPN), dimensions saisies, section (contour + trous en (y, z)), aire, conversion des anciens profilés texte |
 | `src/coupe.ts` | géométrie des coupes d'angle : chaque bout est un **recul linéaire** `e(y,z) = c + a·y + b·z` depuis la pointe ; 4 poses (normale, retournée, bout pour bout ×2) ; `gap` = écart entre deux pointes voisines (négatif quand les coupes s'emboîtent, trait de scie compté le long de la barre) ; `arrange` = ordre et pose qui minimisent la longueur (glouton avec essai de chaque pièce de départ) |
-| `src/debit.ts` | `planCuts` : pour chaque barre, **sac à dos exact au mm** (programmation dynamique) avec un trait complet par pièce (toujours faisable), puis rangement avec `arrange` et **ajout de pièces dans la place gagnée** ; chutes du stock d'abord (sans dressage), puis la longueur de barre la mieux remplie ; relances avec mélange reproductible pendant 250 ms (`budgetMs`), meilleur plan gardé. `StockBar` : `tolMinus`/`tolPlus` ; `BarPlan` : `length` (de calcul), `nominal`, `grow` (plage du reste). `priority: "temps"` : une planification par famille d'angles (clé = paire d'angles triée), stock et chutes consommés dans l'ordre ; `groupBars` |
+| `src/debit.ts` | `planCuts` : pour chaque barre, **sac à dos exact au mm** (programmation dynamique) avec un trait complet par pièce (toujours faisable), puis rangement avec `arrange` et **ajout de pièces dans la place gagnée** ; chutes passées à part d'abord (sans dressage, plus utilisé par l'interface), puis les **tubes du stock** (lignes avec quantité), enfin les **barres à acheter** (sans quantité), chaque fois la longueur la mieux remplie ; `BarPlan.purchase` dit si la barre est à acheter ; relances avec mélange reproductible pendant 250 ms (`budgetMs`), meilleur plan gardé. `StockBar` : `tolMinus`/`tolPlus` ; `BarPlan` : `length` (de calcul), `nominal`, `grow` (plage du reste). `priority: "temps"` : une planification par famille d'angles (clé = paire d'angles triée), stock et chutes consommés dans l'ordre ; `groupBars` |
 | `src/ordre.ts` | `barOps` : opérations de scie d'une barre (dressage, coupe de bout, recoupe, pièce ; angle, retourner, coupe commune) ; `sawOrder` : ordre qui enchaîne le plus de coupes au même angle (glouton, à égalité le plus petit angle) |
 | `src/pieces.ts` | `nextMark` (A, B… AA), `rowsFromPaste` (Excel), `num`, `quantity` |
 | `src/piece3d.ts` | scène three.js (`Viewer3D`), géométrie d'une pièce (`buildGeometry`), rendu **à la demande** |
@@ -100,10 +102,20 @@ L 1 000, V 24 → 199,5 kN (20,3 t).
 ## Traçage (`plugins/tracage`)
 
 Développés de chaudronnerie « façon Logitrace » (l'ancien plugin prévu « Chaudronnerie », renommé).
-Tout est calculé sur la **fibre moyenne** : on saisit le Ø intérieur, moyen ou extérieur et
-l'épaisseur. Chaque mini-app affiche le flan (`src/Flat.svelte`), un **tableau de traçage** repliable
-et copiable (`src/TraceTable.svelte`), et propose **Exporter en DXF** et **Imprimer le gabarit**
-(fiche + gabarit à l'échelle 1 en feuilles A4, voir [09](09-bibliotheques-fiches-envoi.md)).
+Tout est calculé sur la **fibre moyenne**. **Chaque cote** a son choix Int / Moy / Ext
+(`src/CoteField.svelte`, cote moyenne affichée dessous) : Ø de virole et de coude, grand et petit Ø
+du cône, Ø du tube principal (avec son épaisseur) et du piquage, longueur, largeur et Ø de la trémie.
+Chaque mini-app a un **aperçu Flan / 3D** (`src/Apercu.svelte`, choix gardé dans les réglages du
+plugin), un **tableau de traçage** repliable et copiable (`src/TraceTable.svelte`), et propose
+**Exporter en DXF** et **Imprimer le gabarit** (fiche + gabarit à l'échelle 1 en feuilles A4, voir
+[09](09-bibliotheques-fiches-envoi.md)).
+
+Aperçu 3D : `src/modele3d.ts` décrit chaque pièce sans three.js (surfaces réglées en anneaux de
+génératrices, `shell` pour l'épaisseur, lignes de génératrices, soudure et raccords, étiquettes :
+numéros du tableau en quinconce, 12 au plus, coins de la trémie) ; `src/viewer3d.ts` (three.js, chargé
+à part, rendu à la demande) ; `src/Vue3D.svelte` (vues 3D / face / dessus, étiquettes masquées
+derrière la pièce). Le tube principal du piquage est dessiné en gris, les segments du coude en deux
+teintes, la soudure en rouge.
 
 | Mini-app | Calcul (`src/`) | Contenu |
 | --- | --- | --- |
@@ -127,7 +139,7 @@ sur une vraie pièce** ou un modèle de tôlerie SolidWorks.
 | --- | --- | --- |
 | `masse` | `masse.ts` | tôle ou plat, tube rond, tube carré ou rectangulaire (angles vifs), rond et carré pleins, cornière, IPE/HEA/HEB/UPN (masse au mètre de `profiles.json`, acier) ; matière, longueur (vide : au mètre), quantité, prix au kg ou au mètre ; masse unitaire et totale, kg/m, kg/m² d'une tôle, section, surface extérieure |
 | `taraudage` | `filetage.ts` | M1,6 à M64, pas gros et fins ; foret de taraudage (table DIN 336 au pas gros, d − P au pas fin), foret pour taraud à refouler (d − P/2), D1, d2, d3, section résistante As, passages ISO 273 (fine, moyenne, large), lamage CHC ; tableau complet copiable |
-| `rotation` | `vitesse.ts` | Vc proposée (opération × outil HSS/carbure × matière), N = 1000 Vc / (π D), avance conseillée, Vf, temps ; **vitesses de la machine** gardées dans `PluginSettings` : vitesse à régler et Vc réelle |
+| `rotation` | `vitesse.ts` | écran simple voulu par Bryan : on saisit **le Ø du trou**, on lit la **vitesse théorique** et la plage **mini-maxi** (Vc de la table en [mini, conseillée, maxi], perçage HSS en acier doux par défaut) ; « Plus de paramètres » : opération, matière, outil, Vc, avance, dents, longueur (Vf, temps), **vitesses de la machine** gardées dans `PluginSettings` (vitesse à régler : dans la plage, la plus proche de la théorique) |
 | `serrage` | `serrage.ts` | méthode simplifiée **VDI 2230** : précharge à 90 % de Rp0,2, FM = ν Rp A0 / √(1 + 3 [3/2 · d2/d0 · (P/(π d2) + 1,155 µ)]²), MA = FM (0,16 P + 0,58 d2 µ + Dkm/2 · µ) ; classes 8.8, 10.9, 12.9, A2-70, A4-80 ; µ de 0,08 à 0,20 ; répartition du couple ; tableau M3 à M30 |
 
 Tables (`src/data/`, chacune avec sa source) : `matieres.json` (copie de celle de la Tôlerie),

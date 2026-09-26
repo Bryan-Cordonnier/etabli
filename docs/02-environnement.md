@@ -55,6 +55,13 @@ La CI (`.github/workflows/ci.yml`, Windows) exécute : `npm ci`, `npm run check`
 Le fichier local `.claude/launch.json` (ignoré par Git) déclare cette configuration pour l'outil de
 prévisualisation de l'agent (serveur « interface », port 1420).
 
+**Une mini-app seule** : `npx vite plugins/<id> --port 518x` sert le plugin sans le moteur
+(`http://localhost:518x/apps/<mini-app>/index.html`). La mini-app s'affiche avec ses valeurs par
+défaut (`connect()` n'aboutit jamais : rien n'est enregistré, les réglages du plugin restent ceux par
+défaut) ; on remplit les champs en déclenchant l'évènement `input`. Configurations locales :
+« plugin-tracage » (5181), « plugin-materiaux » (5182), « plugin-economie » (5183). Chaque
+modification recharge la page : les valeurs saisies sont perdues.
+
 ## Pièges connus
 
 | Piège | Solution |
