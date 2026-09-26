@@ -1,0 +1,21 @@
+{
+  "source": "Vitesses de coupe indicatives (m/min) en usinage conventionnel avec lubrification, d'après les recommandations courantes des fabricants d'outils. À ajuster selon la machine, la rigidité et l'outil réel.",
+  "matieres": [
+    { "id": "acier-doux", "nom": "Acier doux (S235)" },
+    { "id": "acier-allie", "nom": "Acier allié, traité" },
+    { "id": "inox", "nom": "Inox austénitique" },
+    { "id": "fonte", "nom": "Fonte grise" },
+    { "id": "alu", "nom": "Aluminium" },
+    { "id": "laiton", "nom": "Laiton, bronze" }
+  ],
+  "vc": {
+    "percage": { "hss": { "acier-doux": 25, "acier-allie": 15, "inox": 10, "fonte": 20, "alu": 80, "laiton": 50 }, "carbure": { "acier-doux": 80, "acier-allie": 60, "inox": 50, "fonte": 70, "alu": 200, "laiton": 120 } },
+    "fraisage": { "hss": { "acier-doux": 25, "acier-allie": 18, "inox": 12, "fonte": 18, "alu": 120, "laiton": 40 }, "carbure": { "acier-doux": 150, "acier-allie": 110, "inox": 90, "fonte": 100, "alu": 400, "laiton": 200 } },
+    "tournage": { "hss": { "acier-doux": 30, "acier-allie": 20, "inox": 15, "fonte": 20, "alu": 100, "laiton": 60 }, "carbure": { "acier-doux": 180, "acier-allie": 140, "inox": 120, "fonte": 120, "alu": 400, "laiton": 250 } }
+  },
+  "avances": {
+    "percage": "Avance par tour ≈ Ø / 100 en acier (0,1 mm/tr pour un foret de 10), moitié en inox.",
+    "fraisage": "Avance par dent ≈ 0,05 mm (HSS) à 0,1 mm (carbure) en acier.",
+    "tournage": "Avance par tour ≈ 0,1 (finition) à 0,3 mm/tr (ébauche)."
+  }
+}

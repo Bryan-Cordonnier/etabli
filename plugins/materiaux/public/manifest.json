@@ -1,0 +1,54 @@
+{
+  "id": "materiaux",
+  "name": "Matériaux et fixation",
+  "version": "1.0.0",
+  "apiVersion": "^1",
+  "author": "Établi",
+  "description": "Masses, taraudages, vitesses de coupe, couples de serrage",
+  "color": "#0e9fb7",
+  "emoji": "⚖️",
+  "icon": "weight",
+  "permissions": [],
+  "miniApps": [
+    {
+      "id": "masse",
+      "name": "Masse d'une pièce",
+      "description": "Tôle, tube, cornière, IPE, HEA…",
+      "icon": "weight",
+      "emoji": "⚖️",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/masse/index.html"
+    },
+    {
+      "id": "taraudage",
+      "name": "Taraudage et passages",
+      "description": "Foret, trous de passage, lamage",
+      "icon": "drill",
+      "emoji": "🔩",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/taraudage/index.html"
+    },
+    {
+      "id": "rotation",
+      "name": "Vitesse de coupe",
+      "description": "N = 1000·Vc / (π·D), avance, temps",
+      "icon": "gauge",
+      "emoji": "⚙️",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/rotation/index.html"
+    },
+    {
+      "id": "serrage",
+      "name": "Couple de serrage",
+      "description": "Couple et précharge, 8.8 à 12.9, inox",
+      "icon": "wrench",
+      "emoji": "🔧",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/serrage/index.html"
+    }
+  ]
+}

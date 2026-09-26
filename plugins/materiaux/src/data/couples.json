@@ -1,0 +1,19 @@
+{
+  "source": "Couples de serrage calculés selon la méthode simplifiée de la VDI 2230 (précharge de montage à 90 % de la limite élastique, filetage métrique à pas gros, trous de passage moyens ISO 273, tête hexagonale ISO 4017 ou cylindrique ISO 4762). Limites élastiques Rp0,2 : ISO 898-1 (8.8 prise à 640 MPa sur toute la gamme, comme les tables usuelles), ISO 3506-1 pour l'inox. Valeurs indicatives, à vérifier selon la visserie et l'assemblage.",
+  "classes": [
+    { "id": "8.8", "nom": "8.8", "rp": 640 },
+    { "id": "10.9", "nom": "10.9", "rp": 940 },
+    { "id": "12.9", "nom": "12.9", "rp": 1100 },
+    { "id": "A2-70", "nom": "Inox A2-70", "rp": 450 },
+    { "id": "A4-80", "nom": "Inox A4-80", "rp": 600 }
+  ],
+  "frottements": [
+    { "mu": 0.08, "nom": "0,08 : pâte au MoS₂, cire" },
+    { "mu": 0.1, "nom": "0,10 : huilé" },
+    { "mu": 0.12, "nom": "0,12 : légèrement huilé (courant)" },
+    { "mu": 0.14, "nom": "0,14 : zingué, sec" },
+    { "mu": 0.16, "nom": "0,16 : noir, sec" },
+    { "mu": 0.2, "nom": "0,20 : inox sur inox, sec" }
+  ],
+  "cles": { "3": 5.5, "4": 7, "5": 8, "6": 10, "8": 13, "10": 16, "12": 18, "14": 21, "16": 24, "18": 27, "20": 30, "22": 34, "24": 36, "27": 41, "30": 46 }
+}

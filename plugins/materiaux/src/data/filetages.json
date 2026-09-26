@@ -1,0 +1,33 @@
+{
+  "source": "Filetages métriques ISO 261 et ISO 262 (pas gros et pas fins courants), forets de taraudage DIN 336 (pas gros), trous de passage ISO 273 (séries fine, moyenne, large), lamages pour vis à tête cylindrique à six pans creux ISO 4762 (DIN 974-1). Valeurs indicatives.",
+  "filetages": [
+    { "d": 1.6, "pas": 0.35, "fins": [0.2], "foret": 1.25, "passage": [1.7, 1.8, 2.0], "lamage": [3.5, 1.8] },
+    { "d": 2, "pas": 0.4, "fins": [0.25], "foret": 1.6, "passage": [2.2, 2.4, 2.6], "lamage": [4.3, 2.3] },
+    { "d": 2.5, "pas": 0.45, "fins": [0.35], "foret": 2.05, "passage": [2.7, 2.9, 3.1], "lamage": [5.0, 2.8] },
+    { "d": 3, "pas": 0.5, "fins": [0.35], "foret": 2.5, "passage": [3.2, 3.4, 3.6], "lamage": [6.5, 3.4] },
+    { "d": 4, "pas": 0.7, "fins": [0.5], "foret": 3.3, "passage": [4.3, 4.5, 4.8], "lamage": [8.0, 4.4] },
+    { "d": 5, "pas": 0.8, "fins": [0.5], "foret": 4.2, "passage": [5.3, 5.5, 5.8], "lamage": [10.0, 5.4] },
+    { "d": 6, "pas": 1.0, "fins": [0.75], "foret": 5.0, "passage": [6.4, 6.6, 7.0], "lamage": [11.0, 6.4] },
+    { "d": 8, "pas": 1.25, "fins": [1.0, 0.75], "foret": 6.8, "passage": [8.4, 9.0, 10.0], "lamage": [15.0, 8.6] },
+    { "d": 10, "pas": 1.5, "fins": [1.25, 1.0], "foret": 8.5, "passage": [10.5, 11.0, 12.0], "lamage": [18.0, 10.6] },
+    { "d": 12, "pas": 1.75, "fins": [1.5, 1.25], "foret": 10.2, "passage": [13.0, 13.5, 14.5], "lamage": [20.0, 12.6] },
+    { "d": 14, "pas": 2.0, "fins": [1.5], "foret": 12.0, "passage": [15.0, 15.5, 16.5], "lamage": [24.0, 14.6] },
+    { "d": 16, "pas": 2.0, "fins": [1.5], "foret": 14.0, "passage": [17.0, 17.5, 18.5], "lamage": [26.0, 16.6] },
+    { "d": 18, "pas": 2.5, "fins": [2.0, 1.5], "foret": 15.5, "passage": [19.0, 20.0, 21.0], "lamage": [30.0, 18.6] },
+    { "d": 20, "pas": 2.5, "fins": [2.0, 1.5], "foret": 17.5, "passage": [21.0, 22.0, 24.0], "lamage": [33.0, 20.6] },
+    { "d": 22, "pas": 2.5, "fins": [2.0, 1.5], "foret": 19.5, "passage": [23.0, 24.0, 26.0], "lamage": [36.0, 22.8] },
+    { "d": 24, "pas": 3.0, "fins": [2.0], "foret": 21.0, "passage": [25.0, 26.0, 28.0], "lamage": [40.0, 24.8] },
+    { "d": 27, "pas": 3.0, "fins": [2.0], "foret": 24.0, "passage": [28.0, 30.0, 32.0], "lamage": [43.0, 27.8] },
+    { "d": 30, "pas": 3.5, "fins": [2.0], "foret": 26.5, "passage": [31.0, 33.0, 35.0], "lamage": [48.0, 31.0] },
+    { "d": 33, "pas": 3.5, "fins": [2.0], "foret": 29.5, "passage": [34.0, 36.0, 38.0], "lamage": [53.0, 34.0] },
+    { "d": 36, "pas": 4.0, "fins": [3.0], "foret": 32.0, "passage": [37.0, 39.0, 42.0], "lamage": [57.0, 37.0] },
+    { "d": 39, "pas": 4.0, "fins": [3.0], "foret": 35.0, "passage": [40.0, 42.0, 45.0], "lamage": [62.0, 40.0] },
+    { "d": 42, "pas": 4.5, "fins": [3.0], "foret": 37.5, "passage": [43.0, 45.0, 48.0], "lamage": [66.0, 43.0] },
+    { "d": 45, "pas": 4.5, "fins": [3.0], "foret": 40.5, "passage": [46.0, 48.0, 52.0], "lamage": [71.0, 46.0] },
+    { "d": 48, "pas": 5.0, "fins": [3.0], "foret": 43.0, "passage": [50.0, 52.0, 56.0], "lamage": [76.0, 49.0] },
+    { "d": 52, "pas": 5.0, "fins": [4.0], "foret": 47.0, "passage": [54.0, 56.0, 62.0], "lamage": [82.0, 53.0] },
+    { "d": 56, "pas": 5.5, "fins": [4.0], "foret": 50.5, "passage": [58.0, 62.0, 66.0], "lamage": [87.0, 57.0] },
+    { "d": 60, "pas": 5.5, "fins": [4.0], "foret": 54.5, "passage": [62.0, 66.0, 70.0], "lamage": [93.0, 61.0] },
+    { "d": 64, "pas": 6.0, "fins": [4.0], "foret": 58.0, "passage": [66.0, 70.0, 74.0], "lamage": [98.0, 65.0] }
+  ]
+}
