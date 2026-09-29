@@ -83,5 +83,10 @@ Dépôt : https://github.com/Bryan-Cordonnier/etabli (public, branche `main`, CI
 Les ajouts de fin septembre 2026 (conversions, débit v2, Traçage, Matériaux) n'ont **pas encore été
 vus à l'écran** : liste dans [12-a-faire.md](12-a-faire.md).
 
-**Pas encore fait** : Projets, export PDF direct, mises à jour automatiques, installateur complet
-(ressources des plugins), plugins des lots 3 et 4. Détail dans [12-a-faire.md](12-a-faire.md).
+**Distribution** : première version publiée le 29 septembre 2026 (v0.1.0) sur
+https://github.com/Bryan-Cordonnier/etabli/releases/latest, avec mises à jour automatiques
+signées (voir [14-publier-une-version.md](14-publier-une-version.md)). Des camarades de Bryan
+l'installent : une version publiée doit rester sûre (pas de calcul faux, pas de perte de données).
+
+**Pas encore fait** : Projets, export PDF direct, plugins des lots 3 et 4. Détail dans
+[12-a-faire.md](12-a-faire.md).
