@@ -72,11 +72,25 @@ git push origin main; git push origin v0.2.0
   protégé votre ordinateur » → **Informations complémentaires** → **Exécuter quand même**. Un antivirus
   ou une restriction d'établissement (AppLocker) peut bloquer l'installation : voir avec
   l'administrateur réseau.
+- **Contrôle intelligent des applications** (Smart App Control, Windows 11) : il **bloque sans
+  recours** tout programme sans signature reconnue (constaté le 29/09/2026 sur le PC d'un camarade,
+  v0.1.0). Seule parade sans signature : le désactiver (Sécurité Windows → Contrôle des applications et
+  du navigateur) ; depuis la mise à jour d'avril 2026 il se réactive sans réinstaller Windows, mais
+  Établi reste bloqué tant qu'il est actif. Vraie solution : signer l'installateur et l'exécutable
+  (Authenticode), voir « Pistes ».
 - WebView2 (moteur d'affichage) est présent sur Windows 10 et 11 ; l'installateur le télécharge
   s'il manque.
 
 ## Pistes
 
-- Signature Windows (Authenticode) pour supprimer l'avertissement : SignPath (gratuit pour les
-  projets libres, sur dossier) ou certificat payant.
+- Signature Windows (Authenticode), indispensable avec le Contrôle intelligent des applications
+  (options étudiées le 29/09/2026) :
+  - **SignPath Foundation** : gratuit pour les projets libres ; il faut une licence OSI (le dépôt n'en
+    a pas encore), l'authentification à deux facteurs, une page « politique de signature » ; éditeur
+    affiché : « SignPath Foundation » ; signature dans GitHub Actions ; dossier à faire accepter.
+  - **Certum Open Source** : environ 25 € (carte) ou 49 € HT (nuage SimplySign) par an, pour un
+    particulier et un projet libre non commercial ; éditeur affiché : le nom du développeur ;
+    signature en nuage avec code à usage unique, peu pratique en CI.
+  - **Azure Artifact Signing** : 9,99 $/mois, signature automatique en CI ; particuliers : pas la
+    France ; entreprises de l'UE : au moins 3 ans d'existence vérifiable, nom de l'entreprise affiché.
 - Page de téléchargement (GitHub Pages) plus lisible que la page des Releases.
