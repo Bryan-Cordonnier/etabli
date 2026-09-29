@@ -8,13 +8,21 @@ SolidWorks sur des PC modestes, 100 % locale, et extensible par plugins.
 
 ## Installer
 
-1. Téléchargez **`Etabli_…_x64-setup.exe`** sur la page de la
+1. Téléchargez l'installateur **`Etabli_…_x64_fr-FR.msi`** sur la page de la
    [dernière version](https://github.com/Bryan-Cordonnier/etabli/releases/latest).
 2. Lancez-le : l'installation se fait pour votre compte, sans droits d'administrateur.
-3. Si Windows affiche « Windows a protégé votre ordinateur » : **Informations complémentaires** →
-   **Exécuter quand même** (l'installateur n'a pas de certificat payant).
+3. En attendant la signature de l'installateur (demande en cours auprès de la SignPath Foundation,
+   voir la [politique de signature](CODE_SIGNING.md)) : si Windows affiche « Windows a protégé votre
+   ordinateur », cliquez sur **Informations complémentaires** → **Exécuter quand même**.
 
 Établi cherche ensuite lui-même les nouvelles versions au démarrage et propose de les installer.
+
+Ce que fait Établi : des calculs d'atelier de chaudronnerie (géométrie, débit de tubes, calepinage de
+tôles, développés de pliage et de traçage, masses, taraudages, couples de serrage), enregistrés sur
+l'ordinateur et imprimables en fiches d'atelier. Il ne collecte aucune donnée (voir la
+[politique de signature et de confidentialité](CODE_SIGNING.md)).
+
+Licence : [MIT](LICENSE).
 
 ## Structure
 

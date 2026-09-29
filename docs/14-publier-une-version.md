@@ -1,47 +1,85 @@
-# 14 — Publier une version et mises à jour
+# 14 — Publier une version, signature et mises à jour
 
 Établi est distribué par les **Releases GitHub** du dépôt public (gratuit) :
 https://github.com/Bryan-Cordonnier/etabli/releases/latest. Chaque version contient l'installateur
-Windows `Etabli_<version>_x64-setup.exe`, sa signature `.sig` et `latest.json`, le fichier que les
-Établi installés consultent pour se mettre à jour.
+`Etabli_<version>_x64_fr-FR.msi`, sa signature de mise à jour `.msi.sig` et `latest.json`, le
+fichier que les Établi installés consultent pour se mettre à jour. Licence : **MIT** (`LICENSE`).
 
-## Comment ça marche
+## Installateur MSI par utilisateur
 
-1. Une étiquette `v1.2.3` envoyée sur GitHub lance `.github/workflows/publier.yml` (Windows) :
-   tests, plugins compilés, installateur NSIS, **signature de mise à jour**, publication de la
-   Release avec le message de l'étiquette comme notes de version.
-2. Au démarrage (5 s après l'ouverture, si « Chercher au démarrage » est activé), Établi lit
-   `…/releases/latest/download/latest.json` (`plugins.updater.endpoints` dans `tauri.conf.json`).
-   Si la version est plus récente, un bandeau propose « Installer et redémarrer » ; les notes sont
-   dans Paramètres → Mises à jour et à propos. Rien ne s'installe sans clic.
-3. L'installation télécharge le nouvel installateur, **vérifie sa signature** avec la clé publique de
-   `tauri.conf.json` (`plugins.updater.pubkey`), ferme Établi, installe en mode « passive » (petite
-   fenêtre de progression, sans question) et relance l'application. Documents et réglages ne sont pas
-   touchés (ils sont dans Documents\Etabli et AppData).
+Depuis la 0.1.1, l'installateur est un **MSI** (la 0.1.0 était un NSIS `.exe`). Modèle WiX :
+`apps/desktop/src-tauri/windows/installateur.wxs` = le modèle de Tauri 2.11.5 avec l'installation
+**par utilisateur, sans droits d'administrateur** (paquet « double usage » : `ALLUSERS=2`,
+`MSIINSTALLPERUSER=1`, `InstallPrivileges="limited"`). Résultat, vérifié le 29/09/2026 depuis un
+compte sans droits d'administrateur : installation dans `%LOCALAPPDATA%\Programs\Etabli`, raccourcis
+du menu Démarrer et du Bureau de l'utilisateur, désinstallation propre (Paramètres Windows ou
+`msiexec /x`). À comparer avec le modèle d'origine à chaque mise à jour de Tauri.
 
-Code : `apps/desktop/src/lib/state/updates.svelte.ts` (vérification, téléchargement),
-`components/UpdateBanner.svelte`, section « a-propos » de `pages/SettingsPage.svelte` ; côté Rust,
-`tauri-plugin-updater` et `tauri-plugin-process` (relance), permissions `updater:default` et
-`process:allow-restart`.
+Pourquoi MSI plutôt que NSIS : SignPath signe **en une seule demande** le programme contenu dans le
+MSI puis le MSI (une seule approbation par version), et il n'y a pas d'exécutable de désinstallation
+à signer (msiexec, signé par Microsoft, s'en charge). Avec NSIS, il aurait fallu signer séparément le
+programme, le désinstalleur généré pendant la compilation et l'installateur.
+
+Configuration : `bundle.targets = ["msi"]`, `bundle.windows.wix` (modèle, `fr-FR`, `upgradeCode`
+**à ne jamais changer** : c'est lui qui fait remplacer l'ancienne version), `bundle.publisher`,
+`copyright`, `license` (repris dans les propriétés du programme : exigence de SignPath).
 
 ## Plugins dans l'installateur
 
 `npm run build:plugins` compile les plugins puis `scripts/plugins-officiels.mjs` copie chaque
 `plugins/<id>/dist` dans `apps/desktop/src-tauri/plugins-officiels/<id>` (ignoré par Git, sauf
-`.gitkeep`). `bundle.resources` l'installe dans `resources/plugins`, où le moteur cherche les plugins
-officiels en production (`paths.rs`). Un nouveau plugin est donc inclus sans rien configurer.
+`.gitkeep`). `bundle.resources` l'installe dans `plugins`, à côté du programme, où le moteur cherche
+les plugins officiels en production (`paths.rs`). Un nouveau plugin est inclus sans rien configurer.
 
-## Clé de signature (à ne jamais perdre ni publier)
+## Mises à jour automatiques
 
-- Privée : `H:\outils\cles\etabli-mises-a-jour.key`, mot de passe dans
-  `H:\outils\cles\etabli-mises-a-jour.mdp.txt`. Hors du dépôt (`*.key` est aussi ignoré).
-- **Sauvegarde obligatoire** (clé USB, gestionnaire de mots de passe) : sans elle, les Établi déjà
-  installés ne pourront plus se mettre à jour (il faudrait les réinstaller à la main).
-- Secrets GitHub du dépôt (Settings → Secrets and variables → Actions), saisis par Bryan :
-  `TAURI_SIGNING_PRIVATE_KEY` = **contenu** du fichier `.key` (pas son chemin) et
-  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = contenu du fichier `.mdp.txt`.
-- La clé publique est dans `tauri.conf.json` ; changer de clé = les versions installées refusent les
-  mises à jour suivantes.
+1. Au démarrage (5 s après l'ouverture, si « Chercher au démarrage » est activé), Établi lit
+   `…/releases/latest/download/latest.json` (`plugins.updater.endpoints` dans `tauri.conf.json`).
+   Si la version est plus récente, un bandeau propose « Installer et redémarrer » ; les notes sont
+   dans Paramètres → Mises à jour et à propos. Rien ne s'installe sans clic.
+2. L'installation télécharge le MSI, **vérifie sa signature de mise à jour** avec la clé publique de
+   `tauri.conf.json` (`plugins.updater.pubkey`), ferme Établi, installe en mode « passive » et relance
+   l'application. Documents et réglages ne sont pas touchés (Documents\Etabli et AppData).
+
+Code : `apps/desktop/src/lib/state/updates.svelte.ts`, `components/UpdateBanner.svelte`, section
+« a-propos » de `pages/SettingsPage.svelte` ; Rust : `tauri-plugin-updater`, `tauri-plugin-process` ;
+permissions `updater:default`, `process:allow-restart`.
+
+## Deux signatures différentes
+
+| Signature | Sert à | Clé | Où |
+| --- | --- | --- | --- |
+| **Mise à jour** (minisign, `.msi.sig`) | Établi installé vérifie que la mise à jour vient bien de nous | `H:\outils\cles\etabli-mises-a-jour.key` + `.mdp.txt` | secrets GitHub `TAURI_SIGNING_PRIVATE_KEY` (contenu du fichier) et `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` |
+| **Windows** (Authenticode) | Windows (SmartScreen, Contrôle intelligent des applications) accepte d'ouvrir l'installateur et le programme | chez SignPath (HSM), jamais chez nous | secret `SIGNPATH_API_TOKEN`, variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_POLICY_SLUG` |
+
+La clé de mise à jour est **à sauvegarder** (clé USB, gestionnaire de mots de passe) : sans elle,
+les Établi installés ne peuvent plus se mettre à jour. La signature de mise à jour est faite **après**
+la signature Windows (elle porte sur le MSI final) : `scripts/latest-json.mjs` écrit `latest.json`.
+
+## SignPath (signature Windows gratuite pour les projets libres)
+
+Le Contrôle intelligent des applications de Windows 11 **bloque sans recours** un programme non
+signé (constaté le 29/09/2026 sur le PC d'un camarade avec la 0.1.0). Signature choisie : SignPath
+Foundation (gratuit, projet libre ; éditeur affiché « SignPath Foundation »). Politique de signature
+publiée : [`CODE_SIGNING.md`](../CODE_SIGNING.md) (phrase obligatoire, rôles, confidentialité).
+
+Déroulé dans `.github/workflows/publier.yml`, **seulement si la variable
+`SIGNPATH_ORGANIZATION_ID` existe** (sinon la version est publiée sans signature Windows) :
+1. MSI compilé sur un runner GitHub (exigence de SignPath : tout le travail sur des machines GitHub) ;
+2. envoyé comme artefact (`actions/upload-artifact@v7`) puis soumis
+   (`signpath/github-action-submit-signing-request@v3`) ;
+3. **Bryan approuve la demande dans SignPath** (courriel ou site) : le workflow attend jusqu'à 1 h ;
+4. le MSI signé remplace le MSI non signé, puis signature de mise à jour et publication.
+
+Configuration d'artefact à recopier dans SignPath : `.signpath/artifact-configuration.xml` (zip →
+MSI → `etabli.exe`, nom de produit « Etabli » imposé).
+
+Mise en place, une fois la demande acceptée par la SignPath Foundation : dans SignPath, créer le
+projet (slug `etabli`), la configuration d'artefact, la politique de signature (slug
+`release-signing`), relier le dépôt GitHub (connecteur « GitHub.com »), créer un jeton d'API pour un
+utilisateur « soumetteur » ; dans GitHub (Settings → Secrets and variables → Actions), ajouter le
+secret `SIGNPATH_API_TOKEN` et les variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG`,
+`SIGNPATH_POLICY_SLUG`.
 
 ## Publier une version (pas à pas)
 
@@ -54,43 +92,35 @@ git tag -a v0.2.0 -F notes.txt         # notes en français : ce qui change pour
 git push origin main; git push origin v0.2.0
 ```
 
-- La version doit **augmenter** (semver) : sinon aucune mise à jour n'est proposée. Le workflow
-  refuse une étiquette différente de la version de `tauri.conf.json`.
-- Suivre la publication dans l'onglet Actions (« Publication », ~10 min). Une étiquette ratée :
-  supprimer la Release et l'étiquette sur GitHub, corriger, recommencer.
-- Tester en local sans publier : définir `TAURI_SIGNING_PRIVATE_KEY` (contenu de la clé) et
-  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, puis `npm run build` ; installateur dans
-  `apps/desktop/src-tauri/target/release/bundle/nsis/`. Sous PowerShell 5, une variable mise à `''`
-  est supprimée : ne pas utiliser de mot de passe vide.
+- La version doit **augmenter** : sinon aucune mise à jour n'est proposée. Le workflow refuse une
+  étiquette différente de la version de `tauri.conf.json`.
+- Avec SignPath : approuver la demande de signature dans l'heure. Suivre la publication dans
+  l'onglet Actions (« Publication »).
+- Étiquette ratée : supprimer la Release et l'étiquette sur GitHub, corriger, recommencer.
+- Tester en local : définir `TAURI_SIGNING_PRIVATE_KEY` (**contenu** de la clé, pas son chemin) et
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, puis `npm run build` ; MSI dans
+  `apps/desktop/src-tauri/target/release/bundle/msi/`. Installation muette pour vérifier :
+  `msiexec /i <msi> /qn`, désinstallation : `msiexec /x <msi> /qn`. Sous PowerShell 5, une variable
+  mise à `''` est supprimée : ne pas utiliser de mot de passe vide.
 
 ## Installer (pour les utilisateurs)
 
-- Télécharger `Etabli_<version>_x64-setup.exe` sur la page des Releases et le lancer. Installation
-  **par utilisateur** (dans `%LOCALAPPDATA%`), sans droits d'administrateur : utile sur les PC
-  d'école.
-- L'installateur n'est pas signé par un certificat Windows (payant) : Windows affiche « Windows a
-  protégé votre ordinateur » → **Informations complémentaires** → **Exécuter quand même**. Un antivirus
-  ou une restriction d'établissement (AppLocker) peut bloquer l'installation : voir avec
-  l'administrateur réseau.
-- **Contrôle intelligent des applications** (Smart App Control, Windows 11) : il **bloque sans
-  recours** tout programme sans signature reconnue (constaté le 29/09/2026 sur le PC d'un camarade,
-  v0.1.0). Seule parade sans signature : le désactiver (Sécurité Windows → Contrôle des applications et
-  du navigateur) ; depuis la mise à jour d'avril 2026 il se réactive sans réinstaller Windows, mais
-  Établi reste bloqué tant qu'il est actif. Vraie solution : signer l'installateur et l'exécutable
-  (Authenticode), voir « Pistes ».
-- WebView2 (moteur d'affichage) est présent sur Windows 10 et 11 ; l'installateur le télécharge
-  s'il manque.
+- Télécharger `Etabli_<version>_x64_fr-FR.msi` sur la page des Releases et le lancer : installation
+  pour le compte de l'utilisateur, sans droits d'administrateur.
+- **Tant que SignPath n'est pas en place** : Windows affiche « Windows a protégé votre ordinateur » →
+  **Informations complémentaires** → **Exécuter quand même** ; et si le **Contrôle intelligent des
+  applications** est actif, il bloque sans recours (seule parade : le désactiver dans Sécurité
+  Windows → Contrôle des applications et du navigateur ; depuis avril 2026 il se réactive sans
+  réinstaller Windows, mais Établi reste bloqué tant qu'il est actif).
+- WebView2 est présent sur Windows 10 et 11 ; l'installateur le télécharge s'il manque.
+- Qui a installé la 0.1.0 (NSIS) : la mise à jour installe le MSI à côté ; désinstaller « Etabli »
+  0.1.0 dans les paramètres de Windows.
 
-## Pistes
+## Autres options de signature étudiées (29/09/2026)
 
-- Signature Windows (Authenticode), indispensable avec le Contrôle intelligent des applications
-  (options étudiées le 29/09/2026) :
-  - **SignPath Foundation** : gratuit pour les projets libres ; il faut une licence OSI (le dépôt n'en
-    a pas encore), l'authentification à deux facteurs, une page « politique de signature » ; éditeur
-    affiché : « SignPath Foundation » ; signature dans GitHub Actions ; dossier à faire accepter.
-  - **Certum Open Source** : environ 25 € (carte) ou 49 € HT (nuage SimplySign) par an, pour un
-    particulier et un projet libre non commercial ; éditeur affiché : le nom du développeur ;
-    signature en nuage avec code à usage unique, peu pratique en CI.
-  - **Azure Artifact Signing** : 9,99 $/mois, signature automatique en CI ; particuliers : pas la
-    France ; entreprises de l'UE : au moins 3 ans d'existence vérifiable, nom de l'entreprise affiché.
-- Page de téléchargement (GitHub Pages) plus lisible que la page des Releases.
+- **Certum Open Source** : environ 25 € (carte) ou 49 € HT (nuage SimplySign) par an, particulier et
+  projet libre non commercial ; éditeur : le nom du développeur ; code à usage unique à chaque
+  signature, peu pratique en CI.
+- **Azure Artifact Signing** : 9,99 $/mois ; particuliers : pas la France ; entreprises de l'UE : au
+  moins 3 ans d'existence vérifiable.
+- Microsoft Store : exige aussi un installateur signé pour une application Tauri.

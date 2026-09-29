@@ -69,6 +69,8 @@ modification recharge la page : les valeurs saisies sont perdues.
 | Piège | Solution |
 | --- | --- |
 | Vite 8 : `minify: "esbuild"` échoue | laisser `minify: !TAURI_ENV_DEBUG` (Oxc) |
+| `npm run build` écrit sur `C:` | Tauri télécharge WiX (et NSIS) dans `%LOCALAPPDATA%\tauri` : pas de réglage pour le déplacer ; exception tolérée à la règle « rien sur C: » |
+| `TAURI_SIGNING_PRIVATE_KEY` : « failed to decode base64 » | la variable attend le **contenu** de la clé, pas son chemin ; sous PowerShell 5, `$env:X = ''` supprime la variable (mot de passe vide impossible) |
 | L'aperçu rapide se fermait à l'ouverture | WebView2 émet `Focused(false)` quand le focus passe à la page : la perte de focus est détectée **par la page** (`Apercu.svelte`), pas par Rust |
 | Styles bloqués dans une fiche imprimée | Tauri ajoute des empreintes à `style-src` (ce qui annule `unsafe-inline`) : `dangerousDisableAssetCspModification: ["style-src"]` dans `tauri.conf.json` |
 | JSON passé en argument PowerShell perd ses guillemets | écrire un fichier (script `.mjs`, JSON) et le passer par chemin |

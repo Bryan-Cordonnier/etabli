@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuration d'artefact SignPath du projet Établi (à recopier dans SignPath : Projects → etabli →
+  Artifact configurations). L'artefact envoyé par GitHub Actions est un zip qui contient le MSI ;
+  SignPath signe d'abord etabli.exe dans le MSI, puis le MSI lui-même. Une seule demande, donc une
+  seule approbation par version. Voir docs/14-publier-une-version.md.
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <msi-file path="Etabli_*_x64_fr-FR.msi" product-name="Etabli">
+      <pe-file path="etabli.exe" product-name="Etabli">
+        <authenticode-sign />
+      </pe-file>
+      <authenticode-sign />
+    </msi-file>
+  </zip-file>
+</artifact-configuration>

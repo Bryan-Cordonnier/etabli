@@ -2,6 +2,7 @@
   "name": "etabli",
   "private": true,
   "description": "Boîte à outils de bureau extensible par plugins, pour la chaudronnerie (BTS CRCI)",
+  "license": "MIT",
   "workspaces": [
     "apps/*",
     "packages/*",

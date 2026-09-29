@@ -1,7 +1,7 @@
-# Publication d'une version : à chaque étiquette « v1.2.3 » envoyée sur GitHub, l'installateur
-# Windows est compilé, signé pour la mise à jour automatique et publié dans les Releases avec
-# latest.json, le fichier que les Établi installés consultent pour se mettre à jour.
-# Marche à suivre : docs/14-publier-une-version.md.
+# Publication d'une version : à chaque étiquette « v1.2.3 » envoyée sur GitHub, l'installateur MSI
+# est compilé, signé pour Windows par SignPath (dès que la variable SIGNPATH_ORGANIZATION_ID est
+# définie), signé pour la mise à jour automatique, puis publié dans les Releases avec latest.json,
+# le fichier que les Établi installés consultent. Marche à suivre : docs/14-publier-une-version.md.
 name: Publication
 
 on:
@@ -18,6 +18,8 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      SIGNPATH: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -42,14 +44,10 @@ jobs:
           fi
 
       - name: Notes de version (message de l'étiquette)
-        id: notes
         run: |
           git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
-          {
-            echo "body<<FIN_DES_NOTES"
-            git tag -l --format='%(contents)' "${GITHUB_REF_NAME}"
-            echo "FIN_DES_NOTES"
-          } >> "$GITHUB_OUTPUT"
+          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > "$RUNNER_TEMP/notes.txt"
+          cat "$RUNNER_TEMP/notes.txt"
 
       - name: Dépendances npm
         run: npm ci
@@ -60,16 +58,64 @@ jobs:
       - name: Plugins (compilés et copiés pour l'installateur)
         run: npm run build:plugins
 
-      - name: Installateur, signature et publication
-        uses: tauri-apps/tauri-action@v1
+      - name: Installateur MSI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build -w @etabli/desktop
+
+      - name: Emplacement du MSI
+        id: msi
+        run: |
+          path=$(ls apps/desktop/src-tauri/target/release/bundle/msi/*.msi)
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$path")" >> "$GITHUB_OUTPUT"
+
+      # ——— Signature Windows (Authenticode) par SignPath : une demande, approuvée à la main ———
+      - name: MSI non signé, envoyé à SignPath
+        id: non-signe
+        if: env.SIGNPATH == 'true'
+        uses: actions/upload-artifact@v7
         with:
-          projectPath: apps/desktop
-          tagName: ${{ github.ref_name }}
-          releaseName: Établi ${{ github.ref_name }}
-          releaseBody: ${{ steps.notes.outputs.body }}
-          releaseDraft: false
-          prerelease: false
+          name: installateur-non-signe
+          path: ${{ steps.msi.outputs.path }}
+          if-no-files-found: error
+
+      - name: Signature Windows (SignPath, attend l'approbation)
+        if: env.SIGNPATH == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.non-signe.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signe
+
+      - name: MSI signé à la place du MSI non signé
+        if: env.SIGNPATH == 'true'
+        run: cp "signe/${{ steps.msi.outputs.name }}" "${{ steps.msi.outputs.path }}"
+
+      # ——— Signature de mise à jour, sur le MSI final, puis publication ———
+      - name: Signature de mise à jour (.sig)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        working-directory: apps/desktop
+        run: npx tauri signer sign "$GITHUB_WORKSPACE/${{ steps.msi.outputs.path }}"
+
+      - name: latest.json
+        run: node scripts/latest-json.mjs "$GITHUB_REF_NAME" "${{ steps.msi.outputs.path }}" "$RUNNER_TEMP/notes.txt" > "$RUNNER_TEMP/latest.json"
+
+      - name: Publication de la version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "${{ steps.msi.outputs.path }}" \
+            "${{ steps.msi.outputs.path }}.sig" \
+            "$RUNNER_TEMP/latest.json" \
+            --title "Établi $GITHUB_REF_NAME" \
+            --notes-file "$RUNNER_TEMP/notes.txt"

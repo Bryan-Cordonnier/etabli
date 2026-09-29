@@ -56,8 +56,12 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["msi"],
     "createUpdaterArtifacts": true,
+    "publisher": "Bryan Cordonnier",
+    "copyright": "© 2026 Bryan Cordonnier, licence MIT",
+    "license": "MIT",
+    "homepage": "https://github.com/Bryan-Cordonnier/etabli",
     "shortDescription": "Boîte à outils de chaudronnerie",
     "resources": {
       "plugins-officiels/": "plugins/"
@@ -70,10 +74,10 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "nsis": {
-        "installMode": "currentUser",
-        "languages": ["French"],
-        "displayLanguageSelector": false
+      "wix": {
+        "template": "windows/installateur.wxs",
+        "language": "fr-FR",
+        "upgradeCode": "1F476224-4618-46A0-A1FC-3EF01D47C8F3"
       }
     }
   }
