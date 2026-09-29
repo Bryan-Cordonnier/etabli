@@ -1,6 +1,6 @@
 <script lang="ts">
   // Colonne des plugins (cahier des charges, section 5.2).
-  import { PLUGINS } from "$lib/plugins/registry";
+  import { PLUGINS } from "$lib/plugins/registry.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import type { PluginManifest, View } from "$lib/types";
@@ -138,8 +138,22 @@
       <Tile color="var(--muted)" icon="home" emoji="🏠" variant="plain" />
       <span class="label">Accueil</span>
     </button>
+    <button
+      class="item"
+      class:active={view?.kind === "catalogue"}
+      onclick={(e) => go({ kind: "catalogue" }, e)}
+      onauxclick={(e) => e.button === 1 && go({ kind: "catalogue" }, e)}
+      onmousedown={preventAutoscroll}
+      title="Catalogue des plugins"
+    >
+      <Tile color="var(--muted)" icon="store" emoji="🧩" variant="plain" />
+      <span class="label">Catalogue</span>
+    </button>
 
     <div class="section-label label">Plugins</div>
+    {#if !plugins.length}
+      <p class="none label">Aucun plugin installé.</p>
+    {/if}
 
     {#each plugins as plugin (plugin.id)}
       <button
@@ -259,6 +273,16 @@
     letter-spacing: 0.8px;
     color: var(--faint);
     padding: 12px 8px 6px;
+  }
+  .none {
+    margin: 0;
+    padding: 0 8px;
+    font-size: 12.5px;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+  .collapsed.folded .none {
+    display: none;
   }
   .item {
     position: relative;

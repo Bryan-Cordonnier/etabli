@@ -7,7 +7,7 @@
   import SuppliersEditor from "$lib/components/SuppliersEditor.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
-  import { PLUGINS, getMiniAppByKey } from "$lib/plugins/registry";
+  import { PLUGINS, getMiniAppByKey } from "$lib/plugins/registry.svelte";
   import {
     DEFAULT_SHORTCUT,
     TEXT_SCALES,
@@ -310,7 +310,7 @@
         <div class="box">
           <div class="box-head">
             <h3>Plugins installés</h3>
-            <button class="btn" disabled title="Le catalogue en ligne arrive au jalon 6"><Icon name="puzzle" size={16} /> Parcourir le catalogue</button>
+            <button class="btn" onclick={() => tabs.navigate({ kind: "catalogue" })}><Icon name="store" size={16} /> Parcourir le catalogue</button>
           </div>
           <div class="plugins">
             {#each PLUGINS as plugin (plugin.id)}

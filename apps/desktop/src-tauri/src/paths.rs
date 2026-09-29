@@ -1,3 +1,4 @@
+use crate::plugins::Source;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager, Runtime};
 
@@ -7,8 +8,10 @@ pub struct AppPaths {
     pub documents: PathBuf,
     /// Réglages de l'application et plugins installés par l'utilisateur.
     pub config: PathBuf,
-    /// Dossiers où chercher des plugins, avec `true` pour les plugins officiels.
-    pub plugin_roots: Vec<(PathBuf, bool)>,
+    /// Plugins installés depuis le catalogue ou un fichier `.etabli-plugin` (un dossier par plugin).
+    pub catalogue: PathBuf,
+    /// Dossiers où chercher des plugins, dans l'ordre : le premier trouvé pour un identifiant gagne.
+    pub plugin_roots: Vec<(PathBuf, Source)>,
 }
 
 impl AppPaths {
@@ -26,16 +29,22 @@ impl AppPaths {
             None => app.path().config_dir()?.join("Etabli"),
         };
 
-        // Plugins officiels : directement dans le dépôt en développement,
-        // dans les ressources de l'application une fois installée.
-        let official = if cfg!(debug_assertions) {
+        // Plugins intégrés : ceux du dépôt en développement ; une fois installée, l'application
+        // n'en contient plus (ils viennent du catalogue), le dossier des ressources reste lu.
+        let integres = if cfg!(debug_assertions) {
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../plugins")
         } else {
             app.path().resource_dir()?.join("plugins")
         };
+        let catalogue = config.join("catalogue");
 
         Ok(Self {
-            plugin_roots: vec![(official, true), (config.join("plugins"), false)],
+            plugin_roots: vec![
+                (integres, Source::Integre),
+                (catalogue.clone(), Source::Catalogue),
+                (config.join("plugins"), Source::Utilisateur),
+            ],
+            catalogue,
             documents,
             config,
         })

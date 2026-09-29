@@ -26,6 +26,7 @@ import {
   Layers,
   LayoutGrid,
   Minus,
+  Package,
   Palette,
   PanelLeft,
   Plus,
@@ -35,10 +36,12 @@ import {
   Search,
   Settings,
   Shapes,
+  ShieldCheck,
   Sigma,
   Spline,
   Square,
   Star,
+  Store,
   Trash2,
   Triangle,
   TriangleRight,
@@ -95,6 +98,9 @@ export const ICONS = {
   palette: Palette,
   refresh: RefreshCw,
   keyboard: Keyboard,
+  store: Store,
+  package: Package,
+  shield: ShieldCheck,
 };
 
 export type IconName = keyof typeof ICONS;

@@ -12,7 +12,7 @@
   import { DocumentSession } from "$lib/documents.svelte";
   import { addMachineFromApp } from "$lib/machines";
   import { sendToApp, takeIncoming } from "$lib/send";
-  import { getMiniApp, pluginUrl } from "$lib/plugins/registry";
+  import { getMiniApp, pluginUrl } from "$lib/plugins/registry.svelte";
   import { handleShortcut } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";

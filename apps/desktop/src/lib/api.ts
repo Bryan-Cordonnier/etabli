@@ -103,9 +103,31 @@ export interface DocumentInput {
   data: unknown;
 }
 
+/** D'où vient un plugin : livré avec l'application, installé depuis le catalogue, ou déposé à la main. */
+export type PluginSource = "integre" | "catalogue" | "utilisateur";
+
 export interface PluginInfo {
   manifest: unknown;
   official: boolean;
+  source?: PluginSource;
+}
+
+/** Plugin du catalogue publié sur GitHub (voir scripts/paquet-plugin.mjs). */
+export interface CatalogueEntry {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  author: string;
+  color: string;
+  emoji: string;
+  icon: string;
+  apiVersion: string;
+  miniApps: { id: string; name: string; description: string; emoji: string; icon: string }[];
+  /** Taille du paquet, en octets. */
+  size: number;
+  url: string;
+  published: string;
 }
 
 export interface DocumentFilter {
@@ -116,6 +138,22 @@ export interface DocumentFilter {
 
 export const api = {
   pluginsList: (): Promise<PluginInfo[]> => (inTauri ? invoke("plugins_list") : Promise.resolve([])),
+
+  /** Catalogue des plugins officiels (lu sur GitHub par Rust). */
+  catalogueRead: (): Promise<unknown> =>
+    inTauri ? invoke("catalogue_lire") : Promise.reject(new Error("Le catalogue n'est disponible que dans l'application.")),
+  /** Télécharge, vérifie la signature et installe (ou met à jour) un plugin ; renvoie son identifiant. */
+  pluginInstall: (id: string, url: string): Promise<string> => invoke("plugin_installer", { id, url }),
+  /** Installe un fichier .etabli-plugin choisi par l'utilisateur ; null s'il annule. */
+  pluginInstallFile: (): Promise<string | null> => invoke("plugin_installer_fichier"),
+  pluginUninstall: (id: string): Promise<void> => invoke("plugin_desinstaller", { id }),
+  /** Liste des plugins changée (installation, désinstallation), dans n'importe quelle fenêtre. */
+  onPluginsChanged: (handler: () => void): Promise<() => void> =>
+    inTauri ? listen("etabli:plugins", () => handler()) : Promise.resolve(() => {}),
+  onInstallProgress: (handler: (progress: { id: string; pourcent: number }) => void): Promise<() => void> =>
+    inTauri
+      ? listen<{ id: string; pourcent: number }>("etabli:installation", (event) => handler(event.payload))
+      : Promise.resolve(() => {}),
 
   documentsList: (filter: DocumentFilter = {}): Promise<DocumentMeta[]> =>
     inTauri ? invoke("documents_list", { ...filter }) : Promise.resolve(preview.list(filter)),

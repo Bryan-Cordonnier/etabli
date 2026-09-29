@@ -36,6 +36,11 @@ interface Persisted {
   author: string;
   /** Chercher une nouvelle version sur GitHub au démarrage. */
   checkUpdates: boolean;
+  /**
+   * Passage au catalogue fait : les plugins livrés avec les versions 0.1.x ont été réinstallés
+   * depuis le catalogue (ou il n'y avait rien à réinstaller).
+   */
+  catalogueMigrated: boolean;
 }
 
 const DEFAULTS: Persisted = {
@@ -53,6 +58,7 @@ const DEFAULTS: Persisted = {
   closeToTray: true,
   author: "",
   checkUpdates: true,
+  catalogueMigrated: false,
 };
 
 class Settings {
@@ -70,6 +76,7 @@ class Settings {
   closeToTray = $state(DEFAULTS.closeToTray);
   author = $state(DEFAULTS.author);
   checkUpdates = $state(DEFAULTS.checkUpdates);
+  catalogueMigrated = $state(DEFAULTS.catalogueMigrated);
 
   constructor() {
     this.reload();
@@ -92,6 +99,7 @@ class Settings {
     this.closeToTray = saved.closeToTray;
     this.author = saved.author;
     this.checkUpdates = saved.checkUpdates;
+    this.catalogueMigrated = saved.catalogueMigrated;
   }
 
   #save(): void {
@@ -110,11 +118,12 @@ class Settings {
       closeToTray: this.closeToTray,
       author: this.author,
       checkUpdates: this.checkUpdates,
+      catalogueMigrated: this.catalogueMigrated,
     } satisfies Persisted);
   }
 
   /** Modifie un réglage simple et l'enregistre. */
-  set<K extends "theme" | "iconStyle" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author" | "checkUpdates">(
+  set<K extends "theme" | "iconStyle" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author" | "checkUpdates" | "catalogueMigrated">(
     key: K,
     value: Settings[K],
   ): void {

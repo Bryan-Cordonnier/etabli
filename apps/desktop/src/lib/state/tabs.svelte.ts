@@ -14,6 +14,7 @@ function sameView(a: View, b: View): boolean {
   if (a.kind !== b.kind) return false;
   switch (a.kind) {
     case "home":
+    case "catalogue":
       return true;
     case "plugin":
       return b.kind === "plugin" && a.pluginId === b.pluginId;
@@ -99,11 +100,11 @@ class Tabs {
         return;
       }
     }
-    // Un seul onglet Paramètres.
-    if (view.kind === "settings") {
-      const open = this.list.find((t) => t.view.kind === "settings");
+    // Un seul onglet Paramètres, un seul onglet Catalogue.
+    if (view.kind === "settings" || view.kind === "catalogue") {
+      const open = this.list.find((t) => t.view.kind === view.kind);
       if (open) {
-        if (view.section) open.view = view;
+        if (view.kind === "settings" && view.section) open.view = view;
         this.activeId = open.id;
         return;
       }

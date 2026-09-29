@@ -30,7 +30,13 @@ export async function initStorage(): Promise<void> {
       if (legacy !== undefined) cache[key] = legacy;
     }
   }
+  usedBefore = "settings" in cache;
 }
+
+let usedBefore = false;
+
+/** Vrai si Établi avait déjà été utilisé sur ce poste avant ce lancement (réglages existants). */
+export const wasUsedBefore = (): boolean => usedBefore;
 
 /** Relit settings.json : une autre fenêtre (la principale) a pu le modifier. */
 export async function reloadStorage(): Promise<void> {

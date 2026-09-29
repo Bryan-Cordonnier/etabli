@@ -1,4 +1,5 @@
 mod apercu;
+mod catalogue;
 mod documents;
 mod donnees;
 mod files;
@@ -13,7 +14,10 @@ use plugins::LoadedPlugin;
 use serde::Serialize;
 use std::{
     borrow::Cow,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        RwLock, RwLockReadGuard,
+    },
 };
 use tauri::{http::Response, Manager, WindowEvent};
 use tauri_plugin_autostart::MacosLauncher;
@@ -25,9 +29,23 @@ const DEMARRAGE: &str = "--demarrage";
 /// État partagé par les commandes et le service des fichiers de plugins.
 pub struct AppState {
     pub paths: AppPaths,
-    pub plugins: Vec<LoadedPlugin>,
+    /// Relue après chaque installation ou désinstallation depuis le catalogue (sans redémarrer).
+    plugins: RwLock<Vec<LoadedPlugin>>,
     /// Fermer la fenêtre principale la réduit dans la zone de notification (réglage « Général »).
     pub fermeture_zone: AtomicBool,
+}
+
+impl AppState {
+    pub fn plugins(&self) -> RwLockReadGuard<'_, Vec<LoadedPlugin>> {
+        // Un verrou empoisonné (panique pendant une écriture) garde la dernière liste complète.
+        self.plugins.read().unwrap_or_else(|e| e.into_inner())
+    }
+
+    /// Relit les dossiers de plugins.
+    pub fn reload_plugins(&self) {
+        let list = plugins::scan(&self.paths.plugin_roots);
+        *self.plugins.write().unwrap_or_else(|e| e.into_inner()) = list;
+    }
 }
 
 #[derive(Serialize)]
@@ -91,7 +109,7 @@ pub fn run() {
         )
         .register_uri_scheme_protocol(plugins::SCHEME, |ctx, request| {
             match ctx.app_handle().try_state::<AppState>() {
-                Some(state) => plugins::serve(&state.plugins, request.uri().path()),
+                Some(state) => plugins::serve(&state.plugins(), request.uri().path()),
                 None => Response::builder()
                     .status(503)
                     .body(Cow::Borrowed(&b"demarrage en cours"[..]))
@@ -113,6 +131,7 @@ pub fn run() {
             }
 
             let paths = AppPaths::resolve(app.handle())?;
+            catalogue::nettoyer(&paths.catalogue);
             let plugins = plugins::scan(&paths.plugin_roots);
             let reglages = store::read(&paths.config);
             let reglage = |cle: &str| reglages.get("settings").and_then(|s| s.get(cle)).cloned();
@@ -127,7 +146,7 @@ pub fn run() {
                 .unwrap_or(true);
             app.manage(AppState {
                 paths,
-                plugins,
+                plugins: RwLock::new(plugins),
                 fermeture_zone: AtomicBool::new(fermeture_zone),
             });
 
@@ -182,6 +201,10 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             plugins::plugins_list,
+            catalogue::catalogue_lire,
+            catalogue::plugin_installer,
+            catalogue::plugin_installer_fichier,
+            catalogue::plugin_desinstaller,
             documents::documents_list,
             documents::document_read,
             documents::document_save,

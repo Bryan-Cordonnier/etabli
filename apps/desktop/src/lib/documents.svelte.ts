@@ -3,7 +3,7 @@
 import type { DocumentSnapshot, PluginToHost } from "@etabli/sdk/protocol";
 import { api, type DocumentMeta } from "./api";
 import { stamp } from "./dates";
-import type { MiniAppRef } from "./plugins/registry";
+import type { MiniAppRef } from "./plugins/registry.svelte";
 import { ui } from "./state/ui.svelte";
 
 const SAVE_DELAY = 1000;

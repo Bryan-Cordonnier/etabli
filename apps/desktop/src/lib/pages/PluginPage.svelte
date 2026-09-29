@@ -2,7 +2,7 @@
   import AppCard from "$lib/components/AppCard.svelte";
   import RecentDocs from "$lib/components/RecentDocs.svelte";
   import Tile from "$lib/components/Tile.svelte";
-  import { getPlugin } from "$lib/plugins/registry";
+  import { getPlugin } from "$lib/plugins/registry.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import type { MiniAppManifest } from "$lib/types";
 

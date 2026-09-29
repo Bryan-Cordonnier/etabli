@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { appKey } from "$lib/plugins/registry";
+  import { appKey } from "$lib/plugins/registry.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import type { MiniAppManifest, PluginManifest } from "$lib/types";
   import Icon from "./Icon.svelte";

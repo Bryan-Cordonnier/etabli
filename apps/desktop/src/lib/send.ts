@@ -2,7 +2,7 @@
 // cherche une mini-app qui accepte ce type de données, l'ouvre dans un nouvel onglet et lui
 // transmet les données à son ouverture. Fenêtre principale seulement (l'aperçu lui délègue).
 import type { Incoming } from "@etabli/sdk/protocol";
-import { allMiniApps } from "./plugins/registry";
+import { allMiniApps } from "./plugins/registry.svelte";
 import { settings } from "./state/settings.svelte";
 import { tabs } from "./state/tabs.svelte";
 import { ui } from "./state/ui.svelte";

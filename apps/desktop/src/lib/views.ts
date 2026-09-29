@@ -1,5 +1,5 @@
 import type { IconName } from "./icons";
-import { getMiniApp, getPlugin } from "./plugins/registry";
+import { getMiniApp, getPlugin } from "./plugins/registry.svelte";
 import type { View } from "./types";
 
 export interface ViewInfo {
@@ -18,6 +18,8 @@ export function describeView(view: View): ViewInfo {
       return { title: "Accueil", icon: "home", emoji: "🏠", color: "var(--accent)" };
     case "settings":
       return { title: "Paramètres", icon: "settings", emoji: "⚙️", color: "var(--faint)" };
+    case "catalogue":
+      return { title: "Catalogue", icon: "store", emoji: "🧩", color: "var(--accent)" };
     case "plugin": {
       const plugin = getPlugin(view.pluginId);
       return plugin ? { title: plugin.name, icon: plugin.icon, emoji: plugin.emoji, color: plugin.color } : UNKNOWN;

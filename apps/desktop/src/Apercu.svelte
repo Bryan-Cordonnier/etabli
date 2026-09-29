@@ -10,7 +10,7 @@
   import Tile from "$lib/components/Tile.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { DocumentSession } from "$lib/documents.svelte";
-  import { appKey, getMiniAppByKey, pluginUrl, type MiniAppRef } from "$lib/plugins/registry";
+  import { appKey, getMiniAppByKey, loadPlugins, pluginUrl, type MiniAppRef } from "$lib/plugins/registry.svelte";
   import { libraries } from "$lib/state/libraries.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { reloadStorage } from "$lib/storage";
@@ -52,7 +52,8 @@
       closing = false;
       selected = 0;
       shown = true;
-      await Promise.all([reloadStorage(), libraries.load()]);
+      // Réglages, bibliothèques et plugins (installés ou désinstallés depuis la fenêtre principale).
+      await Promise.all([reloadStorage(), libraries.load(), loadPlugins()]);
       settings.reload();
       await tick();
       focusSelected();

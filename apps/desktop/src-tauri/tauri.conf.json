@@ -65,9 +65,6 @@
     "license": "MIT",
     "homepage": "https://github.com/Bryan-Cordonnier/etabli",
     "shortDescription": "Boîte à outils de chaudronnerie",
-    "resources": {
-      "plugins-officiels/": "plugins/"
-    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

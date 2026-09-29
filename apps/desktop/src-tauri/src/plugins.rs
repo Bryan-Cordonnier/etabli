@@ -24,18 +24,31 @@ const PLUGIN_CSP: &str = "default-src 'none'; \
     worker-src 'self' http://plugins.localhost plugins: blob:; \
     connect-src 'none'; base-uri 'none'; form-action 'none'";
 
+/// D'où vient un plugin.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Source {
+    /// Livré avec l'application (en développement : les plugins du dépôt).
+    Integre,
+    /// Installé depuis le catalogue ou un fichier `.etabli-plugin`, signature vérifiée.
+    Catalogue,
+    /// Déposé à la main dans le dossier des plugins de l'utilisateur.
+    Utilisateur,
+}
+
 pub struct LoadedPlugin {
     pub id: String,
     /// Dossier qui contient `manifest.json` et les fichiers servis.
     pub root: PathBuf,
     pub manifest: Value,
-    pub official: bool,
+    pub source: Source,
 }
 
 #[derive(Serialize)]
 pub struct PluginInfo {
     manifest: Value,
     official: bool,
+    source: Source,
 }
 
 /// Identifiant de plugin ou de mini-app : minuscules, chiffres et tirets.
@@ -48,15 +61,17 @@ pub fn valid_id(id: &str) -> bool {
 }
 
 /// Cherche les plugins dans chaque dossier racine. Pour un plugin compilé, le manifeste est
-/// dans `dist/` ; pour un plugin sans code, directement dans son dossier.
-pub fn scan(roots: &[(PathBuf, bool)]) -> Vec<LoadedPlugin> {
+/// dans `dist/` ; pour un plugin sans code, directement dans son dossier. Les dossiers qui
+/// commencent par un point (installation en cours, ancienne version) sont ignorés.
+pub fn scan(roots: &[(PathBuf, Source)]) -> Vec<LoadedPlugin> {
     let mut found: Vec<LoadedPlugin> = Vec::new();
-    for (root, official) in roots {
+    for (root, source) in roots {
         let Ok(entries) = fs::read_dir(root) else {
             continue;
         };
         let mut dirs: Vec<PathBuf> = entries
             .filter_map(Result::ok)
+            .filter(|e| !e.file_name().to_string_lossy().starts_with('.'))
             .map(|e| e.path())
             .filter(|p| p.is_dir())
             .collect();
@@ -77,7 +92,7 @@ pub fn scan(roots: &[(PathBuf, bool)]) -> Vec<LoadedPlugin> {
                     id,
                     root: plugin_root,
                     manifest,
-                    official: *official,
+                    source: *source,
                 }),
                 Err(err) => log::warn!("Plugin ignoré ({}) : {err}", dir.display()),
             }
@@ -86,7 +101,7 @@ pub fn scan(roots: &[(PathBuf, bool)]) -> Vec<LoadedPlugin> {
     found
 }
 
-fn read_manifest(root: &Path) -> Result<(String, Value), String> {
+pub fn read_manifest(root: &Path) -> Result<(String, Value), String> {
     let text = fs::read_to_string(root.join("manifest.json")).map_err(|e| e.to_string())?;
     let manifest: Value =
         serde_json::from_str(&text).map_err(|e| format!("manifest.json invalide : {e}"))?;
@@ -102,11 +117,12 @@ fn read_manifest(root: &Path) -> Result<(String, Value), String> {
 #[tauri::command]
 pub fn plugins_list(state: tauri::State<'_, crate::AppState>) -> Vec<PluginInfo> {
     state
-        .plugins
+        .plugins()
         .iter()
         .map(|p| PluginInfo {
             manifest: p.manifest.clone(),
-            official: p.official,
+            official: p.source != Source::Utilisateur,
+            source: p.source,
         })
         .collect()
 }
@@ -251,7 +267,15 @@ mod tests {
         fs::create_dir_all(root.join("casse")).unwrap();
         fs::write(root.join("casse/manifest.json"), "pas du json").unwrap();
 
-        let plugins = scan(&[(root.clone(), true)]);
+        // Installation en cours (dossier caché) : ignorée.
+        fs::create_dir_all(root.join(".installation-1")).unwrap();
+        fs::write(
+            root.join(".installation-1/manifest.json"),
+            r#"{"id":"cache"}"#,
+        )
+        .unwrap();
+
+        let plugins = scan(&[(root.clone(), Source::Integre)]);
         assert_eq!(plugins.len(), 1);
         assert_eq!(plugins[0].id, "maths");
         assert!(plugins[0].root.ends_with("dist"));
@@ -266,7 +290,7 @@ mod tests {
             id: "maths".into(),
             root,
             manifest: Value::Null,
-            official: true,
+            source: Source::Integre,
         }];
 
         let ok = serve(&plugins, "/maths/apps/index.html");

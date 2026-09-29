@@ -1,9 +1,12 @@
-import { api, inTauri } from "$lib/api";
+import { api, inTauri, type PluginSource } from "$lib/api";
 import { ICONS, type IconName } from "$lib/icons";
 import type { MiniAppManifest, PluginManifest } from "$lib/types";
 
-/** Plugins installés, remplis une fois au démarrage par `loadPlugins()`. */
-export const PLUGINS: PluginManifest[] = [];
+/**
+ * Plugins installés : remplis au démarrage par `loadPlugins()`, puis rechargés après chaque
+ * installation ou désinstallation (liste réactive : l'interface suit sans redémarrer).
+ */
+export const PLUGINS = $state<PluginManifest[]>([]);
 
 export interface MiniAppRef {
   plugin: PluginManifest;
@@ -16,7 +19,9 @@ export interface MiniAppRef {
  */
 export async function loadPlugins(): Promise<void> {
   const raw = inTauri ? await api.pluginsList().catch(() => []) : repositoryManifests();
-  const plugins = raw.map(({ manifest, official }) => normalize(manifest, official)).filter((p) => p !== null);
+  const plugins = raw
+    .map(({ manifest, official, source }) => normalize(manifest, official, source ?? (official ? "integre" : "utilisateur")))
+    .filter((p) => p !== null);
   plugins.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "fr"));
   PLUGINS.splice(0, PLUGINS.length, ...plugins);
 }
@@ -28,7 +33,7 @@ const rank = (plugin: PluginManifest) => {
   return plugin.official && index >= 0 ? index : OFFICIAL_ORDER.length;
 };
 
-function repositoryManifests(): { manifest: unknown; official: boolean }[] {
+function repositoryManifests(): { manifest: unknown; official: boolean; source?: PluginSource }[] {
   const files = import.meta.glob<unknown>(
     ["../../../../../plugins/*/manifest.json", "../../../../../plugins/*/public/manifest.json"],
     { eager: true, import: "default" },
@@ -40,7 +45,7 @@ const text = (value: unknown, fallback = ""): string => (typeof value === "strin
 const icon = (value: unknown): IconName => (typeof value === "string" && value in ICONS ? (value as IconName) : "puzzle");
 
 /** Valide un manifeste et complète les champs facultatifs. Renvoie null s'il est inutilisable. */
-function normalize(raw: unknown, official: boolean): PluginManifest | null {
+function normalize(raw: unknown, official: boolean, source: PluginSource): PluginManifest | null {
   if (typeof raw !== "object" || raw === null) return null;
   const m = raw as Record<string, unknown>;
   const id = text(m.id);
@@ -72,6 +77,7 @@ function normalize(raw: unknown, official: boolean): PluginManifest | null {
     icon: icon(m.icon),
     permissions: Array.isArray(m.permissions) ? m.permissions.filter((p) => typeof p === "string") : [],
     official,
+    source,
     miniApps,
   };
 }

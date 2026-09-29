@@ -2,7 +2,7 @@
   // Derniers calculs, tous plugins confondus (Accueil) ou d'un seul plugin (grille d'un plugin).
   import { api, type DocumentMeta } from "$lib/api";
   import { formatDate } from "$lib/dates";
-  import { getMiniApp } from "$lib/plugins/registry";
+  import { getMiniApp } from "$lib/plugins/registry.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import Tile from "./Tile.svelte";
 

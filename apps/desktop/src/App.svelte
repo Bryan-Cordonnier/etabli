@@ -4,15 +4,18 @@
   import TabBar from "$lib/components/TabBar.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import UpdateBanner from "$lib/components/UpdateBanner.svelte";
+  import CataloguePage from "$lib/pages/CataloguePage.svelte";
   import Home from "$lib/pages/Home.svelte";
   import MiniAppPage from "$lib/pages/MiniAppPage.svelte";
   import PluginPage from "$lib/pages/PluginPage.svelte";
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
-  import { system } from "$lib/api";
+  import { api, system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
   import { addMachineFromApp } from "$lib/machines";
   import { sendToApp } from "$lib/send";
   import { handleShortcut } from "$lib/shortcuts";
+  import { loadPlugins } from "$lib/plugins/registry.svelte";
+  import { catalogue } from "$lib/state/catalogue.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -28,6 +31,25 @@
     if (!settings.checkUpdates) return;
     const timer = setTimeout(() => void updates.check(true), 5000);
     return () => clearTimeout(timer);
+  });
+
+  // Catalogue : réinstallation des plugins de qui arrive d'une 0.1.x, puis mises à jour
+  // automatiques des plugins, une fois au démarrage.
+  $effect(() => {
+    const timer = setTimeout(() => void catalogue.startup(), 2000);
+    return () => clearTimeout(timer);
+  });
+
+  // Plugins installés ou désinstallés depuis l'autre fenêtre, et progression des téléchargements.
+  $effect(() => {
+    const changed = api.onPluginsChanged(() => void loadPlugins());
+    const progress = api.onInstallProgress(({ id, pourcent }) => {
+      if (catalogue.progress[id] !== undefined) catalogue.progress[id] = pourcent;
+    });
+    return () => {
+      void changed.then((stop) => stop());
+      void progress.then((stop) => stop());
+    };
   });
 
   // « Ouvrir dans l'Établi » depuis l'aperçu rapide : le calcul arrive dans un nouvel onglet.
@@ -93,6 +115,8 @@
             <MiniAppPage tabId={tabs.activeId} pluginId={view.pluginId} appId={view.appId} docId={view.docId} />
           {:else if view?.kind === "settings"}
             <SettingsPage section={view.section} />
+          {:else if view?.kind === "catalogue"}
+            <CataloguePage />
           {/if}
         </div>
       {/key}

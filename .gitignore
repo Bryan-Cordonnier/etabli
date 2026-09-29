@@ -8,9 +8,8 @@ target/
 
 # Tauri (généré)
 apps/desktop/src-tauri/gen/schemas/
-# Plugins officiels compilés pour l'installateur (scripts/plugins-officiels.mjs)
-apps/desktop/src-tauri/plugins-officiels/*
-!apps/desktop/src-tauri/plugins-officiels/.gitkeep
+# Paquets de plugins fabriqués en local (scripts/paquet-plugin.mjs)
+paquets/
 
 # Éditeurs et système
 .vscode/*

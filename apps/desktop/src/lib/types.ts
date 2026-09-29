@@ -23,7 +23,8 @@ export type View =
       /** Change à chaque ouverture : l'écran est recréé, mais pas quand le calcul reçoit son identifiant. */
       nonce?: number;
     }
-  | { kind: "settings"; section?: SettingsSection };
+  | { kind: "settings"; section?: SettingsSection }
+  | { kind: "catalogue" };
 
 export type AppView = Extract<View, { kind: "app" }>;
 
@@ -71,5 +72,7 @@ export interface PluginManifest {
   icon: IconName;
   permissions: string[];
   official: boolean;
+  /** Livré avec l'application, installé depuis le catalogue (désinstallable), ou déposé à la main. */
+  source: "integre" | "catalogue" | "utilisateur";
   miniApps: MiniAppManifest[];
 }
