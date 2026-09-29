@@ -131,6 +131,13 @@ pub fn run() {
                 fermeture_zone: AtomicBool::new(fermeture_zone),
             });
 
+            // Les fenêtres (« create »: false dans tauri.conf.json) sont créées seulement maintenant.
+            // Créées avant cet état, leurs pages, servies instantanément une fois installées,
+            // demandaient la liste des plugins et les réglages avant qu'ils existent : liste vide.
+            for config in app.config().app.windows.clone() {
+                tauri::WebviewWindowBuilder::from_config(app.handle(), &config)?.build()?;
+            }
+
             // Raccourci de l'aperçu rapide : celui des réglages, sinon Ctrl+Maj+Espace.
             app.manage(raccourci::QuickShortcut::default());
             let accelerator = reglage("quickShortcut")

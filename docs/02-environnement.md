@@ -69,6 +69,8 @@ modification recharge la page : les valeurs saisies sont perdues.
 | Piège | Solution |
 | --- | --- |
 | Vite 8 : `minify: "esbuild"` échoue | laisser `minify: !TAURI_ENV_DEBUG` (Oxc) |
+| Application installée sans plugins (0.1.0 et 0.1.1) | Tauri crée les fenêtres de la config **avant** `setup` ; installée, la page se charge instantanément et demande plugins et réglages avant que `AppState` existe (erreur avalée → liste vide). Les fenêtres ont `"create": false` et sont créées dans `setup` après `app.manage(AppState)`. En développement le bug ne se voit pas (page servie lentement par Vite) : tester une version compilée |
+| Tester une version compilée alors qu'Établi installé tourne | une seule instance par identifiant : compiler avec `--no-bundle --config` (identifiant `fr.etabli.essai`), lancer `target/release/etabli.exe` avec `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9333` et lire la page par `http://127.0.0.1:9333/json` (protocole DevTools) ; supprimer ensuite `%LOCALAPPDATA%\fr.etabli.essai` |
 | `npm run build` écrit sur `C:` | Tauri télécharge WiX (et NSIS) dans `%LOCALAPPDATA%\tauri` : pas de réglage pour le déplacer ; exception tolérée à la règle « rien sur C: » |
 | `TAURI_SIGNING_PRIVATE_KEY` : « failed to decode base64 » | la variable attend le **contenu** de la clé, pas son chemin ; sous PowerShell 5, `$env:X = ''` supprime la variable (mot de passe vide impossible) |
 | L'aperçu rapide se fermait à l'ouverture | WebView2 émet `Focused(false)` quand le focus passe à la page : la perte de focus est détectée **par la page** (`Apercu.svelte`), pas par Rust |

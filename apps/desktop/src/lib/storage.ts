@@ -7,13 +7,20 @@ const SAVE_DELAY = 300;
 
 let cache: Record<string, unknown> = {};
 let timer: ReturnType<typeof setTimeout> | undefined;
+/**
+ * Faux tant que settings.json n'a pas été lu : on n'écrit alors jamais dessus, pour ne pas
+ * remplacer les réglages de l'utilisateur par ceux par défaut après une lecture ratée.
+ */
+let readable = false;
 
 /** À appeler une fois avant de créer l'interface : les réglages sont lus de façon synchrone ensuite. */
 export async function initStorage(): Promise<void> {
   if (!inTauri) return;
   try {
     cache = await api.storeLoad();
-  } catch {
+    readable = true;
+  } catch (err) {
+    console.error("Réglages illisibles, rien ne sera enregistré :", err);
     cache = {};
   }
   // Premier lancement avec settings.json : on reprend ce que la version précédente avait mémorisé.
@@ -30,6 +37,7 @@ export async function reloadStorage(): Promise<void> {
   if (!inTauri) return;
   try {
     cache = await api.storeLoad();
+    readable = true;
   } catch {
     // On garde ce qui était déjà chargé.
   }
@@ -46,6 +54,7 @@ export function save(key: string, value: unknown): void {
     return;
   }
   cache[key] = value;
+  if (!readable) return;
   clearTimeout(timer);
   timer = setTimeout(() => {
     api.storeSave(cache).catch((err) => console.error("Réglages non enregistrés :", err));
