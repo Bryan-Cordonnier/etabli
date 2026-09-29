@@ -34,6 +34,8 @@ interface Persisted {
   closeToTray: boolean;
   /** Nom écrit dans le cartouche des fiches d'atelier (« Préparé : … »). */
   author: string;
+  /** Chercher une nouvelle version sur GitHub au démarrage. */
+  checkUpdates: boolean;
 }
 
 const DEFAULTS: Persisted = {
@@ -50,6 +52,7 @@ const DEFAULTS: Persisted = {
   quickShortcut: DEFAULT_SHORTCUT,
   closeToTray: true,
   author: "",
+  checkUpdates: true,
 };
 
 class Settings {
@@ -66,6 +69,7 @@ class Settings {
   quickShortcut = $state<QuickShortcut>(DEFAULTS.quickShortcut);
   closeToTray = $state(DEFAULTS.closeToTray);
   author = $state(DEFAULTS.author);
+  checkUpdates = $state(DEFAULTS.checkUpdates);
 
   constructor() {
     this.reload();
@@ -87,6 +91,7 @@ class Settings {
     this.quickShortcut = saved.quickShortcut;
     this.closeToTray = saved.closeToTray;
     this.author = saved.author;
+    this.checkUpdates = saved.checkUpdates;
   }
 
   #save(): void {
@@ -104,11 +109,12 @@ class Settings {
       quickShortcut: $state.snapshot(this.quickShortcut),
       closeToTray: this.closeToTray,
       author: this.author,
+      checkUpdates: this.checkUpdates,
     } satisfies Persisted);
   }
 
   /** Modifie un réglage simple et l'enregistre. */
-  set<K extends "theme" | "iconStyle" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author">(
+  set<K extends "theme" | "iconStyle" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author" | "checkUpdates">(
     key: K,
     value: Settings[K],
   ): void {

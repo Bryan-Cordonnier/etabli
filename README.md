@@ -6,6 +6,16 @@ SolidWorks sur des PC modestes, 100 % locale, et extensible par plugins.
 
 > Documentation complète pour reprendre le code : **[AGENTS.md](AGENTS.md)** (sommaire) et le dossier [`docs/`](docs/).
 
+## Installer
+
+1. Téléchargez **`Etabli_…_x64-setup.exe`** sur la page de la
+   [dernière version](https://github.com/Bryan-Cordonnier/etabli/releases/latest).
+2. Lancez-le : l'installation se fait pour votre compte, sans droits d'administrateur.
+3. Si Windows affiche « Windows a protégé votre ordinateur » : **Informations complémentaires** →
+   **Exécuter quand même** (l'installateur n'a pas de certificat payant).
+
+Établi cherche ensuite lui-même les nouvelles versions au démarrage et propose de les installer.
+
 ## Structure
 
 ```

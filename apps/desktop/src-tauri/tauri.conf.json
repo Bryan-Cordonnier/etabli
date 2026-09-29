@@ -45,9 +45,23 @@
       "dangerousDisableAssetCspModification": ["style-src"]
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZDOTVBMzg4RUYzNDJBNEYKUldSUEtqVHZpS09WL0kvV2JadXpYSUpoQTVqM3dLTUxuOWZCanpZWitPckRUWXpqTnROR0RXazQK",
+      "endpoints": ["https://github.com/Bryan-Cordonnier/etabli/releases/latest/download/latest.json"],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
+    "shortDescription": "Boîte à outils de chaudronnerie",
+    "resources": {
+      "plugins-officiels/": "plugins/"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

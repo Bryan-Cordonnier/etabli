@@ -62,6 +62,8 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
   [09-bibliotheques-fiches-envoi.md](09-bibliotheques-fiches-envoi.md)).
 - Ordre dans la colonne : pour un plugin officiel, ajoutez son id à `OFFICIAL_ORDER` dans
   `apps/desktop/src/lib/plugins/registry.ts`.
+- Installateur : rien à faire, tout plugin avec un `dist/manifest.json` est copié dans les
+  ressources par `npm run build:plugins` (voir [14](14-publier-une-version.md)).
 
 ## 3. Modèle de mini-app
 

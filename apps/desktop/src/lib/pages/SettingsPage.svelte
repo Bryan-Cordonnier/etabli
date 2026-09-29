@@ -1,6 +1,6 @@
 <script lang="ts">
   // Paramètres (cahier des charges, section 5.10).
-  import { system, type AppInfo } from "$lib/api";
+  import { inTauri, system, type AppInfo } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
   import ShortcutRecorder from "$lib/components/ShortcutRecorder.svelte";
   import MachinesEditor from "$lib/components/MachinesEditor.svelte";
@@ -17,6 +17,7 @@
   } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
+  import { updates } from "$lib/state/updates.svelte";
   import { SYSTEM_THEME, THEMES, currentColors, parseTheme, themeToJson, type Theme } from "$lib/themes";
   import type { SettingsSection } from "$lib/types";
 
@@ -390,9 +391,43 @@
         </div>
       {:else}
         <div class="box">
-          <h3>Version</h3>
-          <p>Établi <b>{info?.version ?? "…"}</b></p>
-          <p class="hint">Les mises à jour automatiques depuis GitHub arrivent au jalon 4.</p>
+          <h3>Mises à jour</h3>
+          <p>Version installée : Établi <b>{info?.version ?? "…"}</b></p>
+          {#if !inTauri}
+            <p class="hint">Mises à jour indisponibles dans l'aperçu navigateur.</p>
+          {:else if updates.status === "available" || updates.status === "downloading" || updates.status === "installing"}
+            <div class="update">
+              <p><b>Établi {updates.version}</b> est disponible.</p>
+              {#if updates.notes}<pre class="notes">{updates.notes}</pre>{/if}
+              {#if updates.status === "available"}
+                <div class="buttons">
+                  <button class="btn primary" onclick={() => void updates.install()}>Installer et redémarrer</button>
+                </div>
+                <p class="hint">Établi se ferme, s'installe et se relance : vos calculs sont déjà enregistrés.</p>
+              {:else}
+                <p class="hint">
+                  {updates.status === "installing"
+                    ? "Installation… Établi va redémarrer."
+                    : `Téléchargement${Number.isFinite(updates.progress) ? ` : ${Math.round(updates.progress * 100)} %` : "…"}`}
+                </p>
+              {/if}
+            </div>
+          {:else}
+            <div class="buttons">
+              <button class="btn" disabled={updates.busy} onclick={() => void updates.check()}>
+                {updates.status === "checking" ? "Recherche…" : "Rechercher une mise à jour"}
+              </button>
+            </div>
+            {#if updates.status === "uptodate"}
+              <p class="hint">Établi est à jour.</p>
+            {:else if updates.status === "error"}
+              <p class="hint">Impossible de joindre GitHub ({updates.error}). Vérifiez la connexion à Internet.</p>
+            {/if}
+          {/if}
+          <div class="setting">
+            {@render row("Chercher au démarrage", "Quelques secondes après l'ouverture, Établi regarde sur GitHub s'il existe une nouvelle version.")}
+            <Switch checked={settings.checkUpdates} label="Chercher les mises à jour au démarrage" onchange={(v) => settings.set("checkUpdates", v)} />
+          </div>
         </div>
         <div class="box">
           <h3>Projet</h3>
@@ -516,6 +551,26 @@
     border-radius: var(--r-xs);
     user-select: text;
     overflow-wrap: anywhere;
+  }
+  .update {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    background: var(--accent-soft);
+  }
+  .update p {
+    margin: 0;
+  }
+  /* Notes de version : le message écrit à la publication, tel quel. */
+  .notes {
+    margin: 0;
+    max-height: 220px;
+    overflow: auto;
+    font: 13px/1.5 var(--font);
+    white-space: pre-wrap;
+    user-select: text;
   }
 
   .themes {

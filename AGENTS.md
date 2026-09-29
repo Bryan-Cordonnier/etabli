@@ -30,6 +30,7 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/10-plugins-existants.md](docs/10-plugins-existants.md) | Maths, Économie de matière, Tôlerie : fichiers, algorithmes, tests | vous modifiez un plugin existant |
 | [docs/12-a-faire.md](docs/12-a-faire.md) | Ce qui reste à faire, par priorité, et les limites connues | vous cherchez la prochaine tâche |
 | [docs/13-specs-a-venir.md](docs/13-specs-a-venir.md) | Spécifications (formules, cas de test) des Projets et des plugins pas encore codés | vous codez une de ces fonctionnalités |
+| [docs/14-publier-une-version.md](docs/14-publier-une-version.md) | Releases GitHub, mises à jour automatiques signées, clé, publier une version, installer | vous publiez une version ou touchez aux mises à jour |
 
 Autres références : [README.md](README.md) (présentation courte), [packages/sdk/README.md](packages/sdk/README.md) (API du SDK).
 

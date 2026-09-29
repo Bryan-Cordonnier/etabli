@@ -41,6 +41,8 @@
 La CI (`.github/workflows/ci.yml`, Windows) exécute : `npm ci`, `npm run check`, `npm test`,
 `npm run build:plugins`, `npm run build -w @etabli/desktop`, `cargo fmt --check`,
 `cargo clippy --all-targets -- -D warnings` (les avertissements sont des erreurs), `cargo test`.
+Une étiquette `v1.2.3` lance en plus `.github/workflows/publier.yml` : installateur signé publié
+dans les Releases (voir [14-publier-une-version.md](14-publier-une-version.md)).
 
 ## Voir l'interface sans Rust (aperçu navigateur)
 

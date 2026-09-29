@@ -1,0 +1,75 @@
+# Publication d'une version : à chaque étiquette « v1.2.3 » envoyée sur GitHub, l'installateur
+# Windows est compilé, signé pour la mise à jour automatique et publié dans les Releases avec
+# latest.json, le fichier que les Établi installés consultent pour se mettre à jour.
+# Marche à suivre : docs/14-publier-une-version.md.
+name: Publication
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Installateur Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Étiquette et version de l'application identiques
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          app=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+          if [ "$tag" != "$app" ]; then
+            echo "::error::Étiquette v$tag mais tauri.conf.json en $app : lancez « npm run version:app -- $tag » avant de publier."
+            exit 1
+          fi
+
+      - name: Notes de version (message de l'étiquette)
+        id: notes
+        run: |
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          {
+            echo "body<<FIN_DES_NOTES"
+            git tag -l --format='%(contents)' "${GITHUB_REF_NAME}"
+            echo "FIN_DES_NOTES"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Dépendances npm
+        run: npm ci
+
+      - name: Tests des calculs
+        run: npm test
+
+      - name: Plugins (compilés et copiés pour l'installateur)
+        run: npm run build:plugins
+
+      - name: Installateur, signature et publication
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: apps/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: Établi ${{ github.ref_name }}
+          releaseBody: ${{ steps.notes.outputs.body }}
+          releaseDraft: false
+          prerelease: false

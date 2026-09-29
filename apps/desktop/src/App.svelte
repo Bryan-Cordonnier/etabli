@@ -3,6 +3,7 @@
   import Sidebar from "$lib/components/Sidebar.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
   import Toast from "$lib/components/Toast.svelte";
+  import UpdateBanner from "$lib/components/UpdateBanner.svelte";
   import Home from "$lib/pages/Home.svelte";
   import MiniAppPage from "$lib/pages/MiniAppPage.svelte";
   import PluginPage from "$lib/pages/PluginPage.svelte";
@@ -12,12 +13,22 @@
   import { addMachineFromApp } from "$lib/machines";
   import { sendToApp } from "$lib/send";
   import { handleShortcut } from "$lib/shortcuts";
+  import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
+  import { updates } from "$lib/state/updates.svelte";
   import type { View } from "$lib/types";
 
   $effect(() => applyAppearance());
   $effect(() => tabs.persist());
+
+  // Nouvelle version sur GitHub : cherchée une fois, quelques secondes après le démarrage (le
+  // premier affichage reste rapide). Sans réseau, rien ne s'affiche.
+  $effect(() => {
+    if (!settings.checkUpdates) return;
+    const timer = setTimeout(() => void updates.check(true), 5000);
+    return () => clearTimeout(timer);
+  });
 
   // « Ouvrir dans l'Établi » depuis l'aperçu rapide : le calcul arrive dans un nouvel onglet.
   $effect(() => {
@@ -70,6 +81,7 @@
   <Sidebar />
   <section class="main">
     <TabBar />
+    <UpdateBanner />
     <main class="content">
       {#key viewKey}
         <div class="view">

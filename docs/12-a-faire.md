@@ -49,10 +49,10 @@ Jamais vus :
 
 ## Distribution
 
-- **Mises à jour automatiques** via GitHub Releases (greffon updater de Tauri) : pas faites.
-- **Installateur** : vérifier que les plugins officiels compilés sont inclus dans les ressources de
-  l'application (`bundle.resources` de `tauri.conf.json`) — en production, le moteur les cherche dans
-  `resources/plugins`. Pas encore configuré ni testé.
+- Releases GitHub, installateur avec les plugins et mises à jour automatiques signées : **faits**
+  (voir [14-publier-une-version.md](14-publier-une-version.md)). Le cycle complet (installer une
+  version, en publier une plus récente, se mettre à jour) reste à éprouver sur deux versions.
+- Installateur non signé pour Windows (avertissement SmartScreen) : signature Authenticode à voir.
 - Catalogue de plugins en ligne : bouton présent mais désactivé.
 - Site de documentation pour les auteurs de plugins : non commencé.
 
