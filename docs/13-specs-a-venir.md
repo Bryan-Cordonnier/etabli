@@ -11,6 +11,68 @@ Spécification validée par Bryan puis codée : voir [14-publier-une-version.md]
 Restent pour plus tard : plugins d'autres auteurs (par demande de fusion sur le catalogue), version
 minimale de l'application par plugin (champ `apiVersion` publié mais pas encore contrôlé).
 
+### Réglages ajoutés par les plugins et dépendances entre plugins (proposé, à valider)
+
+**Pas codé.** Demandé par Bryan le 29/09/2026 : « tout ce qui est fournisseur, machines, il ne faut pas
+que ce soit des blocs dans le moteur : c'est le plugin qui ajoute son réglage », et des plugins qui
+s'appuient les uns sur les autres « exactement comme un serveur Minecraft ». Aujourd'hui, les
+Fournisseurs et les Machines sont codés dans le moteur (`lib/state/libraries.svelte.ts`,
+`SuppliersEditor`, `MachinesEditor`, champ `libraries` du message `init`) : c'est ce qui disparaît.
+
+**Principe.** Chaque plugin reste indépendant (son dossier, sa version, ses données, installé et
+désinstallé seul). Un plugin **déclare** dans son manifeste ce qu'il fournit et ce dont il a besoin ;
+le moteur, jamais un autre plugin, fait circuler les données (les cadres restent isolés).
+
+Manifeste, champs nouveaux (tous facultatifs) :
+```json
+{
+  "id": "fournisseurs",
+  "provides": { "fournisseurs": "1" },
+  "settings": [{ "id": "fournisseurs", "title": "Fournisseurs", "entry": "reglages/index.html" }],
+  "dependencies": { },
+  "optionalDependencies": { }
+}
+```
+et, pour un plugin consommateur : `"dependencies": { "fournisseurs": "^1" }` (obligatoire) ou
+`"optionalDependencies": { "fournisseurs": "^1" }` (il marche sans, en mieux avec).
+
+1. **Pages de réglages de plugin** (`settings`). Le moteur ajoute une entrée dans Paramètres → Plugins
+   pour chaque page déclarée, avec le titre du plugin. La page est une page du plugin, dans le même
+   cadre isolé et avec le même kit `@etabli/ui` : le plugin dessine son écran (tableau de fournisseurs,
+   liste de machines, prix des tubes). Plugin désactivé ou désinstallé : la page disparaît. Variante
+   déclarative (cases, nombres, listes décrits en JSON, dessinés par le moteur) possible plus tard.
+2. **Données fournies** (`provides`). Un plugin qui fournit `fournisseurs@1` s'engage sur un
+   **contrat** documenté (forme des données, ici la liste des fournisseurs et de leur matière). Les
+   contrats officiels (`fournisseurs@1`, `machines@1`) sont décrits dans `docs/` : c'est ce qui permet à
+   des développeurs indépendants de s'entendre sans se parler. Les données restent dans l'espace du
+   fournisseur (`donnees/<plugin>/…`).
+3. **Lecture par un autre plugin.** Le SDK gagne `etabli.services.get("fournisseurs")` : le moteur
+   vérifie que la dépendance est déclarée et que le service est disponible, puis relaie la **lecture**
+   (jamais l'écriture) et prévient à chaque modification, comme `libraries.onChange` aujourd'hui.
+4. **Cycle de vie.** Installer un plugin qui a des dépendances obligatoires : le catalogue affiche
+   « a besoin de Fournisseurs » et installe les deux après confirmation, dans l'ordre. Désinstaller ou
+   désactiver un plugin dont d'autres dépendent : avertissement avec la liste, désactivation en
+   cascade ou annulation ; les données sont **gardées** (règle déjà validée pour la désinstallation).
+   Dépendance obligatoire absente : la mini-app affiche « Il faut installer Fournisseurs » avec un
+   bouton, jamais un écran cassé. Versions : `^1` = toute version 1.x ; une version 2.0 d'un
+   fournisseur n'active pas les plugins qui exigent `^1` (ils sont signalés « à mettre à jour »). Cycles
+   de dépendances interdits (le catalogue et le chargement les refusent).
+5. **Migration.** Au premier lancement de la version qui apporte ça, les fournisseurs et machines
+   enregistrés par l'utilisateur sont repris dans les données des nouveaux plugins officiels
+   `fournisseurs` et `machines` (rien de perdu), la section « Fournisseurs et machines » de Paramètres
+   disparaît, Économie de matière passe en dépendance **facultative** de ces deux plugins. Comme au
+   premier lancement il n'y a rien d'installé, l'application ne les impose pas.
+6. **Plus tard** : points d'extension (un plugin tiers, par exemple « fournisseur métaux Lyon »,
+   ajoute ses prix au plugin `fournisseurs`).
+
+Ordre de codage proposé : (a) pages de réglages de plugin ; (b) `dependencies`, `provides`, relais de
+lecture, installation en chaîne ; (c) plugins `fournisseurs` et `machines`, migration, retrait des blocs
+du moteur ; (d) points d'extension.
+
+Questions à trancher avec Bryan avant (c) : un seul plugin « Atelier » ou deux plugins `fournisseurs` et
+`machines` (recommandé : deux) ; installer les dépendances obligatoires automatiquement après
+confirmation (recommandé) ; réglages en page libre uniquement au début (recommandé).
+
 ### Projets (lot 1)
 - Onglet « Projets » dans la colonne, sous Accueil (ce n'est pas un plugin).
 - Créer un projet : nom, description facultative, emplacement → dossier `<nom>/` avec un fichier de
