@@ -1,15 +1,26 @@
 <script lang="ts">
   // Enregistreur de raccourci : on clique, on appuie sur la combinaison voulue, c'est tout.
   // La touche est prise par son emplacement physique (event.code) : le raccourci marche en AZERTY.
-  import type { QuickShortcut } from "$lib/state/settings.svelte";
+  import type { Shortcut } from "$lib/state/settings.svelte";
 
   interface Props {
-    value: QuickShortcut;
+    /** Raccourci actuel ; `null` : aucun. */
+    value: Shortcut | null;
+    /**
+     * global : raccourci Windows (aperçu rapide), format Tauri, la touche Win est permise ;
+     * app : raccourci dans l'application, format du SDK (Ctrl, Alt, Maj), sans la touche Win.
+     */
+    scope: "global" | "app";
+    /** Nom de l'action, pour les lecteurs d'écran. */
+    name: string;
     /** Essaie d'appliquer le raccourci ; renvoie un message d'erreur, ou null si c'est bon. */
-    onchange: (shortcut: QuickShortcut) => Promise<string | null>;
+    onchange: (shortcut: Shortcut) => Promise<string | null> | string | null;
+    /** Si fourni, un bouton « Effacer » apparaît quand un raccourci est réglé. */
+    onclear?: () => void;
+    compact?: boolean;
   }
 
-  let { value, onchange }: Props = $props();
+  let { value, scope, name, onchange, onclear, compact = false }: Props = $props();
 
   let recording = $state(false);
   let preview = $state("");
@@ -20,6 +31,7 @@
   const NAMED: Record<string, string> = {
     Space: "Espace",
     Enter: "Entrée",
+    Tab: "Tab",
     ArrowUp: "↑",
     ArrowDown: "↓",
     ArrowLeft: "←",
@@ -32,14 +44,14 @@
     PageDown: "Page suiv.",
   };
 
-  /** Nom de la touche pour Windows et pour l'affichage ; null si la touche n'est pas prise en charge. */
+  /** Nom de la touche pour le raccourci et pour l'affichage ; null si la touche n'est pas prise en charge. */
   function keyOf(event: KeyboardEvent): { code: string; label: string } | null {
     const { code, key } = event;
     if (/^Key[A-Z]$/.test(code)) return { code, label: key.length === 1 ? key.toUpperCase() : code.slice(3) };
     if (/^Digit\d$/.test(code)) return { code, label: code.slice(5) };
     if (/^Numpad\d$/.test(code)) return { code, label: `Pavé ${code.slice(6)}` };
     if (/^F([1-9]|1\d|2[0-4])$/.test(code)) return { code, label: code };
-    if (code in NAMED) return { code, label: NAMED[code]! };
+    if (code in NAMED && (code !== "Tab" || scope === "app")) return { code, label: NAMED[code]! };
     if (/^(Backquote|Minus|Equal|Comma|Period|Semicolon|Slash|Backslash|BracketLeft|BracketRight|Quote)$/.test(code)) {
       return { code, label: key.length === 1 ? key.toUpperCase() : code };
     }
@@ -82,8 +94,17 @@
       error = "Cette touche ne peut pas servir de raccourci.";
       return;
     }
-    if (!event.ctrlKey && !event.altKey && !event.metaKey) {
-      error = "Ajoutez Ctrl, Alt ou Win à la combinaison, pour ne pas bloquer une touche normale.";
+    if (scope === "app" && event.metaKey) {
+      error = "La touche Windows ne peut pas servir ici : utilisez Ctrl ou Alt.";
+      return;
+    }
+    // Une touche seule gênerait la saisie ; seules les touches de fonction (F1 à F24) peuvent servir seules.
+    const isFunctionKey = /^F\d+$/.test(key.code);
+    if (!event.ctrlKey && !event.altKey && !event.metaKey && !(scope === "app" && isFunctionKey)) {
+      error =
+        scope === "app"
+          ? "Ajoutez Ctrl ou Alt à la combinaison, pour ne pas bloquer une touche de saisie."
+          : "Ajoutez Ctrl, Alt ou Win à la combinaison, pour ne pas bloquer une touche normale.";
       return;
     }
 
@@ -97,32 +118,50 @@
   }
 </script>
 
+<div class="root" class:compact>
 <div class="recorder">
   <button
     bind:this={button}
     class="keys"
     class:recording
+    class:empty={!value && !recording}
     onclick={start}
     {onkeydown}
     onblur={() => (recording = false)}
     disabled={busy}
-    aria-label="Raccourci de l'aperçu rapide : {value.label}. Cliquer pour le changer."
+    aria-label="Raccourci de « {name} » : {value ? value.label : 'aucun'}. Cliquer pour le changer."
   >
     {#if recording}
       {preview ? `${preview} + …` : "Appuyez sur la combinaison…"}
-    {:else}
+    {:else if value}
       {#each value.label.split(" + ") as part, i (i)}
         {#if i > 0}<span class="plus">+</span>{/if}<kbd>{part}</kbd>
       {/each}
+    {:else}
+      Aucun · cliquer pour régler
     {/if}
   </button>
-  <span class="hint">{recording ? "Échap pour annuler" : "Cliquez pour changer"}</span>
+  {#if recording}
+    <span class="hint">Échap pour annuler</span>
+  {:else if value && onclear}
+    <button class="clear" onclick={onclear} aria-label="Effacer le raccourci de « {name} »">Effacer</button>
+  {/if}
 </div>
 {#if error}
   <p class="error" role="alert">{error}</p>
 {/if}
+</div>
 
 <style>
+  .root {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+  }
+  .compact .error {
+    max-width: 280px;
+  }
   .recorder {
     display: flex;
     align-items: center;
@@ -144,6 +183,16 @@
     transition:
       border-color 0.12s,
       background 0.12s;
+  }
+  .compact .keys {
+    min-width: 200px;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .keys.empty {
+    color: var(--faint);
+    font-weight: 400;
   }
   .keys:hover {
     border-color: var(--accent);
@@ -168,6 +217,18 @@
   .hint {
     font-size: 12px;
     color: var(--faint);
+  }
+  .clear {
+    background: none;
+    border: 0;
+    color: var(--muted);
+    font-size: 12.5px;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .clear:hover {
+    color: var(--err);
   }
   .error {
     margin: 8px 0 0;

@@ -1,6 +1,7 @@
 <script lang="ts">
   // Colonne des plugins (cahier des charges, section 5.2).
   import { PLUGINS } from "$lib/plugins/registry.svelte";
+  import { shortcutHint } from "$lib/shortcuts";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import type { PluginManifest, View } from "$lib/types";
@@ -135,7 +136,7 @@
       onmousedown={preventAutoscroll}
       title="Accueil"
     >
-      <Tile color="var(--muted)" icon="home" emoji="🏠" variant="plain" />
+      <Tile color="var(--muted)" icon="home" variant="plain" />
       <span class="label">Accueil</span>
     </button>
     <button
@@ -146,7 +147,7 @@
       onmousedown={preventAutoscroll}
       title="Catalogue des plugins"
     >
-      <Tile color="var(--muted)" icon="store" emoji="🧩" variant="plain" />
+      <Tile color="var(--muted)" icon="store" variant="plain" />
       <span class="label">Catalogue</span>
     </button>
 
@@ -174,7 +175,7 @@
         onpointercancel={endDrag}
         title={`${plugin.name} (glisser pour déplacer)`}
       >
-        <Tile color={plugin.color} icon={plugin.icon} emoji={plugin.emoji} />
+        <Tile color={plugin.color} icon={plugin.icon} />
         <span class="label">{plugin.name}</span>
       </button>
     {/each}
@@ -195,7 +196,7 @@
     <button
       class="strip-btn fold"
       onclick={() => settings.toggleSidebar()}
-      title={settings.sidebarCollapsed ? "Déplier la colonne (Ctrl+B)" : "Replier la colonne (Ctrl+B)"}
+      title={shortcutHint(settings.sidebarCollapsed ? "Déplier la colonne" : "Replier la colonne", "toggleSidebar")}
       aria-label={settings.sidebarCollapsed ? "Déplier la colonne" : "Replier la colonne"}
     >
       <Icon name="panel" />

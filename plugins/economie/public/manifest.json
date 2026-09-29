@@ -6,7 +6,6 @@
   "author": "Établi",
   "description": "Optimiser les débits de barres et le calepinage de tôles",
   "color": "#16a34a",
-  "emoji": "♻️",
   "icon": "layers",
   "permissions": [],
   "miniApps": [
@@ -15,7 +14,6 @@
       "name": "Débit de tubes",
       "description": "Le moins de barres possible, coupes d'angle comprises",
       "icon": "cylinder",
-      "emoji": "📏",
       "dataVersion": 2,
       "plannedFor": "v1",
       "entry": "apps/debit-tubes/index.html"
@@ -25,7 +23,6 @@
       "name": "Calepinage de tôles",
       "description": "Platines et flans à la cisaille",
       "icon": "grid",
-      "emoji": "🟩",
       "dataVersion": 2,
       "plannedFor": "v1",
       "entry": "apps/calepinage-rect/index.html",

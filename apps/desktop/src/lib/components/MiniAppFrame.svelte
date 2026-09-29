@@ -13,6 +13,7 @@
   } from "@etabli/sdk/protocol";
   import { api, inTauri } from "$lib/api";
   import { printFiche } from "$lib/print/print";
+  import { frameShortcuts } from "$lib/shortcuts";
   import { libraries } from "$lib/state/libraries.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -34,10 +35,15 @@
     docTitle?: string;
     /** Données envoyées par une autre mini-app, transmises à la première ouverture seulement. */
     incoming?: Incoming | null;
+    /**
+     * Transmettre au cadre les raccourcis réglés par l'utilisateur, pour qu'il les renvoie au moteur.
+     * Faux dans l'aperçu rapide, qui n'a pas d'onglets à piloter.
+     */
+    forward?: boolean;
     onmessage: (message: PluginToHost) => void;
   }
 
-  let { src, title, pluginId, appId, initial, docTitle = "", incoming = null, onmessage }: Props = $props();
+  let { src, title, pluginId, appId, initial, docTitle = "", incoming = null, forward = true, onmessage }: Props = $props();
   let incomingSent = false;
 
   let frame: HTMLIFrameElement;
@@ -120,9 +126,16 @@
       pluginData: JSON.parse(sentPluginData),
       // Si le cadre se recharge, les données reçues ne sont pas appliquées une seconde fois.
       incoming: incoming && !incomingSent ? JSON.parse(JSON.stringify(incoming)) : null,
+      shortcuts: forward ? frameShortcuts() : [],
     });
     incomingSent = true;
   }
+
+  // Raccourcis modifiés dans les Paramètres pendant que la mini-app est ouverte.
+  $effect(() => {
+    const list = forward ? frameShortcuts() : [];
+    if (port) send({ type: "shortcuts", shortcuts: list });
+  });
 
   // Fournisseurs modifiés dans les Paramètres, ou réglages du plugin changés par une autre mini-app.
   $effect(() => {

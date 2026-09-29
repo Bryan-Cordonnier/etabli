@@ -22,7 +22,7 @@
     </nav>
 
     <header class="head">
-      <Tile color={plugin.color} icon={plugin.icon} emoji={plugin.emoji} size={52} />
+      <Tile color={plugin.color} icon={plugin.icon} size={52} />
       <div>
         <h1>{plugin.name}</h1>
         <p class="sub">{plugin.description} · <span class="pill">v{plugin.version}</span></p>

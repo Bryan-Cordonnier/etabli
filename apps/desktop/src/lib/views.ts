@@ -5,29 +5,28 @@ import type { View } from "./types";
 export interface ViewInfo {
   title: string;
   icon: IconName;
-  emoji: string;
   color: string;
 }
 
-const UNKNOWN: ViewInfo = { title: "Page introuvable", icon: "puzzle", emoji: "❔", color: "var(--faint)" };
+const UNKNOWN: ViewInfo = { title: "Page introuvable", icon: "puzzle", color: "var(--faint)" };
 
 /** Titre, icône et couleur d'une page, pour les onglets et la palette. */
 export function describeView(view: View): ViewInfo {
   switch (view.kind) {
     case "home":
-      return { title: "Accueil", icon: "home", emoji: "🏠", color: "var(--accent)" };
+      return { title: "Accueil", icon: "home", color: "var(--accent)" };
     case "settings":
-      return { title: "Paramètres", icon: "settings", emoji: "⚙️", color: "var(--faint)" };
+      return { title: "Paramètres", icon: "settings", color: "var(--faint)" };
     case "catalogue":
-      return { title: "Catalogue", icon: "store", emoji: "🧩", color: "var(--accent)" };
+      return { title: "Catalogue", icon: "store", color: "var(--accent)" };
     case "plugin": {
       const plugin = getPlugin(view.pluginId);
-      return plugin ? { title: plugin.name, icon: plugin.icon, emoji: plugin.emoji, color: plugin.color } : UNKNOWN;
+      return plugin ? { title: plugin.name, icon: plugin.icon, color: plugin.color } : UNKNOWN;
     }
     case "app": {
       const found = getMiniApp(view.pluginId, view.appId);
       return found
-        ? { title: found.app.name, icon: found.app.icon, emoji: found.app.emoji, color: found.plugin.color }
+        ? { title: found.app.name, icon: found.app.icon, color: found.plugin.color }
         : UNKNOWN;
     }
   }

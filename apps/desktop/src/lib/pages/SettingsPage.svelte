@@ -8,13 +8,8 @@
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
   import { PLUGINS, getMiniAppByKey } from "$lib/plugins/registry.svelte";
-  import {
-    DEFAULT_SHORTCUT,
-    TEXT_SCALES,
-    settings,
-    type IconStyle,
-    type QuickShortcut,
-  } from "$lib/state/settings.svelte";
+  import { ACTIONS, actionUsing } from "$lib/shortcuts";
+  import { DEFAULT_SHORTCUT, TEXT_SCALES, settings, type Shortcut } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { updates } from "$lib/state/updates.svelte";
@@ -23,33 +18,58 @@
 
   let { section = "general" }: { section?: SettingsSection } = $props();
 
-  const SECTIONS: { id: SettingsSection; label: string }[] = [
-    { id: "general", label: "Général" },
-    { id: "apparence", label: "Apparence" },
-    { id: "bibliotheques", label: "Bibliothèques" },
-    { id: "plugins", label: "Plugins" },
-    { id: "apercu", label: "Aperçu rapide" },
-    { id: "raccourcis", label: "Raccourcis clavier" },
-    { id: "a-propos", label: "Mises à jour et à propos" },
+  // Chaque page a un titre et une phrase qui dit à quoi elle sert ; le menu est rangé par thèmes.
+  const SECTION_INFO: Record<SettingsSection, { label: string; title: string; lead: string }> = {
+    general: {
+      label: "Général",
+      title: "Général",
+      lead: "Comment Établi se comporte avec Windows, et vos informations pour les fiches imprimées.",
+    },
+    apparence: {
+      label: "Apparence",
+      title: "Apparence",
+      lead: "Couleurs, taille du texte et animations. Les mini-apps des plugins suivent ces réglages.",
+    },
+    apercu: {
+      label: "Aperçu rapide",
+      title: "Aperçu rapide",
+      lead: "La petite fenêtre qui s'ouvre par-dessus n'importe quel logiciel pour lancer un calcul sans quitter votre travail.",
+    },
+    raccourcis: {
+      label: "Raccourcis clavier",
+      title: "Raccourcis clavier",
+      lead: "Aucun raccourci n'est réglé d'avance (sauf l'aperçu rapide) : choisissez ceux dont vous avez besoin.",
+    },
+    plugins: {
+      label: "Plugins installés",
+      title: "Plugins installés",
+      lead: "Activez ou désactivez les plugins. Pour en ajouter ou en retirer, ouvrez le catalogue.",
+    },
+    bibliotheques: {
+      label: "Fournisseurs et machines",
+      title: "Fournisseurs et machines",
+      lead: "Données de l'atelier que les plugins de calcul utilisent pour préremplir leurs formulaires.",
+    },
+    "a-propos": {
+      label: "Mises à jour et à propos",
+      title: "Mises à jour et à propos",
+      lead: "Version d'Établi, recherche de mises à jour et liens du projet.",
+    },
+  };
+
+  const GROUPS: { title: string; sections: SettingsSection[] }[] = [
+    { title: "Application", sections: ["general", "apparence", "apercu", "raccourcis"] },
+    { title: "Plugins", sections: ["plugins", "bibliotheques"] },
+    { title: "Aide", sections: ["a-propos"] },
   ];
 
-  const ICON_STYLES: { id: IconStyle; label: string }[] = [
-    { id: "couleur", label: "Icônes colorées" },
-    { id: "emoji", label: "Émojis" },
-  ];
-
-  const SHORTCUTS: [string, string][] = [
-    ["Ctrl + K", "Palette de commandes : ouvrir n'importe quelle mini-app"],
-    ["Ctrl + T", "Nouvel onglet"],
-    ["Ctrl + W", "Fermer l'onglet"],
-    ["Ctrl + Maj + T", "Rouvrir le dernier onglet fermé"],
-    ["Ctrl + Tab", "Onglet suivant (avec Maj : précédent)"],
-    ["Ctrl + 1 à 9", "Aller à l'onglet n (9 : le dernier)"],
-    ["Ctrl + B", "Replier ou déplier la colonne des plugins"],
-    ["Alt + ←", "Page précédente dans l'onglet"],
-    ["Clic molette", "Fermer un onglet, ou ouvrir dans un nouvel onglet"],
-    ["Ctrl + clic", "Ouvrir dans un nouvel onglet"],
-  ];
+  /** Actions regroupées pour la page Raccourcis, dans l'ordre de `ACTIONS`. */
+  const ACTION_GROUPS = ACTIONS.reduce<{ title: string; actions: typeof ACTIONS }[]>((groups, action) => {
+    const group = groups.find((g) => g.title === action.group);
+    if (group) group.actions.push(action);
+    else groups.push({ title: action.group, actions: [action] });
+    return groups;
+  }, []);
 
   const REPO = "https://github.com/Bryan-Cordonnier/etabli";
 
@@ -80,7 +100,7 @@
     void system.setCloseToTray(active);
   }
 
-  async function changeShortcut(shortcut: QuickShortcut): Promise<string | null> {
+  async function changeShortcut(shortcut: Shortcut): Promise<string | null> {
     try {
       await system.setShortcut(shortcut.accelerator);
       settings.set("quickShortcut", shortcut);
@@ -91,6 +111,16 @@
       return String(err);
     }
   }
+
+  /** Règle le raccourci d'une action de l'application, sauf s'il sert déjà à une autre. */
+  function setActionShortcut(actionId: string, shortcut: Shortcut): string | null {
+    const other = actionUsing(shortcut.accelerator, actionId);
+    if (other) return `Déjà utilisé par « ${other.label} ». Effacez d'abord celui-là.`;
+    settings.setShortcut(actionId, shortcut);
+    return null;
+  }
+
+  const shortcutCount = $derived(Object.keys(settings.shortcuts).length);
 
   async function importTheme(event: Event): Promise<void> {
     const input = event.currentTarget as HTMLInputElement;
@@ -141,7 +171,7 @@
 {#snippet row(title: string, detail: string)}
   <div class="text">
     <b>{title}</b>
-    <small>{detail}</small>
+    {#if detail}<small>{detail}</small>{/if}
   </div>
 {/snippet}
 
@@ -179,28 +209,55 @@
   <h1>Paramètres</h1>
   <div class="layout">
     <nav class="sections" aria-label="Sections">
-      {#each SECTIONS as s (s.id)}
-        <button class:on={section === s.id} onclick={() => goto(s.id)}>{s.label}</button>
+      {#each GROUPS as group (group.title)}
+        <p class="group">{group.title}</p>
+        {#each group.sections as id (id)}
+          <button class:on={section === id} onclick={() => goto(id)}>{SECTION_INFO[id].label}</button>
+        {/each}
       {/each}
     </nav>
 
     <div class="body" class:wide={section === "bibliotheques"}>
+      <header class="section-head">
+        <h2>{SECTION_INFO[section].title}</h2>
+        <p>{SECTION_INFO[section].lead}</p>
+      </header>
+
       {#if section === "general"}
         <div class="box">
-          <h3>Fenêtre</h3>
-          <div class="setting">
-            {@render row(
-              "Garder Établi dans la zone de notification",
-              "Fermer la fenêtre la réduit près de l'horloge : l'aperçu rapide reste disponible au raccourci.",
-            )}
-            <Switch checked={settings.closeToTray} label="Garder dans la zone de notification" onchange={setCloseToTray} />
+          <h3>Quand je ferme la fenêtre</h3>
+          <div class="choices" role="radiogroup" aria-label="Quand je ferme la fenêtre">
+            <button
+              class="choice"
+              class:on={settings.closeToTray}
+              role="radio"
+              aria-checked={settings.closeToTray}
+              onclick={() => setCloseToTray(true)}
+            >
+              <b>Établi reste en arrière-plan</b>
+              <small>La fenêtre se ferme mais Établi continue près de l'horloge : le raccourci de l'aperçu rapide reste disponible. Pour quitter, clic droit sur son icône → Quitter.</small>
+            </button>
+            <button
+              class="choice"
+              class:on={!settings.closeToTray}
+              role="radio"
+              aria-checked={!settings.closeToTray}
+              onclick={() => setCloseToTray(false)}
+            >
+              <b>Établi se ferme complètement</b>
+              <small>Fermer la fenêtre quitte l'application. L'aperçu rapide ne répond plus tant qu'Établi n'est pas relancé.</small>
+            </button>
           </div>
+        </div>
+
+        <div class="box">
+          <h3>Au démarrage de Windows</h3>
           <div class="setting">
             {@render row(
-              "Lancer au démarrage de Windows",
-              "Établi démarre discrètement dans la zone de notification, prêt pour l'aperçu rapide.",
+              "Lancer Établi quand j'ouvre ma session Windows",
+              "Établi démarre réduit près de l'horloge, sans ouvrir de fenêtre, prêt pour l'aperçu rapide.",
             )}
-            <Switch checked={autostart} label="Lancer au démarrage de Windows" onchange={setAutostart} />
+            <Switch checked={autostart} label="Lancer Établi au démarrage de Windows" onchange={setAutostart} />
           </div>
         </div>
 
@@ -253,21 +310,6 @@
         <div class="box">
           <h3>Affichage</h3>
           <div class="setting">
-            {@render row("Icônes des plugins", "Chaque plugin choisit sa couleur et son émoji.")}
-            <div class="segmented" role="radiogroup" aria-label="Style des icônes">
-              {#each ICON_STYLES as style (style.id)}
-                <button
-                  class:on={settings.iconStyle === style.id}
-                  role="radio"
-                  aria-checked={settings.iconStyle === style.id}
-                  onclick={() => settings.set("iconStyle", style.id)}
-                >
-                  {style.label}
-                </button>
-              {/each}
-            </div>
-          </div>
-          <div class="setting">
             {@render row("Taille du texte", "Agrandit toute l'interface, mini-apps comprises.")}
             <div class="segmented" role="radiogroup" aria-label="Taille du texte">
               {#each TEXT_SCALES as scale (scale)}
@@ -316,7 +358,7 @@
             {#each PLUGINS as plugin (plugin.id)}
               {@const on = settings.isPluginEnabled(plugin.id)}
               <div class="setting">
-                <Tile color={plugin.color} icon={plugin.icon} emoji={plugin.emoji} />
+                <Tile color={plugin.color} icon={plugin.icon} />
                 <div class="text">
                   <b>{plugin.name} {#if plugin.official}<span class="pill">officiel</span>{/if}</b>
                   <small>{plugin.description} · v{plugin.version} · {plugin.miniApps.length} mini-app(s)</small>
@@ -331,7 +373,7 @@
         <div class="box">
           <h3>Raccourci global</h3>
           <p class="hint">Ouvre l'aperçu rapide par-dessus n'importe quel logiciel, SolidWorks compris.</p>
-          <ShortcutRecorder value={settings.quickShortcut} onchange={changeShortcut} />
+          <ShortcutRecorder value={settings.quickShortcut} scope="global" name="aperçu rapide" onchange={changeShortcut} />
           {#if shortcutError}
             <p class="error">{shortcutError}</p>
           {/if}
@@ -350,7 +392,7 @@
                 <li>
                   <span class="num">{i + 1}</span>
                   {#if ref}
-                    <Tile color={ref.plugin.color} icon={ref.app.icon} emoji={ref.app.emoji} variant="soft" size={28} />
+                    <Tile color={ref.plugin.color} icon={ref.app.icon} variant="soft" size={28} />
                     <span class="text"><b>{ref.app.name}</b><small>{ref.plugin.name}</small></span>
                   {:else}
                     <span class="text"><b>{key}</b><small>Plugin absent ou désactivé</small></span>
@@ -368,16 +410,55 @@
         </div>
       {:else if section === "raccourcis"}
         <div class="box">
-          <h3>Dans la fenêtre principale</h3>
+          <h3>Aperçu rapide (depuis n'importe quel logiciel)</h3>
+          <div class="setting">
+            {@render row("Ouvrir l'aperçu rapide", "Le seul raccourci réglé d'avance. Ses réglages sont dans « Aperçu rapide ».")}
+            <kbd>{settings.quickShortcut.label}</kbd>
+          </div>
+        </div>
+
+        <div class="box">
+          <div class="box-head">
+            <h3>Dans la fenêtre d'Établi</h3>
+            <button class="btn" disabled={shortcutCount === 0} onclick={() => { for (const a of ACTIONS) settings.setShortcut(a.id, null); }}>
+              Tout effacer
+            </button>
+          </div>
+          <p class="hint">
+            Cliquez sur une case, puis appuyez sur la combinaison voulue : Ctrl ou Alt avec une lettre, un chiffre ou une flèche
+            (les touches F1 à F12 peuvent servir seules). Les mini-apps des plugins reçoivent la même liste et la respectent.
+          </p>
+          {#each ACTION_GROUPS as group (group.title)}
+            <h4>{group.title}</h4>
+            <div class="rows">
+              {#each group.actions as action (action.id)}
+                <div class="setting">
+                  {@render row(action.label, "")}
+                  <ShortcutRecorder
+                    compact
+                    scope="app"
+                    name={action.label}
+                    value={settings.shortcuts[action.id] ?? null}
+                    onchange={(shortcut) => setActionShortcut(action.id, shortcut)}
+                    onclear={() => settings.setShortcut(action.id, null)}
+                  />
+                </div>
+              {/each}
+            </div>
+          {/each}
+        </div>
+
+        <div class="box">
+          <h3>Souris</h3>
           <table class="keys">
             <tbody>
-              <tr><td><kbd>{settings.quickShortcut.label}</kbd></td><td>Aperçu rapide, depuis n'importe quel logiciel</td></tr>
-              {#each SHORTCUTS as [keys, action] (keys)}
-                <tr><td><kbd>{keys}</kbd></td><td>{action}</td></tr>
-              {/each}
+              <tr><td><kbd>Ctrl + clic</kbd></td><td>Ouvrir un lien dans un nouvel onglet</td></tr>
+              <tr><td><kbd>Clic molette</kbd></td><td>Fermer un onglet, ou ouvrir dans un nouvel onglet</td></tr>
+              <tr><td><kbd>Bouton précédent</kbd></td><td>Page précédente dans l'onglet</td></tr>
             </tbody>
           </table>
         </div>
+
         <div class="box">
           <h3>Dans l'aperçu rapide</h3>
           <table class="keys">
@@ -475,6 +556,76 @@
   .sections button.on {
     background: var(--accent-soft);
     color: var(--accent);
+  }
+  .sections .group {
+    margin: 14px 0 4px;
+    padding: 0 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .sections .group:first-child {
+    margin-top: 0;
+  }
+  .section-head h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+  }
+  .section-head p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .body h4 {
+    margin: 16px 0 2px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .rows {
+    display: flex;
+    flex-direction: column;
+  }
+  .rows .setting {
+    border-top: 1px solid var(--border);
+    padding: 8px 0;
+  }
+  .rows .setting:first-child {
+    border-top: 0;
+  }
+  .choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .choice {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    text-align: left;
+    border: 2px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .choice:hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  }
+  .choice.on {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .choice small {
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+  @media (max-width: 900px) {
+    .choices {
+      grid-template-columns: 1fr;
+    }
   }
   .body {
     display: flex;

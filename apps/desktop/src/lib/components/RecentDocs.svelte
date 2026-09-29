@@ -37,7 +37,7 @@
       {@const ref = getMiniApp(doc.pluginId, doc.appId)}
       <button class="row" onclick={(e) => open(doc, e)} onauxclick={(e) => e.button === 1 && open(doc, e)}>
         {#if ref}
-          <Tile color={ref.plugin.color} icon={ref.app.icon} emoji={ref.app.emoji} variant="soft" size={32} />
+          <Tile color={ref.plugin.color} icon={ref.app.icon} variant="soft" size={32} />
         {/if}
         <span class="grow">
           <span class="title">{doc.title}</span>

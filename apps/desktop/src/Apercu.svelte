@@ -185,7 +185,7 @@
           <button class="back" onclick={backToGrid} aria-label="Retour aux favoris" title="Retour (Échap)">
             <Icon name="back" size={18} />
           </button>
-          <Tile color={current.plugin.color} icon={current.app.icon} emoji={current.app.emoji} variant="soft" size={32} />
+          <Tile color={current.plugin.color} icon={current.app.icon} variant="soft" size={32} />
           <h1>{current.app.name}</h1>
           <span class="pill">{current.plugin.name}</span>
           <button class="btn primary open" onclick={openInEtabli}>Ouvrir dans l'Établi</button>
@@ -206,6 +206,7 @@
               appId={current.app.id}
               initial={session.initial}
               docTitle={session.title}
+              forward={false}
               {onmessage}
             />
           {:else}
@@ -221,7 +222,7 @@
                 onclick={() => void openApp(ref)}
                 onfocus={() => (selected = i)}
               >
-                <Tile color={ref.plugin.color} icon={ref.app.icon} emoji={ref.app.emoji} variant="soft" />
+                <Tile color={ref.plugin.color} icon={ref.app.icon} variant="soft" />
                 <span class="name">{ref.app.name}</span>
                 <span class="from">{ref.plugin.name}</span>
                 {#if i < 9}<kbd class="num">{i + 1}</kbd>{/if}

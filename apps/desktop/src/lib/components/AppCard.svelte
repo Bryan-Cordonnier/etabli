@@ -27,7 +27,7 @@
     onauxclick={(e) => e.button === 1 && onopen(e)}
     onmousedown={(e) => e.button === 1 && e.preventDefault()}
   >
-    <Tile color={plugin.color} icon={app.icon} emoji={app.emoji} variant="soft" />
+    <Tile color={plugin.color} icon={app.icon} variant="soft" />
     <span class="name">{app.name}</span>
     {#if showPlugin}<span class="from">{plugin.name}</span>{/if}
     <span class="desc">{app.description}</span>

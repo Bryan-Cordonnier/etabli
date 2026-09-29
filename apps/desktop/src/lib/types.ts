@@ -49,7 +49,6 @@ export interface MiniAppManifest {
   name: string;
   description: string;
   icon: IconName;
-  emoji: string;
   /** Page de la mini-app dans le plugin ; absente tant que la mini-app n'est pas développée. */
   entry?: string;
   /** Version du format des données enregistrées par la mini-app. */
@@ -68,7 +67,6 @@ export interface PluginManifest {
   apiVersion: string;
   author: string;
   color: string;
-  emoji: string;
   icon: IconName;
   permissions: string[];
   official: boolean;

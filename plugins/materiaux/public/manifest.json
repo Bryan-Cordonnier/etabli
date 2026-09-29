@@ -6,7 +6,6 @@
   "author": "Établi",
   "description": "Masses, taraudages, vitesses de coupe, couples de serrage",
   "color": "#0e9fb7",
-  "emoji": "⚖️",
   "icon": "weight",
   "permissions": [],
   "miniApps": [
@@ -15,7 +14,6 @@
       "name": "Masse d'une pièce",
       "description": "Tôle, tube, cornière, IPE, HEA…",
       "icon": "weight",
-      "emoji": "⚖️",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/masse/index.html"
@@ -25,7 +23,6 @@
       "name": "Taraudage et passages",
       "description": "Foret, trous de passage, lamage",
       "icon": "drill",
-      "emoji": "🔩",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/taraudage/index.html"
@@ -35,7 +32,6 @@
       "name": "Vitesse de coupe",
       "description": "Ø du trou → tr/min, mini et maxi",
       "icon": "gauge",
-      "emoji": "⚙️",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/rotation/index.html"
@@ -45,7 +41,6 @@
       "name": "Couple de serrage",
       "description": "Couple et précharge, 8.8 à 12.9, inox",
       "icon": "wrench",
-      "emoji": "🔧",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/serrage/index.html"

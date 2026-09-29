@@ -16,7 +16,8 @@ facultatifs, nouveaux messages) ne changent pas la version ; le SDK tolère un c
 
 | Message | Contenu |
 | --- | --- |
-| `init` | `pluginId`, `appId`, `document` (`{ id, title, data }`, `data` null pour un nouveau calcul), `theme` + `colorScheme`, `libraries` (`{ suppliers, machines }`), `pluginData` (réglages du plugin ou null), `incoming` (données envoyées par une autre mini-app ou null) |
+| `init` | `pluginId`, `appId`, `document` (`{ id, title, data }`, `data` null pour un nouveau calcul), `theme` + `colorScheme`, `libraries` (`{ suppliers, machines }`), `pluginData` (réglages du plugin ou null), `incoming` (données envoyées par une autre mini-app ou null), `shortcuts` (raccourcis réglés par l'utilisateur, vide par défaut) |
+| `shortcuts` | raccourcis modifiés dans les Paramètres |
 | `theme` | nouvelles couleurs (le SDK les applique en variables CSS) |
 | `libraries` | fournisseurs ou machines modifiés dans les Paramètres |
 | `pluginData` | réglages du plugin modifiés par une autre mini-app du même plugin |
@@ -31,7 +32,7 @@ facultatifs, nouveaux messages) ne changent pas la version ; le SDK tolère un c
 | `copy` `{ text }` | copie par l'hôte (si le cadre n'a pas accès au presse-papiers) |
 | `height` `{ value }` | hauteur du contenu : le cadre s'ajuste |
 | `ready` | envoyé par le SDK deux images après `init` (thème appliqué, contenu dessiné) : le moteur garde le cadre invisible jusque-là, puis le fait apparaître en fondu ; sans ce message (SDK ancien), il l'affiche au bout d'une seconde |
-| `shortcut` | touche réservée à l'hôte (Ctrl+T…) ou Échap |
+| `shortcut` `{ key, code, ctrl, shift, alt }` | combinaison réglée par l'utilisateur dans le moteur (`matchesShortcut`, format `Ctrl+Alt+Shift+<code>`), ou Échap ; le reste du clavier appartient à la mini-app |
 | `pluginData` `{ data }` | enregistre les réglages du plugin |
 | `print` `{ fiche }` | imprime une fiche d'atelier (`FichePrint`) |
 | `addMachine` `{ kind }` | crée une machine et ouvre Paramètres → Bibliothèques |
@@ -62,7 +63,7 @@ etabli.send("piece-plate", donnees); etabli.incoming;                           
 etabli.onThemeChange(fn);
 ```
 
-Le SDK signale aussi la hauteur du contenu et transmet les raccourcis de l'hôte : rien à faire.
+Le SDK signale aussi la hauteur du contenu et renvoie au moteur les raccourcis que l'utilisateur y a réglés : rien à faire.
 Dans la pratique, les mini-apps utilisent le kit `@etabli/ui` ci-dessous plutôt que `connect()`
 directement (seul `Pythagore` le fait encore, par ancienneté).
 

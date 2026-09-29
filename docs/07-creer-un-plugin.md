@@ -33,7 +33,6 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
   "author": "Établi",
   "description": "Pliage : développés, vé et effort de presse",
   "color": "#ea7a1a",
-  "emoji": "🔨",
   "icon": "hammer",
   "permissions": [],
   "miniApps": [
@@ -42,7 +41,6 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
       "name": "Développé de pliage",
       "description": "Longueur du flan, lignes de pli",
       "icon": "bend",
-      "emoji": "📃",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/developpe/index.html",
@@ -55,7 +53,8 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
 - `id` (plugin et mini-app) : minuscules, chiffres, tirets. **Ne jamais changer l'id d'une mini-app
   qui a des calculs enregistrés** (ils y sont rattachés).
 - `icon` : un nom de `apps/desktop/src/lib/icons.ts` ; sinon ajoutez l'icône Lucide dans ce fichier
-  (import + entrée dans `ICONS`). Une icône inconnue devient « puzzle ».
+  (import + entrée dans `ICONS`). Une icône inconnue devient « puzzle ». Il n'y a pas d'émoji : un
+  plugin n'a qu'un nom d'icône et une couleur à fournir, l'application dessine le reste.
 - `entry` absent : la mini-app s'affiche « à venir » (placeholder).
 - `dataVersion` : à incrémenter quand le format des données change (et prévoir `migrate`).
 - `accepts` : types de données que la mini-app sait recevoir (voir

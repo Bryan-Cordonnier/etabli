@@ -157,10 +157,16 @@ export type HostToPlugin =
       pluginData: unknown;
       /** Données envoyées par une autre mini-app (« Envoyer au calepinage »), ou `null`. */
       incoming: Incoming | null;
+      /**
+       * Raccourcis clavier réglés par l'utilisateur dans le moteur (« Ctrl+KeyT »…, voir `matchesShortcut`) :
+       * la mini-app garde le clavier, elle ne renvoie au moteur que ces combinaisons. Aucun par défaut.
+       */
+      shortcuts?: string[];
     }
   | { type: "theme"; theme: ThemeTokens; colorScheme: ColorScheme }
   | { type: "libraries"; libraries: Libraries }
-  | { type: "pluginData"; data: unknown };
+  | { type: "pluginData"; data: unknown }
+  | { type: "shortcuts"; shortcuts: string[] };
 
 export type PluginToHost =
   | { type: "update"; data: unknown }
@@ -171,7 +177,7 @@ export type PluginToHost =
   | { type: "height"; value: number }
   /** Thème appliqué et contenu dessiné après `init` : le moteur peut afficher le cadre (sans flash blanc). */
   | { type: "ready" }
-  | { type: "shortcut"; key: string; ctrl: boolean; shift: boolean; alt: boolean }
+  | { type: "shortcut"; key: string; code?: string; ctrl: boolean; shift: boolean; alt: boolean }
   | { type: "pluginData"; data: unknown }
   | { type: "print"; fiche: FichePrint }
   | { type: "addMachine"; kind: MachineKind }
@@ -206,10 +212,33 @@ export interface Incoming {
   from: string;
 }
 
-/** Raccourcis gérés par le moteur même quand le clavier est dans une mini-app. */
-export function isHostShortcut(e: { key: string; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }): boolean {
-  const key = e.key.toLowerCase();
-  if (e.altKey && e.key === "ArrowLeft") return true;
-  if (!e.ctrlKey) return false;
-  return ["t", "w", "k", "b", "tab"].includes(key) || /^[1-9]$/.test(key);
+/**
+ * Un raccourci s'écrit « Ctrl+Alt+Shift+<code> » (modificateurs dans cet ordre), où <code> est
+ * `KeyboardEvent.code` : la touche physique, donc la même en AZERTY et en QWERTY (« Ctrl+KeyT »,
+ * « Ctrl+Digit1 », « Alt+ArrowLeft », « F5 »).
+ */
+export interface Accelerator {
+  ctrl: boolean;
+  alt: boolean;
+  shift: boolean;
+  code: string;
+}
+
+export function parseAccelerator(text: string): Accelerator | null {
+  const parts = text.split("+");
+  const code = parts.pop();
+  if (!code) return null;
+  return { ctrl: parts.includes("Ctrl"), alt: parts.includes("Alt"), shift: parts.includes("Shift"), code };
+}
+
+/** Vrai si l'évènement clavier est exactement l'un des raccourcis de la liste. */
+export function matchesShortcut(
+  e: { code: string; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; metaKey?: boolean },
+  shortcuts: readonly string[],
+): boolean {
+  if (e.metaKey) return false;
+  return shortcuts.some((text) => {
+    const a = parseAccelerator(text);
+    return !!a && a.code === e.code && a.ctrl === e.ctrlKey && a.alt === e.altKey && a.shift === e.shiftKey;
+  });
 }

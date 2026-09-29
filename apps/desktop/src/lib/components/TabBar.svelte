@@ -1,7 +1,9 @@
 <script lang="ts">
   // Barre d'onglets globale, intégrée à la barre de titre (cahier des charges, section 5.3).
   // L'onglet actif se prolonge dans la page, comme dans un navigateur.
+  import { shortcutHint } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
+  import { ui } from "$lib/state/ui.svelte";
   import { describeView } from "$lib/views";
   import Icon from "./Icon.svelte";
   import Tile from "./Tile.svelte";
@@ -95,7 +97,7 @@
         onauxclick={(e) => e.button === 1 && tabs.close(tab.id)}
         onkeydown={(e) => (e.key === "Enter" || e.key === " ") && tabs.activate(tab.id)}
       >
-        <Tile color={info.color} icon={info.icon} emoji={info.emoji} size={20} />
+        <Tile color={info.color} icon={info.icon} size={20} />
         <span class="title">{info.title}</span>
         <button class="close" onclick={() => tabs.close(tab.id)} aria-label="Fermer l'onglet {info.title}">
           <Icon name="x" size={14} />
@@ -103,8 +105,16 @@
       </div>
     {/each}
   </div>
-  <button class="new" onclick={() => tabs.newTab()} title="Nouvel onglet (Ctrl+T)" aria-label="Nouvel onglet">
+  <button class="new" onclick={() => tabs.newTab()} title={shortcutHint("Nouvel onglet", "newTab")} aria-label="Nouvel onglet">
     <Icon name="plus" size={18} strokeWidth={2.4} />
+  </button>
+  <button
+    class="find"
+    onclick={() => (ui.paletteOpen = true)}
+    title={shortcutHint("Rechercher une mini-app ou une page", "palette")}
+    aria-label="Rechercher une mini-app ou une page"
+  >
+    <Icon name="search" size={17} />
   </button>
   <!-- Zone vide qui déplace la fenêtre : aucun bouton dedans, aucun clic perdu. -->
   <div class="drag" data-tauri-drag-region></div>
@@ -246,6 +256,25 @@
   .new:hover {
     transform: translateY(-1px);
     filter: brightness(1.08);
+  }
+  .find {
+    position: relative;
+    z-index: 1;
+    width: 30px;
+    height: 30px;
+    align-self: center;
+    margin-right: 6px;
+    border: 0;
+    border-radius: var(--r-md);
+    background: none;
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+  .find:hover {
+    background: var(--field);
+    color: var(--text);
   }
   .drag {
     flex: 1;

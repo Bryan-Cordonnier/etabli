@@ -53,7 +53,9 @@
 
   function onmessage(message: PluginToHost): void {
     if (session?.handle(message)) return;
-    if (message.type === "shortcut") handleShortcut(message);
+    if (message.type === "shortcut") {
+      if (message.code) handleShortcut({ code: message.code, ctrl: message.ctrl, shift: message.shift, alt: message.alt });
+    }
     else if (message.type === "addMachine") addMachineFromApp(message.kind);
     else if (message.type === "send") sendToApp(message.kind, message.data, found?.app.name ?? "");
   }
@@ -98,7 +100,7 @@
     </nav>
 
     <header class="head">
-      <Tile color={plugin.color} icon={app.icon} emoji={app.emoji} variant="soft" size={36} />
+      <Tile color={plugin.color} icon={app.icon} variant="soft" size={36} />
       {#if session}
         <input
           class="title"

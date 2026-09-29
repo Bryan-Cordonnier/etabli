@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Palette de commandes (Ctrl+K) : ouvrir une page, un plugin ou une mini-app au clavier.
+  // Palette de commandes (bouton de recherche de la barre d'onglets, ou raccourci réglé dans les Paramètres) : ouvrir une page, un plugin ou une mini-app au clavier.
   import type { IconName } from "$lib/icons";
   import { PLUGINS, allMiniApps } from "$lib/plugins/registry.svelte";
   import { settings } from "$lib/state/settings.svelte";
@@ -16,20 +16,18 @@
     view: View;
     color: string;
     icon: IconName;
-    emoji: string;
   }
 
   const entries: Entry[] = [
-    { label: "Accueil", detail: "Page", view: { kind: "home" }, color: "var(--accent)", icon: "home", emoji: "🏠" },
-    { label: "Catalogue", detail: "Installer des plugins", view: { kind: "catalogue" }, color: "var(--accent)", icon: "store", emoji: "🧩" },
-    { label: "Paramètres", detail: "Page", view: { kind: "settings" }, color: "var(--faint)", icon: "settings", emoji: "⚙️" },
+    { label: "Accueil", detail: "Page", view: { kind: "home" }, color: "var(--accent)", icon: "home" },
+    { label: "Catalogue", detail: "Installer des plugins", view: { kind: "catalogue" }, color: "var(--accent)", icon: "store" },
+    { label: "Paramètres", detail: "Page", view: { kind: "settings" }, color: "var(--faint)", icon: "settings" },
     ...PLUGINS.map((p) => ({
       label: p.name,
       detail: "Plugin",
       view: { kind: "plugin", pluginId: p.id } as const,
       color: p.color,
       icon: p.icon,
-      emoji: p.emoji,
     })),
     ...allMiniApps().map(({ plugin, app }) => ({
       label: app.name,
@@ -37,7 +35,6 @@
       view: { kind: "app", pluginId: plugin.id, appId: app.id } as const,
       color: plugin.color,
       icon: app.icon,
-      emoji: app.emoji,
     })),
   ];
 
@@ -100,7 +97,7 @@
       {#each results as entry, i (entry.label + entry.detail)}
         <li role="option" aria-selected={i === selected}>
           <button class:sel={i === selected} onclick={(e) => choose(entry, e.ctrlKey)} onpointermove={() => (selected = i)}>
-            <Tile color={entry.color} icon={entry.icon} emoji={entry.emoji} size={28} variant="soft" />
+            <Tile color={entry.color} icon={entry.icon} size={28} variant="soft" />
             <span class="label">{entry.label}</span>
             <span class="detail">{entry.detail}</span>
           </button>

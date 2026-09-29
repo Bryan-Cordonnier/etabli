@@ -120,10 +120,9 @@ export interface CatalogueEntry {
   version: string;
   author: string;
   color: string;
-  emoji: string;
   icon: string;
   apiVersion: string;
-  miniApps: { id: string; name: string; description: string; emoji: string; icon: string }[];
+  miniApps: { id: string; name: string; description: string; icon: string }[];
   /** Taille du paquet, en octets. */
   size: number;
   url: string;

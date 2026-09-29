@@ -13,7 +13,7 @@
 
   let query = $state("");
 
-  // Nouvel onglet (« + », Ctrl+T) : le curseur est déjà dans la recherche, comme dans un navigateur.
+  // Nouvel onglet (« + » ou raccourci) : le curseur est déjà dans la recherche, comme dans un navigateur.
   const focusSearch = ui.focusSearch;
   ui.focusSearch = false;
 

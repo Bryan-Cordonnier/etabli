@@ -80,10 +80,11 @@
 
   function onkeydown(event: KeyboardEvent): void {
     const handled = handleShortcut({
-      key: event.key,
-      ctrl: event.ctrlKey || event.metaKey,
+      code: event.code,
+      ctrl: event.ctrlKey,
       shift: event.shiftKey,
       alt: event.altKey,
+      meta: event.metaKey,
     });
     if (handled) event.preventDefault();
   }

@@ -10,7 +10,7 @@
 
 import {
   CONNECT,
-  isHostShortcut,
+  matchesShortcut,
   type ColorScheme,
   type DocumentSnapshot,
   type FichePrint,
@@ -120,6 +120,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
   let libraries: Libraries = { suppliers: [], machines: [] };
   let pluginData: unknown = null;
   let incoming: Incoming | null = null;
+  let shortcuts: string[] = [];
 
   const api: Etabli<unknown> = {
     get pluginId() {
@@ -223,6 +224,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         };
         pluginData = message.pluginData ?? null;
         incoming = message.incoming ?? null;
+        shortcuts = message.shortcuts ?? [];
         applyTheme(message.theme, message.colorScheme);
         resolve(api);
         signalReady(send);
@@ -239,11 +241,14 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         pluginData = message.data;
         for (const listener of settingsListeners) listener(pluginData);
         break;
+      case "shortcuts":
+        shortcuts = message.shortcuts;
+        break;
     }
   };
 
   reportHeight(send);
-  forwardShortcuts(send);
+  forwardShortcuts(send, () => shortcuts);
 }
 
 /**
@@ -283,15 +288,24 @@ function reportHeight(send: (message: PluginToHost) => void): void {
   measure();
 }
 
-function forwardShortcuts(send: (message: PluginToHost) => void): void {
+function forwardShortcuts(send: (message: PluginToHost) => void, getShortcuts: () => string[]): void {
   window.addEventListener("keydown", (event) => {
     // Échap : l'aperçu rapide s'en sert pour revenir en arrière. La mini-app peut aussi l'utiliser.
     if (event.key === "Escape" && !event.defaultPrevented) {
-      send({ type: "shortcut", key: "Escape", ctrl: false, shift: false, alt: false });
+      send({ type: "shortcut", key: "Escape", code: "Escape", ctrl: false, shift: false, alt: false });
       return;
     }
-    if (!isHostShortcut(event)) return;
+    // Seuls les raccourcis réglés par l'utilisateur dans le moteur remontent : le reste du clavier
+    // appartient à la mini-app.
+    if (!matchesShortcut(event, getShortcuts())) return;
     event.preventDefault();
-    send({ type: "shortcut", key: event.key, ctrl: event.ctrlKey, shift: event.shiftKey, alt: event.altKey });
+    send({
+      type: "shortcut",
+      key: event.key,
+      code: event.code,
+      ctrl: event.ctrlKey,
+      shift: event.shiftKey,
+      alt: event.altKey,
+    });
   });
 }

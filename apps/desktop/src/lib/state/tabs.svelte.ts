@@ -61,7 +61,7 @@ class Tabs {
     return tab.id;
   }
 
-  /** Bouton « + » et Ctrl+T : comme un navigateur, un onglet neuf, prêt pour la recherche. */
+  /** Bouton « + » et raccourci « Nouvel onglet » : comme un navigateur, un onglet neuf, prêt pour la recherche. */
   newTab(): void {
     ui.focusSearch = true;
     this.open(HOME);

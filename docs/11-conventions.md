@@ -18,7 +18,7 @@
 
 ## Décisions d'interface validées (ne pas changer sans demander)
 
-- Colonne des plugins à gauche (≤ 1/5 de l'écran), icônes colorées ou émojis, bande Paramètres /
+- Colonne des plugins à gauche (≤ 1/5 de l'écran), icônes colorées (pas d'émojis : un plugin indépendant n'a qu'un nom d'icône et une couleur), bande Paramètres /
   Replier en bas, espacement de 6 px entre les plugins, nom « Établi » sous le bord de la fenêtre.
 - Onglets globaux de **largeur fixe 180 px** (ils ne rétrécissent jamais : ils défilent avec un
   fondu), texte, « + » et logo centrés verticalement dans la barre.

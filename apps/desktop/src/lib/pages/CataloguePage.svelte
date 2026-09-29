@@ -28,9 +28,8 @@
     description: string;
     version: string;
     color: string;
-    emoji: string;
     icon: IconName;
-    apps: { name: string; emoji: string }[];
+    apps: { name: string }[];
     size: number | null;
   }
 
@@ -46,9 +45,8 @@
       description: entry.description,
       version: entry.version,
       color: entry.color,
-      emoji: entry.emoji,
       icon: iconOf(entry.icon),
-      apps: entry.miniApps.map((a) => ({ name: a.name, emoji: a.emoji })),
+      apps: entry.miniApps.map((a) => ({ name: a.name })),
       size: entry.size,
     }));
     const others: Card[] = PLUGINS.filter((p) => !catalogue.entries.some((e) => e.id === p.id)).map((p) => ({
@@ -59,9 +57,8 @@
       description: p.description,
       version: p.version,
       color: p.color,
-      emoji: p.emoji,
       icon: p.icon,
-      apps: p.miniApps.map((a) => ({ name: a.name, emoji: a.emoji })),
+      apps: p.miniApps.map((a) => ({ name: a.name })),
       size: null,
     }));
     return [...fromCatalogue, ...others];
@@ -120,7 +117,7 @@
       {@const enabled = !!card.installed && settings.isPluginEnabled(card.id)}
       {@const progress = catalogue.progress[card.id]}
       <article class="card" class:off={card.installed && !enabled}>
-        <div class="tile"><Tile color={card.color} icon={card.icon} emoji={card.emoji} variant="soft" size={52} /></div>
+        <div class="tile"><Tile color={card.color} icon={card.icon} variant="soft" size={52} /></div>
         <div class="body">
           <div class="name">
             <b>{card.name}</b>
@@ -134,7 +131,7 @@
           </div>
           <p>{card.description}</p>
           <div class="chips">
-            {#each card.apps as app (app.name)}<span class="chip">{app.emoji} {app.name}</span>{/each}
+            {#each card.apps as app (app.name)}<span class="chip">{app.name}</span>{/each}
           </div>
           <div class="meta">
             {card.apps.length} mini-app{card.apps.length > 1 ? "s" : ""}{card.size ? ` · ${size(card.size)}` : ""} ·

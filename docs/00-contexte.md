@@ -54,11 +54,12 @@ Dépôt : https://github.com/Bryan-Cordonnier/etabli (public, branche `main`, CI
 **Moteur — fait**
 - Fenêtre principale sans bordure : colonne des plugins (repliable, réordonnable), onglets globaux,
   Accueil avec recherche et favoris, page de plugin, écran de mini-app avec anciens calculs,
-  palette de commandes (Ctrl+K), raccourcis clavier.
-- Paramètres : Général (zone de notification, démarrage avec Windows, nom de l'auteur des fiches,
-  dossier de travail), Apparence (4 thèmes + système + thèmes JSON importés, icônes ou émojis, taille
-  du texte, animations), Bibliothèques (Fournisseurs, Machines), Plugins, Aperçu rapide, Raccourcis,
-  À propos.
+  palette de commandes (bouton de recherche), raccourcis clavier tous réglables (aucun par défaut).
+- Paramètres : Général (fermeture en arrière-plan ou non, démarrage avec Windows, nom de l'auteur
+  des fiches, dossier de travail), Apparence (4 thèmes + système + thèmes JSON importés, taille du
+  texte, animations), Aperçu rapide, Raccourcis clavier, Plugins installés, Fournisseurs et machines
+  (provisoire), Mises à jour et à propos. Icônes : une icône de liste fermée sur la couleur du
+  plugin (les émojis ont été retirés).
 - Aperçu rapide : fenêtre transparente toujours au premier plan, ouverte par un raccourci global
   (Ctrl+Maj+Espace par défaut), grille des favoris, mini-apps utilisables sur place.
 - Plugins isolés (cadre `sandbox`, protocole `plugins://`), SDK, kit d'interface.

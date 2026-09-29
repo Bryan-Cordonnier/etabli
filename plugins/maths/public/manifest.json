@@ -6,7 +6,6 @@
   "author": "Établi",
   "description": "Trigonométrie, triangles, arcs, perçages, polygones, volumes et conversions",
   "color": "#7c5cfa",
-  "emoji": "📐",
   "icon": "sigma",
   "permissions": [],
   "miniApps": [
@@ -15,7 +14,6 @@
       "name": "Pythagore",
       "description": "Deux côtés connus, le troisième calculé",
       "icon": "triangle-right",
-      "emoji": "📐",
       "entry": "apps/pythagore/index.html",
       "dataVersion": 1,
       "plannedFor": "v1"
@@ -25,7 +23,6 @@
       "name": "Résolution de triangle",
       "description": "Côtés, angles, aire",
       "icon": "triangle",
-      "emoji": "🔺",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/triangle/index.html"
@@ -35,7 +32,6 @@
       "name": "Arc et cercle",
       "description": "Corde, flèche, rayon, longueur d'arc",
       "icon": "spline",
-      "emoji": "⭕",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/arc/index.html"
@@ -45,7 +41,6 @@
       "name": "Perçage sur cercle",
       "description": "Coordonnées des trous, entraxe",
       "icon": "circle-dot",
-      "emoji": "🎯",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/percage/index.html"
@@ -55,7 +50,6 @@
       "name": "Polygone régulier",
       "description": "Côté, sur plats, sur angles, onglets",
       "icon": "hexagon",
-      "emoji": "🔷",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/polygone/index.html"
@@ -65,7 +59,6 @@
       "name": "Volumes et contenances",
       "description": "Cuves, bacs, trémies, barème de jaugeage",
       "icon": "container",
-      "emoji": "🛢️",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/volumes/index.html"
@@ -75,7 +68,6 @@
       "name": "Conversions",
       "description": "mm ↔ pouces, degrés ↔ pente %",
       "icon": "arrows",
-      "emoji": "🔁",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/conversions/index.html"

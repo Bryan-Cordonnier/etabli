@@ -42,7 +42,7 @@ docs/             documentation technique
 
 ## Plugins
 
-Un plugin est un dossier avec un `manifest.json` (identifiant, nom, couleur, émoji, mini-apps).
+Un plugin est un dossier avec un `manifest.json` (identifiant, nom, couleur, icône, mini-apps).
 Chaque mini-app est une page web affichée dans un cadre isolé, servie à l'adresse
 `http://plugins.localhost/<plugin>/<page>` : elle n'a accès ni au disque, ni au réseau, et
 dialogue avec le moteur uniquement via [`@etabli/sdk`](packages/sdk/README.md).

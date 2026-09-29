@@ -6,7 +6,6 @@
   "author": "Établi",
   "description": "Pliage : développés, vé et effort de presse",
   "color": "#ea7a1a",
-  "emoji": "🔨",
   "icon": "hammer",
   "permissions": [],
   "miniApps": [
@@ -15,7 +14,6 @@
       "name": "Développé de pliage",
       "description": "Longueur du flan, lignes de pli",
       "icon": "bend",
-      "emoji": "📃",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/developpe/index.html"
@@ -25,7 +23,6 @@
       "name": "Vé et effort de pliage",
       "description": "Vé conseillé, tonnage, rayon obtenu",
       "icon": "vee",
-      "emoji": "🔻",
       "dataVersion": 1,
       "plannedFor": "v1",
       "entry": "apps/ve/index.html"

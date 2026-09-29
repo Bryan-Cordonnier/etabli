@@ -1,26 +1,26 @@
 import { load, save } from "$lib/storage";
 import { SYSTEM_THEME, type Theme } from "$lib/themes";
 
-export type IconStyle = "couleur" | "emoji";
-
 export const SIDEBAR_MIN = 200;
 export const SIDEBAR_MAX = 300;
 export const TEXT_SCALES = [0.9, 1, 1.1, 1.2, 1.3] as const;
 
-export interface QuickShortcut {
-  /** Format compris par Windows (via Tauri) : « Ctrl+Alt+Space ». */
+export interface Shortcut {
+  /**
+   * Raccourci de l'aperçu rapide : format compris par Windows (via Tauri), « Ctrl+Alt+Space ».
+   * Raccourci dans l'application : « Ctrl+Shift+KeyT » (voir `matchesShortcut` du SDK).
+   */
   accelerator: string;
   /** Affichage en français : « Ctrl + Alt + Espace ». */
   label: string;
 }
 
 /** Ctrl+Alt+Espace est déjà pris par d'autres applications (Claude, par exemple). */
-export const DEFAULT_SHORTCUT: QuickShortcut = { accelerator: "Ctrl+Shift+Space", label: "Ctrl + Maj + Espace" };
+export const DEFAULT_SHORTCUT: Shortcut = { accelerator: "Ctrl+Shift+Space", label: "Ctrl + Maj + Espace" };
 
 interface Persisted {
   theme: string;
   customThemes: Theme[];
-  iconStyle: IconStyle;
   reduceMotion: boolean;
   textScale: number;
   sidebarCollapsed: boolean;
@@ -30,7 +30,10 @@ interface Persisted {
   disabledPlugins: string[];
   /** Ordre des plugins dans la colonne, choisi par glisser-déposer. */
   pluginOrder: string[];
-  quickShortcut: QuickShortcut;
+  /** Raccourci global de l'aperçu rapide (le seul réglé par défaut). */
+  quickShortcut: Shortcut;
+  /** Raccourcis dans l'application, par action (voir shortcuts.ts). Aucun par défaut. */
+  shortcuts: Record<string, Shortcut>;
   closeToTray: boolean;
   /** Nom écrit dans le cartouche des fiches d'atelier (« Préparé : … »). */
   author: string;
@@ -46,7 +49,6 @@ interface Persisted {
 const DEFAULTS: Persisted = {
   theme: SYSTEM_THEME,
   customThemes: [],
-  iconStyle: "couleur",
   reduceMotion: false,
   textScale: 1,
   sidebarCollapsed: false,
@@ -55,6 +57,7 @@ const DEFAULTS: Persisted = {
   disabledPlugins: [],
   pluginOrder: [],
   quickShortcut: DEFAULT_SHORTCUT,
+  shortcuts: {},
   closeToTray: true,
   author: "",
   checkUpdates: true,
@@ -64,7 +67,6 @@ const DEFAULTS: Persisted = {
 class Settings {
   theme = $state(DEFAULTS.theme);
   customThemes = $state<Theme[]>([]);
-  iconStyle = $state<IconStyle>(DEFAULTS.iconStyle);
   reduceMotion = $state(DEFAULTS.reduceMotion);
   textScale = $state(DEFAULTS.textScale);
   sidebarCollapsed = $state(DEFAULTS.sidebarCollapsed);
@@ -72,7 +74,8 @@ class Settings {
   favorites = $state<string[]>([]);
   disabledPlugins = $state<string[]>([]);
   pluginOrder = $state<string[]>([]);
-  quickShortcut = $state<QuickShortcut>(DEFAULTS.quickShortcut);
+  quickShortcut = $state<Shortcut>(DEFAULTS.quickShortcut);
+  shortcuts = $state<Record<string, Shortcut>>({});
   closeToTray = $state(DEFAULTS.closeToTray);
   author = $state(DEFAULTS.author);
   checkUpdates = $state(DEFAULTS.checkUpdates);
@@ -87,7 +90,6 @@ class Settings {
     const saved = { ...DEFAULTS, ...load<Partial<Persisted>>("settings", {}) };
     this.theme = saved.theme;
     this.customThemes = saved.customThemes;
-    this.iconStyle = saved.iconStyle;
     this.reduceMotion = saved.reduceMotion;
     this.textScale = saved.textScale;
     this.sidebarCollapsed = saved.sidebarCollapsed;
@@ -96,6 +98,7 @@ class Settings {
     this.disabledPlugins = saved.disabledPlugins;
     this.pluginOrder = saved.pluginOrder;
     this.quickShortcut = saved.quickShortcut;
+    this.shortcuts = saved.shortcuts;
     this.closeToTray = saved.closeToTray;
     this.author = saved.author;
     this.checkUpdates = saved.checkUpdates;
@@ -106,7 +109,6 @@ class Settings {
     save("settings", {
       theme: this.theme,
       customThemes: $state.snapshot(this.customThemes),
-      iconStyle: this.iconStyle,
       reduceMotion: this.reduceMotion,
       textScale: this.textScale,
       sidebarCollapsed: this.sidebarCollapsed,
@@ -115,6 +117,7 @@ class Settings {
       disabledPlugins: $state.snapshot(this.disabledPlugins),
       pluginOrder: $state.snapshot(this.pluginOrder),
       quickShortcut: $state.snapshot(this.quickShortcut),
+      shortcuts: $state.snapshot(this.shortcuts),
       closeToTray: this.closeToTray,
       author: this.author,
       checkUpdates: this.checkUpdates,
@@ -123,11 +126,20 @@ class Settings {
   }
 
   /** Modifie un réglage simple et l'enregistre. */
-  set<K extends "theme" | "iconStyle" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author" | "checkUpdates" | "catalogueMigrated">(
+  set<K extends "theme" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author" | "checkUpdates" | "catalogueMigrated">(
     key: K,
     value: Settings[K],
   ): void {
     (this as Settings)[key] = value;
+    this.#save();
+  }
+
+  /** Règle (ou, avec `null`, efface) le raccourci d'une action de l'application. */
+  setShortcut(actionId: string, shortcut: Shortcut | null): void {
+    const next = { ...this.shortcuts };
+    if (shortcut) next[actionId] = shortcut;
+    else delete next[actionId];
+    this.shortcuts = next;
     this.#save();
   }
 
