@@ -1,7 +1,7 @@
 {
   "id": "materiaux",
   "name": "Matériaux et fixation",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "apiVersion": "^1",
   "author": "Établi",
   "description": "Masses, taraudages, vitesses de coupe, couples de serrage",
