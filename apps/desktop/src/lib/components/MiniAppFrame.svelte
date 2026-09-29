@@ -43,6 +43,13 @@
   let frame: HTMLIFrameElement;
   let port: MessagePort | undefined;
   let height = $state(320);
+  /**
+   * Le cadre reste invisible tant que la mini-app n'a pas appliqué le thème et dessiné son contenu
+   * (message « ready ») : sinon on voit un instant la page blanche, avant ses couleurs et ses données.
+   * Filet de sécurité pour un plugin compilé avec un SDK plus ancien : affiché au bout d'une seconde.
+   */
+  let ready = $state(false);
+  let readyTimer: ReturnType<typeof setTimeout> | undefined;
 
   function readTheme(): { theme: ThemeTokens; colorScheme: ColorScheme } {
     const style = getComputedStyle(document.documentElement);
@@ -62,12 +69,19 @@
   async function connectFrame(): Promise<void> {
     port?.close();
     port = undefined;
+    ready = false;
+    clearTimeout(readyTimer);
+    readyTimer = setTimeout(() => (ready = true), 1000);
     const pluginData = await libraries.loadPlugin(pluginId);
     const channel = new MessageChannel();
     port = channel.port1;
     port.onmessage = (event: MessageEvent<PluginToHost>) => {
       const message = event.data;
       switch (message.type) {
+        case "ready":
+          clearTimeout(readyTimer);
+          ready = true;
+          break;
         case "height":
           height = Math.max(160, Math.ceil(message.value));
           break;
@@ -135,7 +149,10 @@
     return () => media.removeEventListener("change", push);
   });
 
-  $effect(() => () => port?.close());
+  $effect(() => () => {
+    port?.close();
+    clearTimeout(readyTimer);
+  });
 </script>
 
 <iframe
@@ -145,6 +162,7 @@
   {sandbox}
   allow="clipboard-write"
   onload={connectFrame}
+  class:ready
   style:height="{height}px"
 ></iframe>
 
@@ -155,5 +173,10 @@
     border: 0;
     background: transparent;
     color-scheme: normal;
+    opacity: 0;
+  }
+  iframe.ready {
+    opacity: 1;
+    transition: opacity 0.12s ease-out;
   }
 </style>

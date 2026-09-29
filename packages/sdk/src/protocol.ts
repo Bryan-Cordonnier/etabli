@@ -169,6 +169,8 @@ export type PluginToHost =
   | { type: "notify"; text: string }
   | { type: "copy"; text: string }
   | { type: "height"; value: number }
+  /** Thème appliqué et contenu dessiné après `init` : le moteur peut afficher le cadre (sans flash blanc). */
+  | { type: "ready" }
   | { type: "shortcut"; key: string; ctrl: boolean; shift: boolean; alt: boolean }
   | { type: "pluginData"; data: unknown }
   | { type: "print"; fiche: FichePrint }

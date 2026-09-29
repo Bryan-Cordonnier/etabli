@@ -225,6 +225,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         incoming = message.incoming ?? null;
         applyTheme(message.theme, message.colorScheme);
         resolve(api);
+        signalReady(send);
         break;
       case "theme":
         applyTheme(message.theme, message.colorScheme);
@@ -243,6 +244,22 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
 
   reportHeight(send);
   forwardShortcuts(send);
+}
+
+/**
+ * Deux images après `init`, la mini-app a reçu ses données et s'est dessinée avec les couleurs du
+ * moteur : le moteur peut montrer le cadre, jusque-là invisible (pas de flash blanc). Si les images
+ * sont ralenties (fenêtre cachée, PC chargé), le message part quand même au bout de 150 ms.
+ */
+function signalReady(send: (message: PluginToHost) => void): void {
+  let sent = false;
+  const ready = () => {
+    if (sent) return;
+    sent = true;
+    send({ type: "ready" });
+  };
+  requestAnimationFrame(() => requestAnimationFrame(ready));
+  setTimeout(ready, 150);
 }
 
 /** Applique les couleurs du moteur sous forme de variables CSS (`var(--accent)`…). */

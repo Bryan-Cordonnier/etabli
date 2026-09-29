@@ -30,6 +30,7 @@ facultatifs, nouveaux messages) ne changent pas la version ; le SDK tolère un c
 | `notify` `{ text }` | notification en bas à droite |
 | `copy` `{ text }` | copie par l'hôte (si le cadre n'a pas accès au presse-papiers) |
 | `height` `{ value }` | hauteur du contenu : le cadre s'ajuste |
+| `ready` | envoyé par le SDK deux images après `init` (thème appliqué, contenu dessiné) : le moteur garde le cadre invisible jusque-là, puis le fait apparaître en fondu ; sans ce message (SDK ancien), il l'affiche au bout d'une seconde |
 | `shortcut` | touche réservée à l'hôte (Ctrl+T…) ou Échap |
 | `pluginData` `{ data }` | enregistre les réglages du plugin |
 | `print` `{ fiche }` | imprime une fiche d'atelier (`FichePrint`) |
