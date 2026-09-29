@@ -50,8 +50,10 @@ Jamais vus :
 ## Distribution
 
 - Releases GitHub, installateur avec les plugins et mises à jour automatiques signées : **faits**
-  (voir [14-publier-une-version.md](14-publier-une-version.md)). Le cycle complet (installer une
-  version, en publier une plus récente, se mettre à jour) reste à éprouver sur deux versions.
+  (voir [14-publier-une-version.md](14-publier-une-version.md)). Cycle complet validé par Bryan le
+  29/09/2026 : 0.1.1 installée, 0.1.2 proposée au démarrage, installée, plugins présents.
+- Release « Main » (étiquette « 0.1.0 », vide, créée à la main) à supprimer sur GitHub par Bryan,
+  puis l'étiquette « 0.1.0 ».
 - Signature Windows par la **SignPath Foundation** : tout est prêt côté dépôt (licence MIT,
   `CODE_SIGNING.md`, installateur MSI, workflow) ; reste la demande de Bryan, puis la mise en place
   dans SignPath et les réglages GitHub (voir [14](14-publier-une-version.md#signpath-signature-windows-gratuite-pour-les-projets-libres)).
