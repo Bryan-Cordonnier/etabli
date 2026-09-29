@@ -6,38 +6,10 @@ reposer les questions ouvertes avant de coder. Règles communes : [07-creer-un-p
 
 ## Moteur
 
-### Catalogue de plugins (choix validés par Bryan le 29/09/2026, maquette à valider)
-Maquette interactive : https://claude.ai/artifact/Si77KdKYLq3oLqPwoKFSoj
-Principe : l'installateur ne contient **aucun plugin** ; on les installe, met à jour, désinstalle,
-active et désactive depuis un catalogue officiel. Même principe que les mises à jour de l'application :
-tout est sur GitHub (gratuit) et **signé avec la clé de Bryan** (`etabli-mises-a-jour.key`).
-- **Premier lancement** : l'Accueil souhaite la bienvenue ; s'il n'y a aucun plugin, un bouton
-  « Ouvrir le catalogue pour installer des plugins ».
-- **Page Catalogue** (entrée dans la colonne sous Accueil ; le bouton « Parcourir le catalogue » des
-  Paramètres → Plugins y mène) : une carte par plugin (icône, nom, description, version, taille,
-  mini-apps) ; Installer ; une fois installé : Activer/Désactiver, Désinstaller.
-- **Mises à jour des plugins automatiques** : au démarrage, installées sans redémarrer, signalées par
-  une notification (« Traçage mis à jour : 1.2.0 »).
-- **Désinstaller garde les calculs** (Documents\Etabli\<plugin>) : réinstaller les retrouve. La
-  confirmation le dit.
-- **Hors ligne** : « Installer depuis un fichier… » (clé USB, réseau d'école qui bloque GitHub) ; le
-  fichier `<id>-<version>.etabli-plugin` contient le plugin et sa signature ; refusé s'il n'est pas
-  signé par la clé de Bryan.
-- **Qui a déjà une 0.1.x** : les plugins qui étaient fournis avec l'application sont réinstallés
-  automatiquement depuis le catalogue au premier lancement de la version avec catalogue.
-
-Réalisation prévue :
-- Publication d'un plugin indépendante de l'application : étiquette `plugin-<id>-v1.2.0` → workflow
-  qui compile le plugin, fabrique le paquet (zip du `dist/` + signature minisign), le dépose dans une
-  Release fixe `catalogue` et y remplace `catalogue.json` (id, nom, description, icône, version,
-  taille, url, signature, version minimale de l'application, liste des mini-apps).
-- Rust : `catalogue_charger` (lit catalogue.json), `plugin_installer` (télécharge, vérifie la
-  signature avec `minisign-verify` et la clé publique de `tauri.conf.json`, décompresse dans
-  `config/plugins/<id>`), `plugin_desinstaller` (supprime ce dossier, pas les documents),
-  `plugin_installer_fichier` ; la liste des plugins d'`AppState` devient modifiable (rechargée sans
-  redémarrer). Seul le moteur accède au réseau, jamais une mini-app.
-- Un plugin installé depuis le catalogue est « officiel » (signé par Bryan). Plugins d'autres
-  auteurs : plus tard, par demande de fusion sur le catalogue.
+### Catalogue de plugins : fait (0.2.0, 29/09/2026)
+Spécification validée par Bryan puis codée : voir [14-publier-une-version.md](14-publier-une-version.md#catalogue-de-plugins-depuis-la-020).
+Restent pour plus tard : plugins d'autres auteurs (par demande de fusion sur le catalogue), version
+minimale de l'application par plugin (champ `apiVersion` publié mais pas encore contrôlé).
 
 ### Projets (lot 1)
 - Onglet « Projets » dans la colonne, sous Accueil (ce n'est pas un plugin).

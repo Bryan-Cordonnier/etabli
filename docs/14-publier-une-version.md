@@ -24,12 +24,49 @@ Configuration : `bundle.targets = ["msi"]`, `bundle.windows.wix` (modèle, `fr-F
 **à ne jamais changer** : c'est lui qui fait remplacer l'ancienne version), `bundle.publisher`,
 `copyright`, `license` (repris dans les propriétés du programme : exigence de SignPath).
 
-## Plugins dans l'installateur
+## Catalogue de plugins (depuis la 0.2.0)
 
-`npm run build:plugins` compile les plugins puis `scripts/plugins-officiels.mjs` copie chaque
-`plugins/<id>/dist` dans `apps/desktop/src-tauri/plugins-officiels/<id>` (ignoré par Git, sauf
-`.gitkeep`). `bundle.resources` l'installe dans `plugins`, à côté du programme, où le moteur cherche
-les plugins officiels en production (`paths.rs`). Un nouveau plugin est inclus sans rien configurer.
+L'installateur ne contient **aucun plugin** (0.1.x : ils étaient copiés dans l'installateur). On
+les installe depuis le catalogue (page Catalogue, maquette validée par Bryan :
+https://claude.ai/artifact/Si77KdKYLq3oLqPwoKFSoj). Chaque plugin est publié **séparément** de
+l'application : corriger un calcul de Traçage ne demande pas de republier Établi.
+
+- **Paquet** `<id>-<version>.etabli-plugin` : zip qui contient `plugin.zip` (le `dist/` du plugin,
+  `manifest.json` à la racine) et `plugin.zip.minisig` (sa signature, **même clé que les mises à jour**).
+  Fabriqué par `scripts/paquet-plugin.mjs` (`npm run paquet -- <id>`), qui met aussi à jour
+  `catalogue.json`.
+- **Release « catalogue »** (préversion, jamais « dernière version » : les mises à jour de
+  l'application n'y touchent pas) : les paquets et `catalogue.json`, lu par Établi à
+  `…/releases/download/catalogue/catalogue.json`.
+- **Installation** (Rust, `catalogue.rs`) : téléchargement seulement depuis les Releases du dépôt,
+  signature vérifiée avant toute écriture, extraction dans `<config>/catalogue/<id>` (refus des
+  chemins qui sortent du dossier, taille bornée), remplacement d'un bloc, liste rechargée sans
+  redémarrer. Désinstaller supprime ce dossier, **pas les calculs** (dossier des documents).
+- **Au démarrage** : mises à jour automatiques des plugins (notification) ; qui arrive d'une 0.1.x
+  (réglages existants, aucun plugin) retrouve tous les plugins du catalogue réinstallés (réglage
+  `catalogueMigrated`). Vérifié le 29/09/2026 sur une version compilée avec le vrai catalogue.
+- **Hors ligne** : « Installer depuis un fichier… » avec un `.etabli-plugin` (même vérification).
+
+### Publier un plugin (pas à pas)
+
+```powershell
+. 'H:\outils\env-dev.ps1' | Out-Null
+# 1. monter « version » dans plugins/<id>/public/manifest.json (sinon aucune mise à jour proposée)
+npm run check; npm test; npm run build:plugins
+git commit -am "feat(<id>): …"; git push origin main
+git tag plugin-<id>-v1.2.0; git push origin plugin-<id>-v1.2.0
+```
+
+Le workflow « Publication d'un plugin » (`.github/workflows/publier-plugin.yml`, ~2 min) vérifie que
+l'étiquette correspond au manifeste, teste, compile, signe et dépose le paquet et le catalogue. **Un
+plugin à la fois** : chaque publication relit puis réécrit `catalogue.json`, et GitHub annule une
+publication en attente si une troisième arrive (la relancer depuis l'onglet Actions). Les 5 plugins
+officiels y sont depuis le 29/09/2026 (maths 1.0.0, economie 0.3.0, tolerie 1.0.0, tracage 1.1.0,
+materiaux 1.0.0).
+
+Paquet d'essai en local (sans publier) : définir `TAURI_SIGNING_PRIVATE_KEY` (contenu de la clé) et
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, puis `npm run paquet -- <id>` → `paquets/` (ignoré par Git).
+Les tests Rust utilisent un paquet signé avec une clé d'essai : `src-tauri/fixtures/`.
 
 ## Mises à jour automatiques
 

@@ -4,10 +4,11 @@
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/lib.rs` | Construction de l'application : greffons, protocole `plugins`, `setup`, fermeture de la fenêtre (vers la zone de notification ou quitter), liste des commandes. `AppState` : chemins, plugins chargés, réglage « fermer dans la zone de notification » |
+| `src/lib.rs` | Construction de l'application : greffons, protocole `plugins`, `setup`, fermeture de la fenêtre (vers la zone de notification ou quitter), liste des commandes. `AppState` : chemins, plugins chargés (`RwLock`, relus par `reload_plugins` sans redémarrer), réglage « fermer dans la zone de notification ». Les fenêtres (`"create": false`) sont créées dans `setup` après `app.manage(AppState)` |
 | `src/main.rs` | appelle `etabli_lib::run()` |
-| `src/paths.rs` | `AppPaths` : dossier des documents, dossier de configuration, racines des plugins ; `ETABLI_DATA_DIR` les redirige en développement |
-| `src/plugins.rs` | scan des plugins, `plugins_list`, service des fichiers (`serve`, `safe_join`, CSP des mini-apps, types MIME) |
+| `src/paths.rs` | `AppPaths` : dossier des documents, dossier de configuration, dossier `catalogue` (plugins installés), racines des plugins avec leur `Source` (intégrés = dépôt en développement ; catalogue ; utilisateur) ; `ETABLI_DATA_DIR` les redirige en développement |
+| `src/plugins.rs` | scan des plugins (dossiers commençant par un point ignorés), `Source`, `plugins_list`, service des fichiers (`serve`, `safe_join`, CSP des mini-apps, types MIME) |
+| `src/catalogue.rs` | catalogue de plugins : `catalogue_lire` (catalogue.json de la Release « catalogue »), `plugin_installer` (téléchargement depuis les Releases du dépôt seulement, progression `etabli:installation`), `plugin_installer_fichier`, `plugin_desinstaller` ; paquet `.etabli-plugin` vérifié (minisign, clé de `tauri.conf.json`) avant toute écriture, extraction bornée qui refuse les chemins hors du dossier, remplacement d'un bloc ; `nettoyer` au démarrage ; événement `etabli:plugins` |
 | `src/documents.rs` | `Library` : lister, lire, enregistrer (écriture atomique, renommage si le titre change), mettre à la corbeille ; commandes `documents_*` |
 | `src/store.rs` | `settings.json` : lecture au démarrage et commandes `store_load` / `store_save` |
 | `src/donnees.rs` | fichiers JSON de `<config>/donnees/` (bibliothèques, réglages de plugin) : `donnees_lire` / `donnees_ecrire`, noms validés |
@@ -23,7 +24,8 @@ remplacement quand l'interface tourne dans un simple navigateur.
 
 | Commande | Rôle |
 | --- | --- |
-| `plugins_list` | manifestes des plugins chargés et leur statut officiel |
+| `plugins_list` | manifestes des plugins chargés, statut officiel et `source` (`integre`, `catalogue`, `utilisateur`) |
+| `catalogue_lire`, `plugin_installer`, `plugin_installer_fichier`, `plugin_desinstaller` | catalogue de plugins (voir `catalogue.rs`) |
 | `documents_list`, `document_read`, `document_save`, `document_delete` | calculs `.etabli` |
 | `store_load`, `store_save` | `settings.json` |
 | `donnees_lire`, `donnees_ecrire` | `donnees/<nom>.json` (`fournisseurs`, `machines`, `plugin.<id>`) |
@@ -35,7 +37,7 @@ remplacement quand l'interface tourne dans un simple navigateur.
 | `fichier_enregistrer` | « Enregistrer sous » + écriture (exports à venir) |
 
 Événements : `apercu:ouvert`, `apercu:fermer` (Rust → aperçu) ; `etabli:ouvrir`, `etabli:machine`,
-`etabli:envoyer` (aperçu → fenêtre principale).
+`etabli:envoyer` (aperçu → fenêtre principale) ; `etabli:plugins` (liste des plugins changée), `etabli:installation` (progression d'un téléchargement).
 
 ## Lancement
 

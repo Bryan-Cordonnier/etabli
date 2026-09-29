@@ -15,7 +15,9 @@ SolidWorks sur des PC modestes, 100 % locale, et extensible par plugins.
    voir la [politique de signature](CODE_SIGNING.md)) : si Windows affiche « Windows a protégé votre
    ordinateur », cliquez sur **Informations complémentaires** → **Exécuter quand même**.
 
-Établi cherche ensuite lui-même les nouvelles versions au démarrage et propose de les installer.
+Au premier lancement, Établi est vide : ouvrez le **Catalogue** pour installer les plugins dont vous
+avez besoin (Maths et géométrie, Économie de matière, Tôlerie, Traçage, Matériaux et fixation). Établi
+cherche ensuite lui-même les nouvelles versions, de l'application comme des plugins, au démarrage.
 
 Ce que fait Établi : des calculs d'atelier de chaudronnerie (géométrie, débit de tubes, calepinage de
 tôles, développés de pliage et de traçage, masses, taraudages, couples de serrage), enregistrés sur

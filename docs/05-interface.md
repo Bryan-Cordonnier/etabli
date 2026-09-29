@@ -18,7 +18,9 @@ l'onglet actif.
 | `lib/state/ui.svelte.ts` | palette ouverte, notification (toast 4 s), focus de la recherche |
 | `lib/state/libraries.svelte.ts` | bibliothèques Fournisseurs et Machines, réglages des plugins (`libraries`) |
 | `lib/documents.svelte.ts` | `DocumentSession` : un calcul ouvert (chargement, enregistrement différé, historique, duplication, corbeille) |
-| `lib/plugins/registry.ts` | `PLUGINS`, `loadPlugins`, validation des manifestes, `pluginUrl`, recherche de mini-apps, ordre officiel |
+| `lib/plugins/registry.svelte.ts` | `PLUGINS` (liste **réactive**, rechargée après chaque installation), `loadPlugins`, validation des manifestes (avec `source`), `pluginUrl`, recherche de mini-apps, ordre officiel |
+| `lib/state/catalogue.svelte.ts` | catalogue (`catalogue`) : entrées publiées, installation avec progression, désinstallation, installation depuis un fichier, `startup` (réinstallation des plugins de qui arrive d'une 0.1.x, puis mises à jour automatiques), `compareVersions` |
+| `lib/state/updates.svelte.ts` | mises à jour de l'application (voir docs/14) |
 | `lib/views.ts` | titre, icône et couleur d'une vue ; `normalize` (recherche sans accents) |
 | `lib/shortcuts.ts` | raccourcis clavier globaux (aussi transmis par les mini-apps) |
 | `lib/themes.ts`, `lib/appearance.ts` | thèmes et application de l'apparence (thème, animations réduites, zoom) |
@@ -26,7 +28,7 @@ l'onglet actif.
 | `lib/print/print.ts`, `lib/print/fiche.css` | impression des fiches d'atelier |
 | `lib/machines.ts`, `lib/send.ts` | « + Ajouter une machine… » et envoi entre mini-apps (fenêtre principale) |
 | `lib/components/*` | composants (voir plus bas) |
-| `lib/pages/*` | `Home`, `PluginPage`, `MiniAppPage`, `SettingsPage` |
+| `lib/pages/*` | `Home` (bienvenue et bouton du catalogue quand aucun plugin n'est installé), `PluginPage`, `MiniAppPage`, `SettingsPage`, `CataloguePage` |
 
 ## Vues et navigation
 

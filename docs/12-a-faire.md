@@ -49,16 +49,18 @@ Jamais vus :
 
 ## Distribution
 
-- Releases GitHub, installateur avec les plugins et mises à jour automatiques signées : **faits**
+- Releases GitHub et mises à jour automatiques signées : **faites**
   (voir [14-publier-une-version.md](14-publier-une-version.md)). Cycle complet validé par Bryan le
   29/09/2026 : 0.1.1 installée, 0.1.2 proposée au démarrage, installée, plugins présents.
-- Releases publiées : 0.1.1 et 0.1.2 (celles de la 0.1.0, installateur NSIS, ont été supprimées ;
-  l'étiquette `v0.1.0` reste comme repère dans l'historique).
+- **Catalogue de plugins** : fait (0.2.0) ; installateur sans plugin. Testé par l'agent le 29/09/2026
+  sur une version compilée avec le vrai catalogue (réinstallation d'une 0.1.x, désinstaller,
+  installer, adresse étrangère refusée, mini-app ouverte) ; à voir par Bryan dans l'application.
+- Releases publiées : 0.1.1 à 0.1.3, puis 0.2.0 (celles de la 0.1.0, installateur NSIS, ont été
+  supprimées ; l'étiquette `v0.1.0` reste comme repère) ; Release « catalogue » (préversion).
 - Signature Windows par la **SignPath Foundation** : tout est prêt côté dépôt (licence MIT,
   `CODE_SIGNING.md`, installateur MSI, workflow) ; reste la demande de Bryan, puis la mise en place
   dans SignPath et les réglages GitHub (voir [14](14-publier-une-version.md#signpath-signature-windows-gratuite-pour-les-projets-libres)).
   D'ici là, le Contrôle intelligent des applications de Windows 11 bloque Établi.
-- Catalogue de plugins en ligne : bouton présent mais désactivé.
 - Site de documentation pour les auteurs de plugins : non commencé.
 
 ## Limites connues
@@ -71,5 +73,7 @@ Jamais vus :
 - Masses des tubes et cornières (Matériaux) en angles vifs : 1 à 3 % au-dessus du catalogue.
 - Vitesses de la machine (Matériaux) : séparées par des espaces, donc sans espace dans les milliers
   (« 1120 », pas « 1 120 »).
+- Catalogue : sans Internet au premier lancement, Établi reste vide (installation depuis un fichier
+  possible) ; la version minimale de l'application par plugin (`apiVersion`) n'est pas contrôlée.
 - Le commit `8360f99` a un caractère BOM au début de son titre (sans conséquence).
 - `Pythagore.svelte` n'utilise pas encore `MiniAppDocument` (fonctionne, mais style ancien).

@@ -87,6 +87,8 @@ vus à l'écran** : liste dans [12-a-faire.md](12-a-faire.md).
 https://github.com/Bryan-Cordonnier/etabli/releases/latest, avec mises à jour automatiques
 signées (voir [14-publier-une-version.md](14-publier-une-version.md)). Des camarades de Bryan
 l'installent : une version publiée doit rester sûre (pas de calcul faux, pas de perte de données).
+Depuis la 0.2.0, l'installateur ne contient **aucun plugin** : on les installe depuis le **catalogue**
+(page Catalogue), chaque plugin étant publié et mis à jour séparément de l'application.
 
 **Pas encore fait** : Projets, export PDF direct, plugins des lots 3 et 4. Détail dans
 [12-a-faire.md](12-a-faire.md).
