@@ -61,6 +61,17 @@ Jamais vus :
   `CODE_SIGNING.md`, installateur MSI, workflow) ; reste la demande de Bryan, puis la mise en place
   dans SignPath et les réglages GitHub (voir [14](14-publier-une-version.md#signpath-signature-windows-gratuite-pour-les-projets-libres)).
   D'ici là, le Contrôle intelligent des applications de Windows 11 bloque Établi.
+- **Réglages de plugin et dépendances** : faits (0.3.0). Testés le 30/09/2026 sur une version compilée
+  avec le vrai catalogue : reprise des fournisseurs et machines saisis avant (plugins installés et
+  données reprises), installation d'Économie de matière avec la case « extensions facultatives »,
+  désinstallation, données de Fournisseurs visibles dans le débit de tubes. **Pas testé sur une
+  version compilée** : dépendance obligatoire (aucun plugin officiel n'en a ; couverte par les tests de
+  `@etabli/sdk/deps` et vue dans l'aperçu navigateur), désinstallation en cascade dans le catalogue.
+- Suite prévue (Bryan, 29/09/2026) : **mise au propre du GitHub public** : README pour tout le monde,
+  guide de contribution, guide de création de plugin, modèles de tickets et de demandes de fusion,
+  avertissement « outil d'aide, à vérifier », règles de relecture des plugins d'autres auteurs.
+- Plus tard, si le projet grossit : catalogue de plugins hébergé (recherche, comptes de développeurs,
+  vérifications automatiques, révocation) ; points d'extension entre plugins ; réglages déclaratifs.
 - Site de documentation pour les auteurs de plugins : non commencé.
 
 ## Limites connues
