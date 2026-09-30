@@ -32,9 +32,9 @@ tauri-plugin-process = "2.4.0"
 # à jour (rien n'est compilé deux fois), vérification des signatures, lecture des paquets zip.
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "system-proxy", "stream"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
-minisign-verify = "0.2"
-base64 = "0.22"
-zip = { version = "4", default-features = false, features = ["deflate-flate2"] }
+minisign-verify = "0.3"
+base64 = "0.23"
+zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
 flate2 = "1"
 
 # Binaire de production plus petit et plus rapide.
