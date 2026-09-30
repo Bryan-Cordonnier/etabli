@@ -49,6 +49,13 @@
           </ul>
         {/if}
 
+        {#if dialog.entry.notes}
+          <details class="notes">
+            <summary>Nouveautés de la version {dialog.entry.version}</summary>
+            <pre>{dialog.entry.notes}</pre>
+          </details>
+        {/if}
+
         {#if dialog.optional.length}
           <label class="check">
             <input type="checkbox" bind:checked={dialog.withOptional} />
@@ -137,6 +144,22 @@
   }
   ul b {
     color: var(--text);
+  }
+  .notes {
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .notes summary {
+    cursor: pointer;
+    width: fit-content;
+  }
+  .notes pre {
+    margin: 6px 0 0;
+    max-height: 200px;
+    overflow: auto;
+    font: 12.5px/1.5 var(--font);
+    white-space: pre-wrap;
+    user-select: text;
   }
   .version {
     font: 12px var(--mono);

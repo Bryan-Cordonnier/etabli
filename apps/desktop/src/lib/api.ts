@@ -131,6 +131,10 @@ export interface CatalogueEntry {
   provides: Record<string, string>;
   /** Titres des pages de réglages que ce plugin ajoute aux Paramètres. */
   settings: { id: string; title: string }[];
+  /** Nouveautés de cette version (texte brut, tirées du CHANGELOG.md du plugin) ; vide si le catalogue n'en a pas. */
+  notes: string;
+  /** Date de cette version (« 2026-09-30 »), ou null. */
+  notesDate: string | null;
   miniApps: { id: string; name: string; description: string; icon: string }[];
   /** Taille du paquet, en octets. */
   size: number;

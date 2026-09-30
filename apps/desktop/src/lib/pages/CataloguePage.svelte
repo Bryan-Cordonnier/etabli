@@ -31,6 +31,8 @@
     apps: { name: string }[];
     /** Titres des pages de réglages que le plugin ajoute aux Paramètres. */
     settingsPages: string[];
+    /** Nouveautés de la version du catalogue (texte brut), vides sans catalogue. */
+    notes: string;
     needs: string[];
     optional: string[];
     size: number | null;
@@ -51,6 +53,7 @@
       icon: iconOf(entry.icon),
       apps: entry.miniApps.map((a) => ({ name: a.name })),
       settingsPages: entry.settings.map((s) => s.title),
+      notes: entry.notes,
       needs: Object.keys(entry.dependencies),
       optional: Object.keys(entry.optionalDependencies),
       size: entry.size,
@@ -66,6 +69,7 @@
       icon: p.icon,
       apps: p.miniApps.map((a) => ({ name: a.name })),
       settingsPages: p.settings.map((s) => s.title),
+      notes: "",
       needs: Object.keys(p.dependencies),
       optional: Object.keys(p.optionalDependencies),
       size: null,
@@ -131,6 +135,12 @@
             {#each card.apps as app (app.name)}<span class="chip">{app.name}</span>{/each}
             {#each card.settingsPages as page (page)}<span class="chip setting">Réglages : {page}</span>{/each}
           </div>
+          {#if card.notes}
+            <details class="notes">
+              <summary>Nouveautés de la version {card.version}</summary>
+              <pre>{card.notes}</pre>
+            </details>
+          {/if}
           {#if card.needs.length || card.optional.length}
             <p class="deps">
               {#if card.needs.length}<span>A besoin de : <b>{card.needs.map(nameOf).join(", ")}</b></span>{/if}
@@ -291,6 +301,23 @@
   .chip.setting {
     background: var(--accent-soft);
     color: var(--accent);
+  }
+  .notes {
+    margin: 8px 0 0;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .notes summary {
+    cursor: pointer;
+    width: fit-content;
+  }
+  .notes pre {
+    margin: 6px 0 0;
+    max-height: 220px;
+    overflow: auto;
+    font: 12.5px/1.5 var(--font);
+    white-space: pre-wrap;
+    user-select: text;
   }
   .deps {
     margin: 8px 0 0;

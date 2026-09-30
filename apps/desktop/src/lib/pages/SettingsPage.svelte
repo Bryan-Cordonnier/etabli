@@ -184,17 +184,13 @@
   }
 
   function reportProblem(): void {
-    const body = [
-      `**Version** : ${info?.version ?? "?"}`,
-      `**Système** : ${navigator.userAgent}`,
-      `**Plugins** : ${PLUGINS.map((p) => `${p.id} ${p.version}`).join(", ")}`,
-      "",
-      "**Ce qui s'est passé** :",
-      "",
-      "**Ce qui était attendu** :",
-      "",
-    ].join("\n");
-    void system.openUrl(`${REPO}/issues/new?body=${encodeURIComponent(body)}`);
+    // Formulaire « Bug » du dépôt (.github/ISSUE_TEMPLATE/bug.yml) : la version et les plugins sont préremplis.
+    const params = new URLSearchParams({
+      template: "bug.yml",
+      version: info?.version ?? "",
+      plugins: PLUGINS.map((p) => `${p.name} ${p.version}`).join(", "),
+    });
+    void system.openUrl(`${REPO}/issues/new?${params}`);
   }
 </script>
 

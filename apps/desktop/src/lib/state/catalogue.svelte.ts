@@ -30,6 +30,8 @@ function entries(raw: unknown): CatalogueEntry[] {
       optionalDependencies: stringMap(e.optionalDependencies),
       provides: stringMap(e.provides),
       settings: Array.isArray(e.settings) ? e.settings : [],
+      notes: typeof e.notes === "string" ? e.notes : "",
+      notesDate: typeof e.notesDate === "string" ? e.notesDate : null,
       miniApps: Array.isArray(e.miniApps) ? e.miniApps : [],
     }));
 }
