@@ -8,7 +8,7 @@ fichier que les Établi installés consultent pour se mettre à jour. Licence : 
 ## Installateur MSI par utilisateur
 
 Depuis la 0.1.1, l'installateur est un **MSI** (la 0.1.0 était un NSIS `.exe`). Modèle WiX :
-`apps/desktop/src-tauri/windows/installateur.wxs` = le modèle de Tauri 2.11.5 avec l'installation
+`apps/desktop/src-tauri/windows/installateur.wxs` = le modèle de Tauri 2.11.5 (identique dans la 2.12.0, comparé le 01/10/2026) avec l'installation
 **par utilisateur, sans droits d'administrateur** (paquet « double usage » : `ALLUSERS=2`,
 `MSIINSTALLPERUSER=1`, `InstallPrivileges="limited"`). Résultat, vérifié le 29/09/2026 depuis un
 compte sans droits d'administrateur : installation dans `%LOCALAPPDATA%\Programs\Etabli`, raccourcis

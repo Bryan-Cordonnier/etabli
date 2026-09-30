@@ -19,6 +19,12 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - Notes de chaque version écrites dans ce journal, reprises automatiquement pour la Release GitHub, le message de mise à jour
   affiché dans l'application et les nouveautés des plugins.
 
+### Modifié
+
+- Mise à jour de Tauri (le cadre de l'application) et de ses extensions, des bibliothèques qui vérifient les signatures et
+  ouvrent les paquets de plugins, et des outils de l'interface. Aucun changement visible ; vérifié sur une version compilée
+  (installation de plugins depuis le catalogue, mini-app, réglages).
+
 ### Pour les développeurs de plugins
 
 - `npm run nouveau-plugin -- <id> "<Nom>"` crée un plugin prêt à compiler (mini-app d'exemple, tests, journal, page de réglages

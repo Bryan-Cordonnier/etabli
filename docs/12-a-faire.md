@@ -72,8 +72,11 @@ Jamais vus :
   automatiques, Dependabot, validation et création de plugins. Les réglages GitHub de
   [docs/15](15-gerer-le-depot.md#1-réglages-github-à-activer-une-fois-à-la-main) sont appliqués (30/09/2026) et l'image de partage est
   téléversée. Décisions de Bryan : contact de conduite inchangé (signalement privé GitHub ou profil), délais de sécurité de 14 jours
-  (accusé de réception) et 30 jours (analyse). **Reste** : relire et fusionner les demandes de Dependabot (Tauri : la demande Rust et la
-  demande npm ensemble), puis la demande SignPath (un courriel de refus ou de demande de précisions à retrouver).
+  (accusé de réception) et 30 jours (analyse). Les 5 premières demandes de Dependabot ont été fusionnées les 30/09 et 01/10/2026 (icônes, outils de
+  l'interface, bibliothèques Rust dont `minisign-verify` 0.3, `base64` 0.23 et `zip` 8, puis Tauri 2.12 côté npm et côté Rust) : contrôles
+  complets passés, CI verte, et version compilée testée (installation de trois plugins depuis le vrai catalogue, mini-app, réglages).
+  **Non testé** : l'installateur MSI (le modèle WiX de Tauri est identique entre 2.11.5 et 2.12.0) et la mise à jour automatique, qui ne
+  se voient qu'à la prochaine publication. **Reste** : la demande SignPath (un courriel de refus ou de demande de précisions à retrouver).
 - Plus tard, si le projet grossit : catalogue de plugins hébergé (recherche, comptes de développeurs,
   vérifications automatiques, révocation) ; points d'extension entre plugins ; réglages déclaratifs.
 - Site de documentation pour les auteurs de plugins : non commencé.
