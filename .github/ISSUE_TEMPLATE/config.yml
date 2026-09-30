@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Poser une question
-    url: https://github.com/Bryan-Cordonnier/etabli/discussions
-    about: Une question sur l'utilisation d'Établi ou sur l'écriture d'un plugin.
-  - name: Signaler une faille de sécurité
-    url: https://github.com/Bryan-Cordonnier/etabli/security/advisories/new
-    about: Ne publiez pas une faille dans un ticket public : utilisez ce signalement privé.
-  - name: Guide de l'utilisateur
-    url: https://github.com/Bryan-Cordonnier/etabli/blob/main/docs/guide-utilisateur.md
-    about: Installation, catalogue, plugins, raccourcis, données, dépannage.
+  - name: "Poser une question"
+    url: "https://github.com/Bryan-Cordonnier/etabli/discussions"
+    about: "Une question sur l'utilisation d'Établi ou sur l'écriture d'un plugin."
+  - name: "Signaler une faille de sécurité"
+    url: "https://github.com/Bryan-Cordonnier/etabli/security/advisories/new"
+    about: "Ne publiez pas une faille dans un ticket public : utilisez ce signalement privé."
+  - name: "Guide de l'utilisateur"
+    url: "https://github.com/Bryan-Cordonnier/etabli/blob/main/docs/guide-utilisateur.md"
+    about: "Installation, catalogue, plugins, raccourcis, données, dépannage."

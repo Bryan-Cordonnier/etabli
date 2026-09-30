@@ -5,7 +5,18 @@ tickets, publication. Le côté contributeur est dans [CONTRIBUTING.md](../CONTR
 
 ## 1. Réglages GitHub à activer (une fois, à la main)
 
-Ces réglages ne se font pas par des fichiers du dépôt : ils sont dans **Settings** sur GitHub. Cocher chaque case ci-dessous.
+Ces réglages ne se font pas par des fichiers du dépôt : ils sont dans **Settings** sur GitHub.
+
+**État au 30/09/2026** : tout ce qui suit est appliqué, sauf l'image de partage (*Social preview*) et la liste des secrets, à faire
+à la main. Appliqué : description, site, topics ; Wiki désactivé, Discussions activées (catégories Annonces, Général, Idées,
+Montrez vos plugins, Plugins, Questions) ; fusion en squash seulement, branches supprimées après fusion ; signalement privé des failles,
+alertes et mises à jour de sécurité Dependabot, analyse des secrets, protection à l'envoi et analyse du code CodeQL ; règle `main` (demande de
+fusion, 1 approbation, propriétaires du code, conversations résolues, contrôle `Windows`, historique linéaire, pas de force push) ;
+règle `publication` sur les étiquettes `v*` et `plugin-*` ; approbation de la CI pour tout contributeur extérieur. Les deux règles laissent
+le rôle « Repository admin » contourner (« Always allow ») : tant que vous êtes seul, vous poussez directement sur `main`.
+
+**À ne pas activer** : *Settings → General → Releases → Enable release immutability*. Cette option interdit de modifier les fichiers d'une
+Release publiée ; or la Release « catalogue » est réécrite à chaque publication de plugin (`catalogue.json`, `--clobber`).
 
 **Présentation** (Settings → General)
 - [ ] *Description* : « La boîte à outils de l'atelier : débit de tubes, calepinage de tôles, développés de pliage et de traçage.
