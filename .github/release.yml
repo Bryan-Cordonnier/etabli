@@ -1,0 +1,17 @@
+# Rubriques des notes de version générées automatiquement par GitHub (« Generate release notes »).
+# Les notes officielles viennent du CHANGELOG.md (voir docs/14) : ce fichier sert de filet de sécurité.
+changelog:
+  exclude:
+    labels: ["ignorer-dans-les-notes"]
+    authors: ["dependabot"]
+  categories:
+    - title: Nouveautés
+      labels: ["amélioration", "plugin"]
+    - title: Corrections
+      labels: ["bug", "calcul-faux"]
+    - title: Sécurité
+      labels: ["sécurité"]
+    - title: Documentation
+      labels: ["documentation"]
+    - title: Autres changements
+      labels: ["*"]

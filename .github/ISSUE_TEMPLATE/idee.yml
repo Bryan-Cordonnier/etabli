@@ -1,0 +1,37 @@
+name: Idée ou amélioration
+description: Proposer une amélioration d'Établi (moteur, interface, catalogue, SDK…).
+title: "[Idée] "
+labels: ["amélioration", "à-trier"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Décrivez d'abord **le besoin** (ce que vous essayez de faire, dans quelle situation), puis
+        seulement la solution que vous imaginez. Une nouvelle mini-app ou un nouveau plugin :
+        utilisez plutôt « Proposer un plugin ».
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Le besoin
+      description: Que voulez-vous faire ? Qu'est-ce qui vous en empêche aujourd'hui ?
+    validations:
+      required: true
+  - type: textarea
+    id: idee
+    attributes:
+      label: Votre idée
+      description: Comment imaginez-vous la solution ? Une maquette ou un dessin à la main suffit.
+  - type: textarea
+    id: autres
+    attributes:
+      label: Autres solutions envisagées
+  - type: dropdown
+    id: aide
+    attributes:
+      label: Voulez-vous aider à la réaliser ?
+      options:
+        - Non, je propose seulement l'idée
+        - Oui, je peux tester
+        - Oui, je peux écrire le code
+    validations:
+      required: true

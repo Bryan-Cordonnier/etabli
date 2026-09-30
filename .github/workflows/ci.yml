@@ -43,8 +43,14 @@ jobs:
       - name: Tests des calculs (plugins)
         run: npm test
 
+      - name: Scripts de publication (tests)
+        run: npm run test:scripts
+
       - name: Plugins (build)
         run: npm run build:plugins
+
+      - name: Plugins (manifeste, journal, contenu)
+        run: npm run valider -- --tous
 
       - name: Interface (vite build)
         run: npm run build -w @etabli/desktop

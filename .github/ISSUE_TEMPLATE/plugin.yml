@@ -1,0 +1,65 @@
+name: Proposer un plugin
+description: Une idée de plugin ou de mini-app (un calcul, un débit, un tableau de référence…).
+title: "[Plugin] "
+labels: ["plugin", "à-trier"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Un plugin regroupe des mini-apps autour d'un métier ou d'un sujet (voir les plugins existants dans le
+        catalogue). Ce formulaire sert à en discuter **avant** de l'écrire. Pour déposer un plugin déjà
+        écrit, ouvrez une demande de fusion (modèle « plugin ») : voir [CONTRIBUTING.md](https://github.com/Bryan-Cordonnier/etabli/blob/main/CONTRIBUTING.md).
+  - type: input
+    id: nom
+    attributes:
+      label: Nom du plugin
+      placeholder: "Soudage"
+    validations:
+      required: true
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Le besoin d'atelier
+      description: Quelle situation, quel métier, quel calcul refait-on aujourd'hui à la main ou dans Excel ?
+    validations:
+      required: true
+  - type: textarea
+    id: miniapps
+    attributes:
+      label: Les mini-apps envisagées
+      description: Une ligne par mini-app, avec ses entrées et ses résultats.
+      placeholder: |
+        - Cordon d'angle : gorge a, longueur, résultat = résistance
+        - …
+    validations:
+      required: true
+  - type: textarea
+    id: formules
+    attributes:
+      label: Formules et sources
+      description: Normes, catalogues, ouvrages. Indiquez leur licence si vous voulez en reprendre des tables.
+    validations:
+      required: true
+  - type: dropdown
+    id: dependances
+    attributes:
+      label: A-t-il besoin des données d'autres plugins ?
+      options:
+        - Non
+        - Oui, des fournisseurs (matière, prix)
+        - Oui, des machines
+        - Autre (précisez dans le champ suivant)
+  - type: textarea
+    id: autres
+    attributes:
+      label: Autres informations
+  - type: dropdown
+    id: aide
+    attributes:
+      label: Qui l'écrit ?
+      options:
+        - Je propose l'idée, quelqu'un d'autre pourrait l'écrire
+        - Je l'écris moi-même
+        - Je peux fournir les formules et les cas de test, pas le code
+    validations:
+      required: true

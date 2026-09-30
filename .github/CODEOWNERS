@@ -1,0 +1,12 @@
+# Propriétaires du code : relecteurs demandés automatiquement sur chaque demande de fusion.
+# Le dernier motif qui correspond l'emporte. Quand d'autres relecteurs rejoindront le projet,
+# ajoutez-les ici, par exemple pour un plugin dont ils sont les experts métier.
+
+*                      @Bryan-Cordonnier
+
+# Ce qui touche à la sécurité et à la publication : toujours relu par le mainteneur.
+/apps/desktop/src-tauri/                  @Bryan-Cordonnier
+/.github/workflows/                       @Bryan-Cordonnier
+/scripts/                                 @Bryan-Cordonnier
+/SECURITY.md                              @Bryan-Cordonnier
+/CODE_SIGNING.md                          @Bryan-Cordonnier

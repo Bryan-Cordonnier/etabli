@@ -1,4 +1,4 @@
-# Publication d'une version : à chaque étiquette « v1.2.3 » envoyée sur GitHub, l'installateur MSI
+# Publication d'une version : à chaque étiquette « v1.2.3 » envoyée sur GitHub (le CHANGELOG.md doit avoir sa section), l'installateur MSI
 # est compilé, signé pour Windows par SignPath (dès que la variable SIGNPATH_ORGANIZATION_ID est
 # définie), signé pour la mise à jour automatique, puis publié dans les Releases avec latest.json,
 # le fichier que les Établi installés consultent. Marche à suivre : docs/14-publier-une-version.md.
@@ -43,11 +43,13 @@ jobs:
             exit 1
           fi
 
-      - name: Notes de version (message de l'étiquette)
+      # Les notes viennent du CHANGELOG.md : sans section pour cette version, la publication s'arrête tout de suite.
+      - name: Notes de version (CHANGELOG.md)
         run: |
-          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
-          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > "$RUNNER_TEMP/notes.txt"
-          cat "$RUNNER_TEMP/notes.txt"
+          version="${GITHUB_REF_NAME#v}"
+          node scripts/notes-version.mjs CHANGELOG.md "$version" --texte > "$RUNNER_TEMP/notes.txt"
+          node scripts/notes-version.mjs CHANGELOG.md "$version" --release > "$RUNNER_TEMP/notes-release.md"
+          cat "$RUNNER_TEMP/notes-release.md"
 
       - name: Dépendances npm
         run: npm ci
@@ -118,4 +120,4 @@ jobs:
             "${{ steps.msi.outputs.path }}.sig" \
             "$RUNNER_TEMP/latest.json" \
             --title "Établi $GITHUB_REF_NAME" \
-            --notes-file "$RUNNER_TEMP/notes.txt"
+            --notes-file "$RUNNER_TEMP/notes-release.md"

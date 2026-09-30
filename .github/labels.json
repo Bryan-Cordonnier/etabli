@@ -1,0 +1,23 @@
+[
+  { "name": "bug", "color": "d73a4a", "description": "Quelque chose ne marche pas comme prévu" },
+  { "name": "calcul-faux", "color": "b60205", "description": "Un plugin donne un résultat qui ne correspond pas à la réalité : priorité" },
+  { "name": "amélioration", "color": "a2eeef", "description": "Nouvelle fonctionnalité ou amélioration" },
+  { "name": "plugin", "color": "7057ff", "description": "Nouveau plugin ou nouvelle mini-app" },
+  { "name": "documentation", "color": "0075ca", "description": "Documentation, guides, captures d'écran" },
+  { "name": "question", "color": "d876e3", "description": "Une question d'utilisation" },
+  { "name": "sécurité", "color": "e99695", "description": "Touche à la sécurité (les failles se signalent en privé, voir SECURITY.md)" },
+  { "name": "dépendances", "color": "0366d6", "description": "Mise à jour de dépendances" },
+  { "name": "ci", "color": "ededed", "description": "Intégration continue, publication" },
+  { "name": "à-trier", "color": "fbca04", "description": "Pas encore relu par un mainteneur" },
+  { "name": "besoin-d-infos", "color": "fef2c0", "description": "Il manque des informations pour avancer" },
+  { "name": "bloqué", "color": "5319e7", "description": "Attend autre chose (une décision, un autre ticket)" },
+  { "name": "décision-à-prendre", "color": "c5def5", "description": "On discute avant de coder (spécification, maquette)" },
+  { "name": "moteur", "color": "1d76db", "description": "Application (Rust et interface)" },
+  { "name": "sdk", "color": "1d76db", "description": "@etabli/sdk, @etabli/ui, protocole des mini-apps" },
+  { "name": "catalogue", "color": "1d76db", "description": "Catalogue, installation, dépendances entre plugins" },
+  { "name": "bon-premier-ticket", "color": "7057ff", "description": "Facile pour se lancer dans le projet" },
+  { "name": "aide-bienvenue", "color": "008672", "description": "Toute aide est la bienvenue" },
+  { "name": "doublon", "color": "cfd3d7", "description": "Déjà signalé ailleurs" },
+  { "name": "refusé", "color": "e4e669", "description": "Ne sera pas fait (expliqué dans le ticket)" },
+  { "name": "ignorer-dans-les-notes", "color": "ededed", "description": "Ne pas citer dans les notes de version" }
+]

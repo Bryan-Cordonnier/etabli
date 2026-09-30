@@ -1,0 +1,65 @@
+# Notes de version : à chaque changement d'un journal des changements sur main (ou à la demande),
+#  - le texte de chaque Release GitHub d'Établi est remis d'après CHANGELOG.md (une faute corrigée dans le
+#    journal se corrige aussi sur la page de la version) ;
+#  - les « Nouveautés » de chaque plugin du catalogue et le texte de la Release « catalogue » sont remis d'après
+#    plugins/<id>/CHANGELOG.md, sans republier aucun plugin.
+# Rien n'est créé ni supprimé : seules les notes de Releases qui existent déjà sont modifiées.
+name: Notes de version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "CHANGELOG.md"
+      - "plugins/*/CHANGELOG.md"
+      - "scripts/notes-*.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Même groupe que la publication d'un plugin : le catalogue n'est jamais réécrit par deux tâches à la fois.
+concurrency:
+  group: catalogue
+  cancel-in-progress: false
+
+jobs:
+  notes:
+    name: Notes des Releases et du catalogue
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Releases de l'application
+        run: |
+          for version in $(node scripts/notes-version.mjs CHANGELOG.md --versions); do
+            if gh release view "v$version" > /dev/null 2>&1; then
+              node scripts/notes-version.mjs CHANGELOG.md "$version" --release > "$RUNNER_TEMP/notes.md"
+              gh release edit "v$version" --notes-file "$RUNNER_TEMP/notes.md"
+              echo "notes remises : v$version"
+            else
+              echo "pas de Release pour v$version : ignorée"
+            fi
+          done
+
+      - name: Nouveautés des plugins dans le catalogue
+        run: |
+          mkdir -p paquets
+          if gh release download catalogue --pattern catalogue.json --dir paquets; then
+            cp paquets/catalogue.json "$RUNNER_TEMP/avant.json"
+            node scripts/notes-catalogue.mjs paquets/catalogue.json --ecrire
+            if ! cmp -s paquets/catalogue.json "$RUNNER_TEMP/avant.json"; then
+              gh release upload catalogue paquets/catalogue.json --clobber
+              echo "catalogue.json mis à jour"
+            fi
+            node scripts/notes-catalogue.mjs paquets/catalogue.json --markdown > "$RUNNER_TEMP/notes-catalogue.md"
+            gh release edit catalogue --notes-file "$RUNNER_TEMP/notes-catalogue.md"
+          else
+            echo "Pas de catalogue publié : rien à faire."
+          fi

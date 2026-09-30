@@ -1,0 +1,33 @@
+# Étiquettes GitHub du dépôt : la liste de référence est .github/labels.json. À chaque changement de ce
+# fichier sur main (ou à la demande), les étiquettes sont créées ou mises à jour. Aucune n'est supprimée.
+name: Étiquettes
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/labels.json"]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  synchroniser:
+    name: Synchroniser les étiquettes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Créer ou mettre à jour
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jq -c '.[]' .github/labels.json | while read -r label; do
+            nom=$(jq -r .name <<<"$label")
+            gh label create "$nom" \
+              --color "$(jq -r .color <<<"$label")" \
+              --description "$(jq -r .description <<<"$label")" \
+              --force
+            echo "synchronisée : $nom"
+          done

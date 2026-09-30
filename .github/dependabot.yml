@@ -1,0 +1,46 @@
+# Mises à jour automatiques des dépendances : une demande de fusion par semaine et par famille,
+# relue et fusionnée par un mainteneur une fois la CI verte.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["dépendances"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      interface:
+        patterns: ["svelte", "@sveltejs/*", "svelte-check", "vite", "vitest", "typescript", "@tsconfig/*", "@types/*"]
+      tauri:
+        patterns: ["@tauri-apps/*"]
+      autres:
+        patterns: ["*"]
+        exclude-patterns: ["svelte", "@sveltejs/*", "svelte-check", "vite", "vitest", "typescript", "@tsconfig/*", "@types/*", "@tauri-apps/*"]
+
+  - package-ecosystem: cargo
+    directory: /apps/desktop/src-tauri
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["dépendances"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      tauri:
+        patterns: ["tauri", "tauri-*"]
+      autres:
+        patterns: ["*"]
+        exclude-patterns: ["tauri", "tauri-*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dépendances", "ci"]
+    commit-message:
+      prefix: "ci(deps)"

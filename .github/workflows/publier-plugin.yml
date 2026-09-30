@@ -57,6 +57,10 @@ jobs:
       - name: Compilation du plugin
         run: npm run build -w "plugins/${{ steps.tag.outputs.id }}"
 
+      # Manifeste, journal des changements de cette version, contenu du plugin compilé.
+      - name: Validation du plugin
+        run: npm run valider -- "${{ steps.tag.outputs.id }}"
+
       - name: Catalogue actuel
         env:
           GH_TOKEN: ${{ github.token }}
@@ -82,3 +86,6 @@ jobs:
           gh release upload catalogue \
             "paquets/${{ steps.tag.outputs.id }}-${{ steps.tag.outputs.version }}.etabli-plugin" \
             paquets/catalogue.json --clobber
+          # Texte de la Release « catalogue » : la liste des plugins et leurs nouveautés.
+          node scripts/notes-catalogue.mjs paquets/catalogue.json --markdown > "$RUNNER_TEMP/notes-catalogue.md"
+          gh release edit catalogue --notes-file "$RUNNER_TEMP/notes-catalogue.md"

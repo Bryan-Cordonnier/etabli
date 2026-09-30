@@ -1,0 +1,48 @@
+name: Résultat de calcul faux
+description: Un plugin donne un résultat qui ne correspond pas à la réalité, à une norme ou à un calcul à la main.
+title: "[Calcul faux] "
+labels: ["calcul-faux", "à-trier"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        En atelier, un calcul faux coûte de la matière, du temps, parfois plus. **Merci de signaler ceci en
+        priorité.** Pour qu'on puisse vérifier, il faut les valeurs saisies **et** une source du résultat attendu.
+  - type: input
+    id: plugin
+    attributes:
+      label: Plugin et mini-app (avec la version du plugin)
+      placeholder: "Traçage 1.1.1 — Virole"
+    validations:
+      required: true
+  - type: textarea
+    id: saisie
+    attributes:
+      label: Valeurs saisies
+      description: Toutes les valeurs, avec leur unité. Une capture d'écran de la mini-app aide beaucoup.
+    validations:
+      required: true
+  - type: textarea
+    id: obtenu
+    attributes:
+      label: Résultat obtenu
+    validations:
+      required: true
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Résultat attendu
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source du résultat attendu
+      description: Norme (avec l'article), catalogue du fabricant, abaque, calcul à la main (détaillez-le), autre logiciel.
+    validations:
+      required: true
+  - type: textarea
+    id: plus
+    attributes:
+      label: Autres informations
+      description: Écart constaté (en mm, en %), cas où le calcul est juste, etc.

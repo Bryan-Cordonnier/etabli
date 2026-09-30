@@ -1,0 +1,68 @@
+name: Bug
+description: Quelque chose ne marche pas comme prévu dans Établi.
+title: "[Bug] "
+labels: ["bug", "à-trier"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de le signaler. Dans Établi, *Paramètres → Mises à jour et à propos →
+        Signaler un problème* préremplit la version et la liste des plugins.
+        **Un résultat de calcul faux** a son propre formulaire (« Résultat de calcul faux »).
+  - type: input
+    id: version
+    attributes:
+      label: Version d'Établi
+      description: Paramètres → Mises à jour et à propos.
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Version de Windows
+      placeholder: "Windows 11 23H2"
+    validations:
+      required: true
+  - type: input
+    id: plugins
+    attributes:
+      label: Plugin concerné (nom et version), s'il y en a un
+      placeholder: "Économie de matière 0.4.0"
+  - type: textarea
+    id: quoi
+    attributes:
+      label: Ce qui s'est passé
+      description: Décrivez le problème, le message d'erreur exact s'il y en a un.
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Comment le reproduire
+      placeholder: |
+        1. Ouvrir le catalogue
+        2. Installer …
+        3. Cliquer sur …
+    validations:
+      required: true
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Ce que vous attendiez
+    validations:
+      required: true
+  - type: textarea
+    id: plus
+    attributes:
+      label: Captures d'écran ou autres informations
+      description: Vous pouvez glisser des images ici. Le signalement ne doit contenir aucune donnée personnelle.
+  - type: checkboxes
+    id: verifs
+    attributes:
+      label: Vérifications
+      options:
+        - label: J'ai cherché dans les tickets existants et ce bug n'y est pas déjà.
+          required: true
+        - label: Je suis sur la dernière version d'Établi, ou j'ai précisé pourquoi je ne le suis pas.
+          required: false
