@@ -67,10 +67,12 @@ Jamais vus :
   désinstallation, données de Fournisseurs visibles dans le débit de tubes. **Pas testé sur une
   version compilée** : dépendance obligatoire (aucun plugin officiel n'en a ; couverte par les tests de
   `@etabli/sdk/deps` et vue dans l'aperçu navigateur), désinstallation en cascade dans le catalogue.
-- Suite prévue (Bryan, 29/09/2026) : **mise au propre du GitHub public** : README pour tout le monde,
-  guide de contribution, guide de création de plugin, modèles de tickets et de demandes de fusion,
-  avertissement « outil d'aide, à vérifier », règles de relecture des plugins d'autres auteurs.
-- Plus tard, si le projet grossit : catalogue de plugins hébergé (recherche, comptes de développeurs,
+- **Dépôt public mis au propre** (30/09/2026) : README, guide de l'utilisateur, guide de contribution, code de conduite, politique de
+  sécurité, modèles de tickets et de demandes de fusion, journaux des changements (application et plugins), notes de version
+  automatiques, Dependabot, validation et création de plugins. **Reste à faire à la main par Bryan** : les réglages GitHub de
+  [docs/15](15-gerer-le-depot.md#1-réglages-github-à-activer-une-fois-à-la-main) (signalement privé des failles, Discussions,
+  règles de branche et d'étiquettes, analyse du code), relire et fusionner les demandes de Dependabot (Tauri : la demande Rust et la
+  demande npm ensemble), confirmer le contact de conduite, et les délais annoncés dans SECURITY.md (accusé sous 7 jours).- Plus tard, si le projet grossit : catalogue de plugins hébergé (recherche, comptes de développeurs,
   vérifications automatiques, révocation) ; points d'extension entre plugins ; réglages déclaratifs.
 - Site de documentation pour les auteurs de plugins : non commencé.
 
