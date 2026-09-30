@@ -23,7 +23,7 @@ Release publiée ; or la Release « catalogue » est réécrite à chaque public
   Application Windows libre, 100 % locale, extensible par plugins. »
 - [ ] *Website* : l'adresse de la [dernière version](https://github.com/Bryan-Cordonnier/etabli/releases/latest) (ou du site, quand il existera).
 - [ ] *Topics* : `chaudronnerie`, `tolerie`, `atelier`, `calculs`, `plugins`, `tauri`, `svelte`, `rust`, `windows`, `francais`.
-- [ ] *Social preview* : une image 1280 × 640 (capture de l'accueil, titre « Établi »).
+- [ ] *Social preview* : téléverser `docs/images/social-preview.png` (1280 × 640, déjà faite : Settings → General → Social preview → Edit → Upload an image).
 
 **Fonctions** (Settings → General → Features)
 - [ ] *Issues* activées ; *Wiki* désactivé (la documentation est dans `docs/`).
