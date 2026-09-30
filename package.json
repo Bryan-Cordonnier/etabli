@@ -34,6 +34,7 @@
     "paquet": "node scripts/paquet-plugin.mjs",
     "nouveau-plugin": "node scripts/nouveau-plugin.mjs",
     "valider": "node scripts/valider-plugin.mjs",
+    "liens": "node scripts/verifier-liens.mjs",
     "check": "npm run check --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:scripts": "node --test \"scripts/*.test.mjs\""
