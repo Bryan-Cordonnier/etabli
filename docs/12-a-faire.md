@@ -69,10 +69,12 @@ Jamais vus :
   `@etabli/sdk/deps` et vue dans l'aperçu navigateur), désinstallation en cascade dans le catalogue.
 - **Dépôt public mis au propre** (30/09/2026) : README, guide de l'utilisateur, guide de contribution, code de conduite, politique de
   sécurité, modèles de tickets et de demandes de fusion, journaux des changements (application et plugins), notes de version
-  automatiques, Dependabot, validation et création de plugins. **Reste à faire à la main par Bryan** : les réglages GitHub de
-  [docs/15](15-gerer-le-depot.md#1-réglages-github-à-activer-une-fois-à-la-main) (signalement privé des failles, Discussions,
-  règles de branche et d'étiquettes, analyse du code), relire et fusionner les demandes de Dependabot (Tauri : la demande Rust et la
-  demande npm ensemble), confirmer le contact de conduite, et les délais annoncés dans SECURITY.md (accusé sous 7 jours).- Plus tard, si le projet grossit : catalogue de plugins hébergé (recherche, comptes de développeurs,
+  automatiques, Dependabot, validation et création de plugins. Les réglages GitHub de
+  [docs/15](15-gerer-le-depot.md#1-réglages-github-à-activer-une-fois-à-la-main) sont appliqués (30/09/2026) et l'image de partage est
+  téléversée. Décisions de Bryan : contact de conduite inchangé (signalement privé GitHub ou profil), délais de sécurité de 14 jours
+  (accusé de réception) et 30 jours (analyse). **Reste** : relire et fusionner les demandes de Dependabot (Tauri : la demande Rust et la
+  demande npm ensemble), puis la demande SignPath (un courriel de refus ou de demande de précisions à retrouver).
+- Plus tard, si le projet grossit : catalogue de plugins hébergé (recherche, comptes de développeurs,
   vérifications automatiques, révocation) ; points d'extension entre plugins ; réglages déclaratifs.
 - Site de documentation pour les auteurs de plugins : non commencé.
 
