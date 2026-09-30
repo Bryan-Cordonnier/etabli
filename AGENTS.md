@@ -30,9 +30,13 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/10-plugins-existants.md](docs/10-plugins-existants.md) | Maths, Économie de matière, Tôlerie : fichiers, algorithmes, tests | vous modifiez un plugin existant |
 | [docs/12-a-faire.md](docs/12-a-faire.md) | Ce qui reste à faire, par priorité, et les limites connues | vous cherchez la prochaine tâche |
 | [docs/13-specs-a-venir.md](docs/13-specs-a-venir.md) | Spécifications (formules, cas de test) des Projets et des plugins pas encore codés | vous codez une de ces fonctionnalités |
+| [docs/15-gerer-le-depot.md](docs/15-gerer-le-depot.md) | Réglages GitHub à activer, relire une demande de fusion et un plugin d'un autre auteur, tri des tickets | vous maintenez le dépôt |
+| [docs/guide-utilisateur.md](docs/guide-utilisateur.md) | Guide de l'utilisateur (installer, catalogue, raccourcis, données, dépannage) | vous documentez ou vous répondez à un utilisateur |
 | [docs/14-publier-une-version.md](docs/14-publier-une-version.md) | Releases GitHub, mises à jour automatiques signées, clé, publier une version, installer | vous publiez une version ou touchez aux mises à jour |
 
-Autres références : [README.md](README.md) (présentation courte), [packages/sdk/README.md](packages/sdk/README.md) (API du SDK).
+Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](CONTRIBUTING.md) (règles pour les contributeurs),
+[CHANGELOG.md](CHANGELOG.md) (journal des changements), [ROADMAP.md](ROADMAP.md), [SECURITY.md](SECURITY.md),
+[docs/README.md](docs/README.md) (index de toute la documentation), [packages/sdk/README.md](packages/sdk/README.md) (API du SDK).
 
 ## Carte du dépôt
 
@@ -58,4 +62,7 @@ docs/                     cette documentation
 - **Une mini-app ne touche jamais au disque ni au réseau** : tout passe par le SDK et le moteur.
 - **Les plugins sont indépendants** : un lien entre plugins (envoi, lecture) reste facultatif.
 - **Ne lancez pas de gros développement sans spécification validée** par l'utilisateur : il itère d'abord (maquette, questions), code ensuite.
+- **Tenez le journal des changements** : chaque changement visible d'un utilisateur, d'un auteur de plugin ou d'un mainteneur a une ligne
+  dans `CHANGELOG.md` (application) ou `plugins/<id>/CHANGELOG.md`, sous « Non publié », écrite pour l'utilisateur. Une version ne se publie
+  pas sans sa section (les notes de la Release en viennent).
 - **Dites ce qui n'a pas été vérifié à l'écran** : la plupart des changements d'interface ne sont testés que par l'utilisateur dans l'application.

@@ -56,18 +56,21 @@ l'application : corriger un calcul de Traçage ne demande pas de republier Étab
 
 ```powershell
 . 'H:\outils\env-dev.ps1' | Out-Null
-# 1. monter « version » dans plugins/<id>/public/manifest.json (sinon aucune mise à jour proposée)
-npm run check; npm test; npm run build:plugins
+# 1. monter « version » dans plugins/<id>/public/manifest.json ET package.json (sinon aucune mise à jour proposée)
+# 2. plugins/<id>/CHANGELOG.md : section « ## [X.Y.Z] — AAAA-MM-JJ » (elle devient les « Nouveautés » du catalogue)
+npm run check; npm test; npm run build:plugins; npm run valider -- <id>
 git commit -am "feat(<id>): …"; git push origin main
 git tag plugin-<id>-v1.2.0; git push origin plugin-<id>-v1.2.0
 ```
 
 Le workflow « Publication d'un plugin » (`.github/workflows/publier-plugin.yml`, ~2 min) vérifie que
-l'étiquette correspond au manifeste, teste, compile, signe et dépose le paquet et le catalogue. **Un
-plugin à la fois** : chaque publication relit puis réécrit `catalogue.json`, et GitHub annule une
-publication en attente si une troisième arrive (la relancer depuis l'onglet Actions). Les 5 plugins
-officiels y sont depuis le 29/09/2026 (maths 1.0.0, economie 0.3.0, tolerie 1.0.0, tracage 1.1.0,
-materiaux 1.0.0).
+l'étiquette correspond au manifeste, teste, compile, **valide le plugin** (`npm run valider` :
+manifeste, journal, contenu), signe et dépose le paquet et le catalogue, puis remet à jour le texte de
+la Release « catalogue » (liste des plugins et nouveautés de chacun). **Un plugin à la fois** : chaque
+publication relit puis réécrit `catalogue.json`, et GitHub annule une publication en attente si une
+troisième arrive (la relancer depuis l'onglet Actions). **Publier les dépendances d'abord.**
+Publiés au 30/09/2026 : maths 1.0.1, economie 0.4.0, tolerie 1.0.1, tracage 1.1.1, materiaux 1.0.1,
+fournisseurs 1.0.0, machines 1.0.0.
 
 Paquet d'essai en local (sans publier) : définir `TAURI_SIGNING_PRIVATE_KEY` (contenu de la clé) et
 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, puis `npm run paquet -- <id>` → `paquets/` (ignoré par Git).
@@ -125,15 +128,33 @@ secret `SIGNPATH_API_TOKEN` et les variables `SIGNPATH_ORGANIZATION_ID`, `SIGNPA
 
 ## Publier une version (pas à pas)
 
+Chaque version a ses **notes**, écrites dans `CHANGELOG.md` avant de publier : ce sont elles, et
+elles seules, qui deviennent le texte de la Release GitHub, le message de mise à jour affiché dans
+l'application et la page « Nouveautés ». Le workflow s'arrête tout de suite si la section de la version
+manque.
+
+1. **Journal** : dans `CHANGELOG.md`, renommer « Non publié » en `## [X.Y.Z] — AAAA-MM-JJ` et rouvrir une
+   section « Non publié » vide au-dessus. Relire : chaque ligne s'adresse à l'utilisateur (voir
+   [CONTRIBUTING.md](../CONTRIBUTING.md#le-journal-des-changements)). Ajouter les liens de comparaison en bas.
+2. **Version** : `npm run version:app -- X.Y.Z` (fichiers de configuration Tauri, Cargo, npm).
+3. **Contrôles** : `npm run check`, `npm test`, `npm run test:scripts`, `npm run build:plugins`,
+   `npm run valider -- --tous`, et pour Rust `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test`.
+4. **Commit puis étiquette** :
+
 ```powershell
 . 'H:\outils\env-dev.ps1' | Out-Null
-npm run version:app -- 0.2.0          # tauri.conf.json, Cargo.toml, Cargo.lock, package.json
-npm run check; npm test; npm run build:plugins
-git commit -am "chore: version 0.2.0"
-git tag -a v0.2.0 -F notes.txt         # notes en français : ce qui change pour l'utilisateur
-git push origin main; git push origin v0.2.0
+npm run version:app -- 0.4.0          # tauri.conf.json, Cargo.toml, Cargo.lock, package.json
+npm run check; npm test; npm run test:scripts; npm run build:plugins; npm run valider -- --tous
+git commit -am "chore: version 0.4.0"
+git tag -a v0.4.0 -m "Établi 0.4.0"    # le message ne sert plus : les notes viennent de CHANGELOG.md
+git push origin main; git push origin v0.4.0
 ```
 
+5. **Suivre** l'onglet Actions (« Publication »), puis vérifier la Release : installateur, `.sig`,
+   `latest.json`, notes.
+
+Après coup, une faute dans les notes se corrige dans `CHANGELOG.md` : le workflow « Notes de version » remet
+à jour le texte de chaque Release existante (et les nouveautés du catalogue) dès que le journal change sur `main`.
 - La version doit **augmenter** : sinon aucune mise à jour n'est proposée. Le workflow refuse une
   étiquette différente de la version de `tauri.conf.json`.
 - Avec SignPath : approuver la demande de signature dans l'heure. Suivre la publication dans

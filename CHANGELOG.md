@@ -11,6 +11,28 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Ajouté
+
+- La page **Catalogue** et la fenêtre de mise à jour d'un plugin affichent les **nouveautés** de la version (« Nouveautés de la version… »).
+- **Signaler un problème** (Paramètres → Mises à jour et à propos) ouvre le formulaire « Bug » du dépôt avec la version d'Établi et
+  la liste des plugins déjà remplies.
+- Notes de chaque version écrites dans ce journal, reprises automatiquement pour la Release GitHub, le message de mise à jour
+  affiché dans l'application et les nouveautés des plugins.
+
+### Pour les développeurs de plugins
+
+- `npm run nouveau-plugin -- <id> "<Nom>"` crée un plugin prêt à compiler (mini-app d'exemple, tests, journal, page de réglages
+  facultative) et `npm run valider -- <id>` le vérifie : manifeste, dépendances, journal des changements, appels réseau ou
+  exécution de code dans les sources, contenu du plugin compilé. La publication d'un plugin lance cette validation.
+- Chaque plugin a un `CHANGELOG.md` ; sa section pour la version publiée devient les nouveautés du catalogue.
+
+### Pour les contributeurs
+
+- Nouveaux fichiers du dépôt : guide de contribution, code de conduite, politique de sécurité, aide, feuille de route, guide de
+  l'utilisateur, guide des mainteneurs, modèles de tickets (bug, résultat de calcul faux, idée, plugin) et de demandes de fusion,
+  mises à jour automatiques des dépendances (Dependabot), propriétaires du code et étiquettes.
+- La vérification automatique contrôle aussi les scripts de publication, les plugins et les liens de la documentation.
+
 ## [0.3.0] — 2026-09-30
 
 Les plugins peuvent maintenant ajouter leurs propres réglages et dépendre les uns des autres.
