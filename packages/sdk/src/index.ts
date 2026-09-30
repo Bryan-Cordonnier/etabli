@@ -20,6 +20,8 @@ import {
   type MachineKind,
   type PluginToHost,
   type SavedFile,
+  type ServiceSnapshot,
+  type Services,
   type ThemeTokens,
 } from "./protocol";
 
@@ -28,13 +30,17 @@ export type {
   ColorScheme,
   DocumentSnapshot,
   FichePrint,
+  FournisseursData,
   Incoming,
   Libraries,
   Machine,
   MachineKind,
+  MachinesData,
   SavedFile,
   Saw,
   SawType,
+  ServiceSnapshot,
+  Services,
   Shear,
   StockKind,
   Supplier,
@@ -67,13 +73,33 @@ export interface Etabli<T> {
     /** Copie un texte et affiche une confirmation. */
     copy(text: string): Promise<void>;
   };
-  /** Bibliothèques de l'application (fournisseurs…), en lecture seule. Vides si l'utilisateur n'a rien saisi. */
+  /**
+   * Fournisseurs et machines, en lecture seule : ils viennent des plugins Fournisseurs et Machines et
+   * sont vides si votre plugin ne les déclare pas en dépendance, ou s'ils ne sont pas installés.
+   * Raccourci pour `services` : préférez `services` pour les autres plugins.
+   */
   readonly libraries: {
     readonly current: Libraries;
     onChange(listener: (libraries: Libraries) => void): () => void;
-    /** Ouvre Paramètres → Bibliothèques sur une nouvelle machine à régler ; elle arrive ensuite par `onChange`. */
+    /** Ouvre la page de réglages du plugin Machines sur une nouvelle machine ; elle arrive ensuite par `onChange`. */
     addMachine(kind: MachineKind): void;
   };
+  /**
+   * Données publiées par les plugins dont le vôtre dépend (`dependencies`, `optionalDependencies`),
+   * en lecture seule, et publication des vôtres (`provides` dans le manifeste).
+   */
+  readonly services: {
+    /** Tous les services disponibles, par nom. */
+    readonly current: Services;
+    /** Un service, ou `null` si son plugin n'est pas installé, pas déclaré en dépendance ou désactivé. */
+    get<T = unknown>(name: string): ServiceSnapshot<T> | null;
+    /** Appelé quand un service change (ou apparaît, ou disparaît). */
+    onChange(listener: (services: Services) => void): () => void;
+    /** Publie les données du service `name`, à déclarer dans `provides`. Réservé à leur fournisseur. */
+    provide(name: string, data: unknown): void;
+  };
+  /** Ouvre la page de réglages d'un autre plugin (`hash` : intention transmise à sa page, « add=scie »). */
+  openSettings(plugin: string, hash?: string): void;
   /** Réglages du plugin (machines de l'atelier…), partagés par toutes ses mini-apps et enregistrés par le moteur. */
   readonly settings: {
     /** `null` tant que le plugin n'a rien enregistré. */
@@ -114,10 +140,12 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
   const send = (message: PluginToHost) => port.postMessage(message);
   const themeListeners = new Set<(theme: ThemeTokens, scheme: ColorScheme) => void>();
   const libraryListeners = new Set<(libraries: Libraries) => void>();
+  const serviceListeners = new Set<(services: Services) => void>();
   const settingsListeners = new Set<(data: unknown) => void>();
   let doc: DocumentSnapshot = { id: null, title: "", data: null };
   let ids = { pluginId: "", appId: "" };
   let libraries: Libraries = { suppliers: [], machines: [] };
+  let services: Services = {};
   let pluginData: unknown = null;
   let incoming: Incoming | null = null;
   let shortcuts: string[] = [];
@@ -177,8 +205,27 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         return () => libraryListeners.delete(listener);
       },
       addMachine(kind) {
-        send({ type: "addMachine", kind });
+        send({ type: "openSettings", plugin: "machines", hash: `add=${kind}` });
       },
+    },
+    services: {
+      get current() {
+        return services;
+      },
+      get<T>(name: string) {
+        return (services[name] as ServiceSnapshot<T> | undefined) ?? null;
+      },
+      onChange(listener) {
+        serviceListeners.add(listener);
+        return () => serviceListeners.delete(listener);
+      },
+      provide(name, data) {
+        // Copie JSON : le service doit de toute façon être enregistrable, et passer entre cadres.
+        send({ type: "provide", name, data: JSON.parse(JSON.stringify(data)) });
+      },
+    },
+    openSettings(plugin, hash) {
+      send({ type: "openSettings", plugin, hash });
     },
     settings: {
       get data() {
@@ -222,6 +269,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
           suppliers: message.libraries?.suppliers ?? [],
           machines: message.libraries?.machines ?? [],
         };
+        services = message.services ?? {};
         pluginData = message.pluginData ?? null;
         incoming = message.incoming ?? null;
         shortcuts = message.shortcuts ?? [];
@@ -236,6 +284,10 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "libraries":
         libraries = message.libraries;
         for (const listener of libraryListeners) listener(libraries);
+        break;
+      case "services":
+        services = message.services;
+        for (const listener of serviceListeners) listener(services);
         break;
       case "pluginData":
         pluginData = message.data;

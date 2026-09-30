@@ -1,10 +1,34 @@
-# 09 — Bibliothèques, fiches d'atelier, envoi entre mini-apps
+# 09 — Fournisseurs, machines, services, fiches d'atelier, envoi entre mini-apps
 
-Briques communes du moteur (lot 1). Un plugin s'en sert s'il veut ; il fonctionne sans.
+Briques communes. Un plugin s'en sert s'il veut ; il fonctionne sans.
 
-## Bibliothèque Fournisseurs
+## Services : des données qu'un plugin publie pour les autres
 
-- Paramètres → Bibliothèques → Fournisseurs (`components/SuppliersEditor.svelte`).
+Depuis la 0.3.0, le moteur ne connaît plus les fournisseurs ni les machines : ce sont deux plugins
+comme les autres (`plugins/fournisseurs`, `plugins/machines`), sans mini-app, qui **ajoutent une page
+de réglages** dans Paramètres → Plugins et **publient** leurs données (docs/13, fait).
+
+- **Publier** : le manifeste déclare `"provides": { "fournisseurs": "1" }` (nom du service → version
+  du contrat) ; la page de réglages appelle `etabli.services.provide("fournisseurs", données)` (ou
+  `new PluginSettings(defauts, clean, "fournisseurs")` du kit, qui enregistre les réglages et les
+  publie en une fois). Le moteur garde la valeur dans `donnees/service.<plugin>.<nom>.json` et refuse
+  un nom absent de `provides`. Un plugin ne publie que si sa page est ouverte : les données restent
+  ensuite disponibles, elles sont dans un fichier.
+- **Lire** : seuls les plugins qui déclarent une dépendance (`dependencies` ou `optionalDependencies`)
+  sur le fournisseur reçoivent le service, en **lecture seule**, dans `init.services` puis par le
+  message `services` à chaque changement (`etabli.services.get(nom)`, `.onChange`). Le fournisseur doit
+  être installé, activé et dans une version acceptée par la plage (`^1`). Sinon : rien, comme si le
+  plugin n'était pas là.
+- **Contrats** (`packages/sdk/src/protocol.ts`) : `fournisseurs@1` = `FournisseursData { suppliers }`,
+  `machines@1` = `MachinesData { machines }`. Un contrat ne change pas de forme sans changer de version
+  majeure : les plugins qui exigent `^1` ne suivent pas une version 2.
+- **Compatibilité** : `init.libraries` et `etabli.libraries` (`{ suppliers, machines }`) sont toujours
+  fournis, dérivés des services `fournisseurs` et `machines`, pour les SDK anciens et pour la classe
+  `Libraries` du kit `@etabli/ui`.
+
+## Plugin Fournisseurs
+
+- Paramètres → Fournisseurs (`plugins/fournisseurs`, page `reglages/index.html`).
 - `Supplier { id, name, items: SupplierItem[] }` ; `SupplierItem` : `kind` (type de matière :
   `tube-rond`, `tube-carre`, `tube-rect`, `rond-plein`, `carre-plein`, `plat`, `corniere`,
   `poutrelle`, `autre`, `tole`), `material` (nuance, vide = toutes), `designation` (profilé ou
@@ -14,19 +38,32 @@ Briques communes du moteur (lot 1). Un plugin s'en sert s'il veut ; il fonctionn
 - Utilisation actuelle : « Longueur d'un fournisseur… » (débit de tubes), « Format d'un
   fournisseur… » (calepinage, avec la tolérance).
 
-## Bibliothèque Machines
+## Plugin Machines
 
-- Paramètres → Bibliothèques → Machines (`components/MachinesEditor.svelte`). Types dans `protocol.ts`.
+- Paramètres → Machines (`plugins/machines`). Types dans `protocol.ts`.
 - `Saw` (scie) : `type` (ruban, tronçonneuse, onglet, autre), `kerf` (trait de scie), `maxAngle`,
   `bothSides`, `stopMax` (course de butée, null = pas de butée), `minLength`, `trim` (dressage).
 - `Shear` (cisaille) : `bladeLength`, `maxThickness` (acier), `gaugeMax` (butée arrière), `trim`.
 - La presse plieuse viendra avec une évolution de la Tôlerie.
+- **Aucune machine d'exemple** : la liste est vide tant que l'utilisateur n'en a pas ajouté (les anciennes
+  machines « par défaut » de la 0.2 n'existent plus ; celles que l'utilisateur avait enregistrées sont reprises).
 - Dans un calcul, la liste des machines se termine par **« + Ajouter une machine… »** : message
-  `addMachine` → la machine est créée et les Paramètres s'ouvrent dessus (mise en avant) ; la
-  mini-app choisit la nouvelle machine dès qu'elle apparaît dans `libraries.machines`.
-  Depuis l'aperçu rapide, le calcul passe d'abord dans la fenêtre principale.
-- Une machine choisie **impose** ses réglages au calcul (ils ne se modifient que dans la
-  bibliothèque) ; sans machine, les réglages se saisissent à la main.
+  `openSettings` (`plugin: "machines"`, `hash: "add=scie"`) → le moteur ouvre la page de réglages du
+  plugin Machines avec `#add=scie` dans son adresse : la page ajoute la machine, la met en avant et place
+  le curseur sur son nom. Si le plugin n'est pas installé, le catalogue s'ouvre à la place. Depuis
+  l'aperçu rapide, le calcul passe d'abord dans la fenêtre principale (événement `etabli:reglages`).
+  L'ancien message `addMachine` reste compris (il équivaut à ce `openSettings`).
+- Une machine choisie **impose** ses réglages au calcul (ils ne se modifient que dans le plugin
+  Machines) ; sans machine, les réglages se saisissent à la main.
+
+## Migration depuis la 0.2
+
+Au premier démarrage de la 0.3, si l'utilisateur avait enregistré des fournisseurs ou des machines
+(anciens fichiers `donnees/fournisseurs.json` et `machines.json`), `catalogue.migrateLibraries()`
+installe les plugins Fournisseurs et Machines depuis le catalogue et leur donne ces données (fichiers
+`plugin.<id>.json` et `service.<id>.<id>.json`), sans jamais écraser ce que le plugin contient déjà et
+sans effacer les anciens fichiers. Sans réseau, elle recommence au démarrage suivant (réglage
+`librariesMigrated`).
 
 ## Réglages d'un plugin
 

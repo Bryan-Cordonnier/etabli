@@ -44,7 +44,7 @@ Dépôt : https://github.com/Bryan-Cordonnier/etabli (public, branche `main`, CI
 
 | Lot | Plugins | Briques du moteur |
 | --- | --- | --- |
-| 1 | Économie de matière, Maths et géométrie, Tôlerie | Projets, fiches d'atelier, bibliothèques Fournisseurs et Machines, envoi entre mini-apps |
+| 1 | Économie de matière, Maths et géométrie, Tôlerie | Projets, fiches d'atelier, plugins Fournisseurs et Machines, envoi entre mini-apps |
 | 2 | Matériaux et fixation, Traçage (ex-Chaudronnerie) | Export DXF (développés), export PDF, tables de référence partagées |
 | 3 | Soudage, Tolérances et ajustements | aucune |
 | 4 | Chiffrage (proposé) | lecture facultative des résultats d'autres plugins et des prix fournisseurs |
@@ -57,14 +57,15 @@ Dépôt : https://github.com/Bryan-Cordonnier/etabli (public, branche `main`, CI
   palette de commandes (bouton de recherche), raccourcis clavier tous réglables (aucun par défaut).
 - Paramètres : Général (fermeture en arrière-plan ou non, démarrage avec Windows, nom de l'auteur
   des fiches, dossier de travail), Apparence (4 thèmes + système + thèmes JSON importés, taille du
-  texte, animations), Aperçu rapide, Raccourcis clavier, Plugins installés, Fournisseurs et machines
-  (provisoire), Mises à jour et à propos. Icônes : une icône de liste fermée sur la couleur du
+  texte, animations), Aperçu rapide, Raccourcis clavier, Plugins installés, une page par réglage de
+  plugin (Fournisseurs, Machines), Mises à jour et à propos. Icônes : une icône de liste fermée sur la couleur du
   plugin (les émojis ont été retirés).
 - Aperçu rapide : fenêtre transparente toujours au premier plan, ouverte par un raccourci global
   (Ctrl+Maj+Espace par défaut), grille des favoris, mini-apps utilisables sur place.
 - Plugins isolés (cadre `sandbox`, protocole `plugins://`), SDK, kit d'interface.
 - Documents `.etabli` enregistrés automatiquement, corbeille, duplication.
-- Bibliothèques Fournisseurs et Machines, réglages propres à chaque plugin.
+- Plugins Fournisseurs et Machines (réglages ajoutés par des plugins, données publiées), dépendances
+  entre plugins (obligatoires ou facultatives, installées avec confirmation), réglages propres à chaque plugin.
 - Impression des fiches d'atelier (A4 ou PDF via « Enregistrer au format PDF »).
 - Envoi de données d'une mini-app vers une autre (flan plié → calepinage).
 - Export DXF (boîte « Enregistrer sous ») et gabarits à l'échelle 1 découpés en feuilles A4.

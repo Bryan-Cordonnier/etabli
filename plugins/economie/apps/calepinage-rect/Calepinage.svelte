@@ -26,7 +26,7 @@
   }
 
   interface Data {
-    /** Cisaille de la bibliothèque Machines ; vide : réglages saisis à la main. */
+    /** Cisaille du plugin Machines ; vide : réglages saisis à la main. */
     machine: string;
     material: MaterialId;
     thickness: string;
@@ -355,7 +355,7 @@
     <Card title="Cisaille et chutes">
       <SelectField label="Cisaille" options={shearOptions} bind:value={doc.data.machine} onchange={pickShear} />
       {#if shear}
-        <!-- Réglages de la cisaille : modifiables dans Paramètres → Bibliothèques → Machines. -->
+        <!-- Réglages de la cisaille : modifiables dans Paramètres → Machines (plugin Machines). -->
         <p class="machine-settings">
           Lame <b>{format(shear.bladeLength)} mm</b> · butée arrière <b>{format(shear.gaugeMax)} mm</b> · dressage <b>{format(shear.trim)} mm</b> ·
           capacité <b>{format(shear.maxThickness)} mm</b> (acier)

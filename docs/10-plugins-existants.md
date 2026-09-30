@@ -29,14 +29,25 @@ utilisent `MiniAppDocument`.
 
 ---
 
+## Fournisseurs et Machines (`plugins/fournisseurs`, `plugins/machines`)
+
+Deux plugins **sans mini-app** : chacun ajoute une page de réglages (Paramètres → Fournisseurs,
+Machines) et publie ses données (services `fournisseurs` et `machines`, contrats `@1`). Fichiers :
+`reglages/index.html` + `Fournisseurs.svelte` ou `Machines.svelte`, logique et tests dans `src/`
+(`fournisseurs.ts`, `machines.ts` : valeurs par défaut, nettoyage d'un fichier abîmé, saisie des
+nombres). Détails et contrats : [09](09-bibliotheques-fiches-envoi.md).
+
 ## Économie de matière (`plugins/economie`)
+
+Dépendances **facultatives** sur `fournisseurs` et `machines` (`^1`) : le catalogue propose de les
+installer avec Économie ; elle marche sans (saisie à la main).
 
 ### Débit de tubes (`apps/debit-tubes/DebitTubes.svelte`)
 
 But : le moins de barres possible, puis les chutes les plus longues. Saisie : profilé, matière
 (kg/m), **une seule liste des tubes disponibles** (barres entières et chutes : longueur, quantité,
 **tolérance −/+** ; sans quantité = longueur à acheter ; longueur d'un fournisseur), scie
-(bibliothèque Machines) ou réglages à la main, pièces (repère, longueur **pointe à pointe**,
+(plugin Machines) ou réglages à la main, pièces (repère, longueur **pointe à pointe**,
 quantité, angles, **chute réservée** avec sa destination). Bryan a demandé de supprimer le champ
 séparé « chutes déjà en stock » : les anciens calculs y versent leurs chutes (`migrate`).
 

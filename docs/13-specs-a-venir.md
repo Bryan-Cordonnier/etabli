@@ -11,9 +11,13 @@ Spécification validée par Bryan puis codée : voir [14-publier-une-version.md]
 Restent pour plus tard : plugins d'autres auteurs (par demande de fusion sur le catalogue), version
 minimale de l'application par plugin (champ `apiVersion` publié mais pas encore contrôlé).
 
-### Réglages ajoutés par les plugins et dépendances entre plugins (proposé, à valider)
+### Réglages ajoutés par les plugins et dépendances entre plugins : fait (0.3.0, 30/09/2026)
 
-**Pas codé.** Demandé par Bryan le 29/09/2026 : « tout ce qui est fournisseur, machines, il ne faut pas
+**Validé par Bryan le 29/09/2026 (deux plugins séparés, dépendances obligatoires installées
+automatiquement, facultatives proposées avec une case cochée par défaut, réglages en page libre) puis
+codé** : description du fonctionnement dans [07](07-creer-un-plugin.md#dépendances-et-services) et
+[09](09-bibliotheques-fiches-envoi.md). Le texte ci-dessous est la spécification d'origine.
+Restent pour plus tard : points d'extension (n°6), formulaire de réglages déclaratif. Demandé par Bryan le 29/09/2026 : « tout ce qui est fournisseur, machines, il ne faut pas
 que ce soit des blocs dans le moteur : c'est le plugin qui ajoute son réglage », et des plugins qui
 s'appuient les uns sur les autres « exactement comme un serveur Minecraft ». Aujourd'hui, les
 Fournisseurs et les Machines sont codés dans le moteur (`lib/state/libraries.svelte.ts`,
@@ -69,9 +73,9 @@ Ordre de codage proposé : (a) pages de réglages de plugin ; (b) `dependencies`
 lecture, installation en chaîne ; (c) plugins `fournisseurs` et `machines`, migration, retrait des blocs
 du moteur ; (d) points d'extension.
 
-Questions à trancher avec Bryan avant (c) : un seul plugin « Atelier » ou deux plugins `fournisseurs` et
-`machines` (recommandé : deux) ; installer les dépendances obligatoires automatiquement après
-confirmation (recommandé) ; réglages en page libre uniquement au début (recommandé).
+Questions tranchées par Bryan : deux plugins `fournisseurs` et `machines` ; dépendances obligatoires
+installées automatiquement après confirmation, facultatives proposées avec une case cochée par défaut ;
+réglages en page libre uniquement au début.
 
 ### Projets (lot 1)
 - Onglet « Projets » dans la colonne, sous Accueil (ce n'est pas un plugin).

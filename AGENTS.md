@@ -25,8 +25,8 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/05-interface.md](docs/05-interface.md) | Interface hôte Svelte : état, navigation, pages, thèmes, aperçu rapide | vous modifiez `apps/desktop/src` |
 | [docs/06-protocole-sdk.md](docs/06-protocole-sdk.md) | Protocole moteur ↔ mini-app, `@etabli/sdk`, kit `@etabli/ui` | vous écrivez une mini-app ou changez le protocole |
 | [docs/07-creer-un-plugin.md](docs/07-creer-un-plugin.md) | Guide pas à pas : nouveau plugin, nouvelle mini-app, modèles de code, liste de contrôle | vous ajoutez un plugin ou une mini-app |
-| [docs/08-documents-donnees.md](docs/08-documents-donnees.md) | Fichiers `.etabli`, réglages, bibliothèques, emplacements, migrations | vous touchez à l'enregistrement |
-| [docs/09-bibliotheques-fiches-envoi.md](docs/09-bibliotheques-fiches-envoi.md) | Fournisseurs, machines, réglages de plugin, fiches d'atelier imprimées, envoi entre mini-apps | vous utilisez une de ces briques |
+| [docs/08-documents-donnees.md](docs/08-documents-donnees.md) | Fichiers `.etabli`, réglages, données de plugin, emplacements, migrations | vous touchez à l'enregistrement |
+| [docs/09-bibliotheques-fiches-envoi.md](docs/09-bibliotheques-fiches-envoi.md) | Plugins Fournisseurs et Machines, services, réglages de plugin, fiches d'atelier imprimées, envoi entre mini-apps | vous utilisez une de ces briques |
 | [docs/10-plugins-existants.md](docs/10-plugins-existants.md) | Maths, Économie de matière, Tôlerie : fichiers, algorithmes, tests | vous modifiez un plugin existant |
 | [docs/12-a-faire.md](docs/12-a-faire.md) | Ce qui reste à faire, par priorité, et les limites connues | vous cherchez la prochaine tâche |
 | [docs/13-specs-a-venir.md](docs/13-specs-a-venir.md) | Spécifications (formules, cas de test) des Projets et des plugins pas encore codés | vous codez une de ces fonctionnalités |
@@ -46,6 +46,8 @@ plugins/economie/         débit de tubes (angles, 3D), calepinage de tôles à 
 plugins/tolerie/          développé de pliage, vé et effort de pliage
 plugins/tracage/          développés façon Logitrace : virole, cône, piquage, coude, trémie
 plugins/materiaux/        masse, taraudage et passages, vitesse de coupe, couple de serrage
+plugins/fournisseurs/     réglages : fournisseurs de matière (publie le service « fournisseurs »)
+plugins/machines/         réglages : scies et cisailles (publie le service « machines »)
 docs/                     cette documentation
 ```
 

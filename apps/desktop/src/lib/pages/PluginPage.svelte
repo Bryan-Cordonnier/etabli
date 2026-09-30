@@ -1,5 +1,6 @@
 <script lang="ts">
   import AppCard from "$lib/components/AppCard.svelte";
+  import PluginProblems from "$lib/components/PluginProblems.svelte";
   import RecentDocs from "$lib/components/RecentDocs.svelte";
   import Tile from "$lib/components/Tile.svelte";
   import { getPlugin } from "$lib/plugins/registry.svelte";
@@ -28,6 +29,8 @@
         <p class="sub">{plugin.description} · <span class="pill">v{plugin.version}</span></p>
       </div>
     </header>
+
+    <PluginProblems {plugin} />
 
     <div class="grid">
       {#each plugin.miniApps as app, i (app.id)}

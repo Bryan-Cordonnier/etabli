@@ -1,14 +1,18 @@
 <script lang="ts">
-  // Paramètres (cahier des charges, section 5.10).
+  // Paramètres (cahier des charges, section 5.10). Les plugins peuvent y ajouter leurs propres pages
+  // de réglages (fournisseurs, machines…) : elles s'affichent dans le menu, sous « Plugins ».
+  import type { PluginToHost } from "@etabli/sdk/protocol";
   import { inTauri, system, type AppInfo } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
+  import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
+  import PluginProblems from "$lib/components/PluginProblems.svelte";
   import ShortcutRecorder from "$lib/components/ShortcutRecorder.svelte";
-  import MachinesEditor from "$lib/components/MachinesEditor.svelte";
-  import SuppliersEditor from "$lib/components/SuppliersEditor.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
-  import { PLUGINS, getMiniAppByKey } from "$lib/plugins/registry.svelte";
+  import { PLUGINS, getMiniAppByKey, pluginUrl } from "$lib/plugins/registry.svelte";
+  import { openPluginSettings, pluginSection } from "$lib/pluginSettings";
   import { ACTIONS, actionUsing } from "$lib/shortcuts";
+  import { lifecycle } from "$lib/state/lifecycle.svelte";
   import { DEFAULT_SHORTCUT, TEXT_SCALES, settings, type Shortcut } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -16,10 +20,12 @@
   import { SYSTEM_THEME, THEMES, currentColors, parseTheme, themeToJson, type Theme } from "$lib/themes";
   import type { SettingsSection } from "$lib/types";
 
-  let { section = "general" }: { section?: SettingsSection } = $props();
+  let { section = "general", hash }: { section?: SettingsSection; hash?: string } = $props();
+
+  type FixedSection = Exclude<SettingsSection, `plugin:${string}`>;
 
   // Chaque page a un titre et une phrase qui dit à quoi elle sert ; le menu est rangé par thèmes.
-  const SECTION_INFO: Record<SettingsSection, { label: string; title: string; lead: string }> = {
+  const SECTION_INFO: Record<FixedSection, { label: string; title: string; lead: string }> = {
     general: {
       label: "Général",
       title: "Général",
@@ -45,11 +51,6 @@
       title: "Plugins installés",
       lead: "Activez ou désactivez les plugins. Pour en ajouter ou en retirer, ouvrez le catalogue.",
     },
-    bibliotheques: {
-      label: "Fournisseurs et machines",
-      title: "Fournisseurs et machines",
-      lead: "Données de l'atelier que les plugins de calcul utilisent pour préremplir leurs formulaires.",
-    },
     "a-propos": {
       label: "Mises à jour et à propos",
       title: "Mises à jour et à propos",
@@ -57,11 +58,28 @@
     },
   };
 
-  const GROUPS: { title: string; sections: SettingsSection[] }[] = [
+  const GROUPS: { title: string; sections: FixedSection[] }[] = [
     { title: "Application", sections: ["general", "apparence", "apercu", "raccourcis"] },
-    { title: "Plugins", sections: ["plugins", "bibliotheques"] },
+    { title: "Plugins", sections: ["plugins"] },
     { title: "Aide", sections: ["a-propos"] },
   ];
+
+  /** Pages de réglages ajoutées par les plugins installés et activés. */
+  const PAGES = $derived(
+    PLUGINS.filter((p) => settings.isPluginEnabled(p.id)).flatMap((plugin) =>
+      plugin.settings.map((page) => ({ section: pluginSection(plugin.id, page.id), plugin, page })),
+    ),
+  );
+  const pluginPage = $derived(PAGES.find((p) => p.section === section));
+  /** Page affichée : une section inconnue (ancienne version, plugin désinstallé) revient à Général. */
+  const active = $derived<FixedSection | `plugin:${string}`>(
+    pluginPage ? pluginPage.section : section in SECTION_INFO ? (section as FixedSection) : "general",
+  );
+  const head = $derived(
+    pluginPage
+      ? { title: pluginPage.page.title, lead: `Réglages ajoutés par le plugin « ${pluginPage.plugin.name} ».` }
+      : SECTION_INFO[active as FixedSection],
+  );
 
   /** Actions regroupées pour la page Raccourcis, dans l'ordre de `ACTIONS`. */
   const ACTION_GROUPS = ACTIONS.reduce<{ title: string; actions: typeof ACTIONS }[]>((groups, action) => {
@@ -71,6 +89,18 @@
     return groups;
   }, []);
 
+  /** La page d'un plugin n'a pas de calcul : le moteur ne garde que ses notifications et ses demandes d'ouverture. */
+  function onPluginMessage(message: PluginToHost): void {
+    if (message.type === "notify") ui.notify(message.text);
+    else if (message.type === "copy") {
+      void navigator.clipboard.writeText(message.text).then(
+        () => ui.notify(`Copié : ${message.text}`),
+        () => ui.notify("Copie impossible"),
+      );
+    } else if (message.type === "openSettings") openPluginSettings(message.plugin, message.hash);
+  }
+
+  const noDocument = { id: null, title: "", data: null };
   const REPO = "https://github.com/Bryan-Cordonnier/etabli";
 
   let info = $state<AppInfo | null>(null);
@@ -212,18 +242,35 @@
       {#each GROUPS as group (group.title)}
         <p class="group">{group.title}</p>
         {#each group.sections as id (id)}
-          <button class:on={section === id} onclick={() => goto(id)}>{SECTION_INFO[id].label}</button>
+          <button class:on={active === id} onclick={() => goto(id)}>{SECTION_INFO[id].label}</button>
         {/each}
+        {#if group.title === "Plugins"}
+          {#each PAGES as entry (entry.section)}
+            <button class:on={active === entry.section} onclick={() => goto(entry.section)}>{entry.page.title}</button>
+          {/each}
+        {/if}
       {/each}
     </nav>
 
-    <div class="body" class:wide={section === "bibliotheques"}>
+    <div class="body" class:wide={!!pluginPage}>
       <header class="section-head">
-        <h2>{SECTION_INFO[section].title}</h2>
-        <p>{SECTION_INFO[section].lead}</p>
+        <h2>{head.title}</h2>
+        <p>{head.lead}</p>
       </header>
 
-      {#if section === "general"}
+      {#if pluginPage}
+        <PluginProblems plugin={pluginPage.plugin} />
+        <div class="plugin-frame">
+          <MiniAppFrame
+            src={pluginUrl(pluginPage.plugin.id, pluginPage.page.entry) + (hash ? `#${hash}` : "")}
+            title={pluginPage.page.title}
+            pluginId={pluginPage.plugin.id}
+            appId={`reglages-${pluginPage.page.id}`}
+            initial={noDocument}
+            onmessage={onPluginMessage}
+          />
+        </div>
+      {:else if active === "general"}
         <div class="box">
           <h3>Quand je ferme la fenêtre</h3>
           <div class="choices" role="radiogroup" aria-label="Quand je ferme la fenêtre">
@@ -284,7 +331,7 @@
             <button class="btn" onclick={() => info && void system.reveal(info.documents)}>Afficher dans l'Explorateur</button>
           </div>
         </div>
-      {:else if section === "apparence"}
+      {:else if active === "apparence"}
         <div class="box">
           <h3>Thème</h3>
           <div class="themes">
@@ -329,26 +376,7 @@
             <Switch checked={settings.reduceMotion} label="Réduire les animations" onchange={(v) => settings.set("reduceMotion", v)} />
           </div>
         </div>
-      {:else if section === "bibliotheques"}
-        <div class="box">
-          <h3>Fournisseurs</h3>
-          <p class="hint">
-            La matière que vend chaque fournisseur : longueur des barres, format des tôles, tolérance. Les plugins
-            s'en servent pour préremplir leurs calculs ; ils fonctionnent aussi sans. Le prix est facultatif :
-            il ne sert qu'au chiffrage.
-          </p>
-          <SuppliersEditor />
-        </div>
-
-        <div class="box">
-          <h3>Machines</h3>
-          <p class="hint">
-            Les machines de l'atelier : les calculs reprennent leurs réglages (trait de scie, angles, longueur de lame,
-            butée) et les contraintes qu'elles imposent.
-          </p>
-          <MachinesEditor />
-        </div>
-      {:else if section === "plugins"}
+      {:else if active === "plugins"}
         <div class="box">
           <div class="box-head">
             <h3>Plugins installés</h3>
@@ -357,19 +385,32 @@
           <div class="plugins">
             {#each PLUGINS as plugin (plugin.id)}
               {@const on = settings.isPluginEnabled(plugin.id)}
-              <div class="setting">
-                <Tile color={plugin.color} icon={plugin.icon} />
-                <div class="text">
-                  <b>{plugin.name} {#if plugin.official}<span class="pill">officiel</span>{/if}</b>
-                  <small>{plugin.description} · v{plugin.version} · {plugin.miniApps.length} mini-app(s)</small>
+              {@const needs = Object.keys(plugin.dependencies)}
+              <div class="plugin-row">
+                <div class="setting">
+                  <Tile color={plugin.color} icon={plugin.icon} />
+                  <div class="text">
+                    <b>{plugin.name} {#if plugin.official}<span class="pill">officiel</span>{/if}</b>
+                    <small>
+                      {plugin.description} · v{plugin.version} ·
+                      {plugin.miniApps.length
+                        ? `${plugin.miniApps.length} mini-app${plugin.miniApps.length > 1 ? "s" : ""}`
+                        : `réglages : ${plugin.settings.map((s) => s.title).join(", ") || "aucun"}`}
+                    </small>
+                    {#if needs.length}
+                      <small>A besoin de : {needs.map((id) => PLUGINS.find((p) => p.id === id)?.name ?? id).join(", ")}</small>
+                    {/if}
+                  </div>
+                  <Switch checked={on} label="Activer {plugin.name}" onchange={() => lifecycle.toggle(plugin.id)} />
                 </div>
-                <Switch checked={on} label="Activer {plugin.name}" onchange={() => settings.togglePlugin(plugin.id)} />
+                <PluginProblems {plugin} compact />
               </div>
             {/each}
+            {#if !PLUGINS.length}<p class="hint">Aucun plugin installé : ouvrez le catalogue pour en ajouter.</p>{/if}
           </div>
           <p class="hint">Pour changer l'ordre des plugins, faites-les glisser dans la colonne de gauche.</p>
         </div>
-      {:else if section === "apercu"}
+      {:else if active === "apercu"}
         <div class="box">
           <h3>Raccourci global</h3>
           <p class="hint">Ouvre l'aperçu rapide par-dessus n'importe quel logiciel, SolidWorks compris.</p>
@@ -408,7 +449,7 @@
           {/if}
           <p class="hint">Ajoutez une mini-app avec l'étoile de sa tuile. Les 9 premières ont un accès direct par les touches 1 à 9.</p>
         </div>
-      {:else if section === "raccourcis"}
+      {:else if active === "raccourcis"}
         <div class="box">
           <h3>Aperçu rapide (depuis n'importe quel logiciel)</h3>
           <div class="setting">
@@ -826,6 +867,15 @@
   .plugins {
     display: flex;
     flex-direction: column;
+  }
+  .plugin-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 2px 0 6px;
+  }
+  .plugin-frame {
+    min-width: 0;
   }
 
   .favorites {

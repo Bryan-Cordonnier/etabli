@@ -9,12 +9,12 @@
 └──────────────▲───────────────────────────────────────────────────────▲──────────────────────────────────┘
                │ invoke("commande") / événements                        │ requêtes http://plugins.localhost/<id>/…
 ┌──────────────┴─────────── Interface hôte (Svelte, apps/desktop/src) ──┴──────────────────────────────────┐
-│  colonne, onglets, pages, paramètres, aperçu rapide · état (réglages, onglets, bibliothèques)          │
+│  colonne, onglets, pages, paramètres, aperçu rapide · état (réglages, onglets, services, cycle de vie des plugins)          │
 │  MiniAppFrame : <iframe sandbox="allow-scripts"> + MessagePort privé                                     │
 └──────────────┬──────────────────────────────────────────────────────────────────────────────────────────┘
                │ messages du protocole (packages/sdk/src/protocol.ts)
 ┌──────────────▼─────────── Mini-app d'un plugin (plugins/<id>/apps/<app>) ────────────────────────────────┐
-│  page Vite + Svelte · @etabli/sdk (connect, document, bibliothèques, impression, envoi) · @etabli/ui    │
+│  page Vite + Svelte · @etabli/sdk (connect, document, services, impression, envoi) · @etabli/ui    │
 │  aucune API Tauri, aucun accès disque ni réseau (CSP), origine opaque                                    │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -27,9 +27,9 @@
 | `apercu` | `apercu.html` → `src/apercu.ts` → `Apercu.svelte` | aperçu rapide : transparente, sans barre des tâches, toujours au premier plan, redimensionnée sur l'écran de la souris à chaque ouverture ; cachée et réutilisée |
 
 Les deux fenêtres ont chacune leur propre état en mémoire. Elles partagent les fichiers
-(`settings.json`, `donnees/*.json`, documents) : l'aperçu **relit** réglages et bibliothèques à chaque
+(`settings.json`, `donnees/*.json`, documents) : l'aperçu **relit** réglages, plugins et services à chaque
 ouverture. L'aperçu délègue à la fenêtre principale ce qui ouvre un onglet, par événements Tauri
-(`etabli:ouvrir`, `etabli:machine`, `etabli:envoyer`).
+(`etabli:ouvrir`, `etabli:reglages`, `etabli:envoyer`).
 
 ## Démarrage
 
@@ -37,8 +37,9 @@ ouverture. L'aperçu délègue à la fenêtre principale ce qui ouvre un onglet,
    (fermeture dans la zone de notification, raccourci), raccourci global, icône de notification,
    affichage de `main`.
 2. Interface (`main.ts`) : `reportErrors()` (erreurs recopiées dans le journal Rust), puis en
-   parallèle `initStorage()` (settings.json), `loadPlugins()` (manifestes) et `libraries.load()`
-   (fournisseurs, machines), puis import dynamique de `App.svelte`.
+   ordre `initStorage()` (settings.json), `loadPlugins()` (manifestes) puis `services.load()` (données publiées
+   par les plugins), puis import dynamique de `App.svelte`. Les modules qui lisent les réglages
+   (`registry`, `services`) sont importés **après** `initStorage()` : sinon ils liraient des réglages vides.
 
 ## Plugins : découverte et service
 
@@ -57,13 +58,14 @@ ouverture. L'aperçu délègue à la fenêtre principale ce qui ouvre un onglet,
 MiniAppPage (onglet)                         Apercu.svelte (aperçu rapide)
    └─ DocumentSession  ← charge / enregistre le document (.etabli) via Rust
    └─ MiniAppFrame     ← iframe + MessageChannel
-         init : document, thème, bibliothèques, réglages du plugin, données reçues
+         init : document, thème, services visibles, réglages du plugin, données reçues, raccourcis
          ← update / title / summary        → DocumentSession (enregistrement 1 s après)
          ← notify / copy / shortcut        → interface hôte
          ← pluginData                      → réglages du plugin (donnees/plugin.<id>.json)
          ← print                           → impression de la fiche (lib/print)
-         ← addMachine / send               → Paramètres / nouvel onglet
-         → theme / libraries / pluginData  (mises à jour poussées)
+         ← provide                        → services (donnees/service.<plugin>.<nom>.json)
+         ← openSettings / send             → page de réglages d'un plugin / nouvel onglet
+         → theme / services / pluginData   (mises à jour poussées)
 ```
 
 La hauteur du cadre suit le contenu (message `height`) : pas de double barre de défilement.
@@ -74,8 +76,8 @@ La hauteur du cadre suit le contenu (message `height`) : pas de double barre de 
 | --- | --- | --- |
 | Calculs | `<documents>/<pluginId>/<titre-en-slug>-<8 premiers caractères de l'id>.etabli` (JSON) | `documents.rs`, `lib/documents.svelte.ts` |
 | Réglages et onglets ouverts | `<config>/settings.json` (clés `settings`, `session`) | `store.rs`, `lib/storage.ts` |
-| Fournisseurs, machines | `<config>/donnees/fournisseurs.json`, `machines.json` | `donnees.rs`, `lib/state/libraries.svelte.ts` |
-| Réglages d'un plugin | `<config>/donnees/plugin.<id>.json` | idem |
+| Réglages d'un plugin | `<config>/donnees/plugin.<id>.json` | `donnees.rs`, `lib/state/pluginData.svelte.ts` |
+| Services (données publiées par un plugin : fournisseurs, machines) | `<config>/donnees/service.<plugin>.<nom>.json` | `donnees.rs`, `lib/state/services.svelte.ts` |
 
 `<documents>` = `Documents\Etabli`, `<config>` = `%APPDATA%\Etabli` ; en développement tous deux sous
 `%ETABLI_DATA_DIR%`. Détails : [08-documents-donnees.md](08-documents-donnees.md).

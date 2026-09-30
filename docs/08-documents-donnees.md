@@ -7,7 +7,7 @@
 | Calculs `.etabli` | `Documents\Etabli\<pluginId>\` | `%ETABLI_DATA_DIR%\documents\<pluginId>\` |
 | Corbeille | `Documents\Etabli\.corbeille\` | idem sous `documents` |
 | `settings.json` | `%APPDATA%\Etabli\` | `%ETABLI_DATA_DIR%\config\` |
-| Bibliothèques, réglages de plugin | `%APPDATA%\Etabli\donnees\` | `%ETABLI_DATA_DIR%\config\donnees\` |
+| Réglages de plugin, services publiés par les plugins | `%APPDATA%\Etabli\donnees\` | `%ETABLI_DATA_DIR%\config\donnees\` |
 | Plugins de l'utilisateur | `%APPDATA%\Etabli\plugins\` | `%ETABLI_DATA_DIR%\config\plugins\` |
 
 Dans l'aperçu navigateur (sans Rust), tout est dans `localStorage` : `etabli.preview-documents`,
@@ -68,7 +68,7 @@ démarrage. Enregistrement différé de 300 ms.
 | `plugin.<id>.json` | réglages d'un plugin (`PluginSettings`) | valeurs par défaut du plugin |
 
 Écrits 400 ms après la dernière modification ; tant qu'une écriture est en attente, la relecture
-du disque est ignorée (sinon elle écraserait la saisie). Voir `lib/state/libraries.svelte.ts`.
+du disque est ignorée (sinon elle écraserait la saisie). Voir `lib/dataFiles.ts`, `lib/state/pluginData.svelte.ts` et `lib/state/services.svelte.ts`.
 
 ## Pas encore fait
 

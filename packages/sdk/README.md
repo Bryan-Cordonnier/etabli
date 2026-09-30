@@ -33,8 +33,10 @@ etabli.ui.notify("Calcul terminé");
 | `document.setTitle()` / `setSummary()` | Titre et résumé affichés dans les anciens calculs |
 | `ui.notify()` | Notification en bas à droite |
 | `clipboard.copy()` | Copie avec confirmation |
-| `libraries.current` / `onChange()` | Fournisseurs et machines saisis dans les Paramètres |
-| `libraries.addMachine(kind)` | Ouvre les Paramètres sur une nouvelle scie ou cisaille |
+| `services.get(nom)` / `onChange()` | Données publiées par les plugins dont le vôtre dépend (fournisseurs, machines…), en lecture seule |
+| `services.provide(nom, data)` | Publie vos données pour les autres plugins (à déclarer dans `provides`) |
+| `openSettings(plugin, hash?)` | Ouvre la page de réglages d'un autre plugin |
+| `libraries.current` / `onChange()` / `addMachine(kind)` | Fournisseurs et machines, dérivés des services `fournisseurs` et `machines` |
 | `settings.data` / `update()` / `onChange()` | Réglages du plugin, partagés par ses mini-apps |
 | `print(fiche)` | Imprime une fiche d'atelier (A4 ou PDF) |
 | `send(kind, data)` / `incoming` | Envoie des données à une autre mini-app / données reçues à l'ouverture |

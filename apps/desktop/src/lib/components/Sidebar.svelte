@@ -1,6 +1,6 @@
 <script lang="ts">
   // Colonne des plugins (cahier des charges, section 5.2).
-  import { PLUGINS } from "$lib/plugins/registry.svelte";
+  import { pluginsWithApps } from "$lib/plugins/registry.svelte";
   import { shortcutHint } from "$lib/shortcuts";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -16,7 +16,8 @@
       const index = order.indexOf(id);
       return index < 0 ? Number.MAX_SAFE_INTEGER : index;
     };
-    return PLUGINS.filter((p) => settings.isPluginEnabled(p.id))
+    return pluginsWithApps()
+      .filter((p) => settings.isPluginEnabled(p.id))
       .map((plugin, index) => ({ plugin, index }))
       .sort((a, b) => rank(a.plugin.id) - rank(b.plugin.id) || a.index - b.index)
       .map(({ plugin }) => plugin);

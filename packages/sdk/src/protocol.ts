@@ -118,7 +118,11 @@ export interface Shear {
 export type Machine = Saw | Shear;
 export type MachineKind = Machine["kind"];
 
-/** Bibliothèques de l'application, lisibles par tous les plugins (cahier des charges, section 3.3). */
+/**
+ * Fournisseurs et machines, sous la forme que connaissent les anciens plugins. Ils viennent des
+ * plugins Fournisseurs et Machines (services `fournisseurs` et `machines`) ; vide si le plugin n'en
+ * dépend pas ou si ceux-ci ne sont pas installés.
+ */
 export interface Libraries {
   suppliers: Supplier[];
   /** Machines de l'atelier : scies, cisailles (la presse plieuse viendra avec la Tôlerie). */
@@ -143,6 +147,33 @@ export interface FichePrint {
   css?: string;
 }
 
+/**
+ * Données qu'un plugin **publie** pour les autres (`provide`) : les fournisseurs, les machines…
+ * Le moteur les garde et les relaie, en lecture seule, aux plugins qui déclarent une dépendance
+ * (`dependencies` ou `optionalDependencies`) sur le plugin qui les fournit. Le nom du service est
+ * la clé de `provides` dans le manifeste du fournisseur.
+ */
+export interface ServiceSnapshot<T = unknown> {
+  /** Plugin qui fournit ces données. */
+  plugin: string;
+  /** Version du contrat de données (`provides` dans son manifeste). */
+  version: string;
+  /** `null` tant que le fournisseur n'a rien publié. */
+  data: T | null;
+}
+
+export type Services = Record<string, ServiceSnapshot>;
+
+/** Contrat `fournisseurs@1` : donnée publiée par le plugin Fournisseurs. */
+export interface FournisseursData {
+  suppliers: Supplier[];
+}
+
+/** Contrat `machines@1` : donnée publiée par le plugin Machines. */
+export interface MachinesData {
+  machines: Machine[];
+}
+
 export type HostToPlugin =
   | {
       type: "init";
@@ -152,7 +183,13 @@ export type HostToPlugin =
       document: DocumentSnapshot;
       theme: ThemeTokens;
       colorScheme: ColorScheme;
+      /**
+       * Fournisseurs et machines, tirés des services `fournisseurs` et `machines` quand le plugin
+       * les déclare en dépendance. Conservé pour les SDK anciens : préférer `services`.
+       */
       libraries: Libraries;
+      /** Données publiées par les plugins dont celui-ci dépend (voir `ServiceSnapshot`). */
+      services?: Services;
       /** Réglages du plugin, partagés par toutes ses mini-apps ; `null` s'il n'en a pas encore. */
       pluginData: unknown;
       /** Données envoyées par une autre mini-app (« Envoyer au calepinage »), ou `null`. */
@@ -165,6 +202,7 @@ export type HostToPlugin =
     }
   | { type: "theme"; theme: ThemeTokens; colorScheme: ColorScheme }
   | { type: "libraries"; libraries: Libraries }
+  | { type: "services"; services: Services }
   | { type: "pluginData"; data: unknown }
   | { type: "shortcuts"; shortcuts: string[] };
 
@@ -180,6 +218,11 @@ export type PluginToHost =
   | { type: "shortcut"; key: string; code?: string; ctrl: boolean; shift: boolean; alt: boolean }
   | { type: "pluginData"; data: unknown }
   | { type: "print"; fiche: FichePrint }
+  /** Publie des données pour les autres plugins ; `name` doit figurer dans `provides` du manifeste. */
+  | { type: "provide"; name: string; data: unknown }
+  /** Ouvre la page de réglages d'un autre plugin (`hash` : intention transmise à sa page, « add=scie »). */
+  | { type: "openSettings"; plugin: string; hash?: string }
+  /** Ancien message : équivaut à `openSettings` sur le plugin `machines` avec `add=<kind>`. */
   | { type: "addMachine"; kind: MachineKind }
   | { type: "send"; kind: string; data: unknown }
   | { type: "saveFile"; file: SavedFile };

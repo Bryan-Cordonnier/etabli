@@ -14,7 +14,8 @@
   import { api, inTauri } from "$lib/api";
   import { printFiche } from "$lib/print/print";
   import { frameShortcuts } from "$lib/shortcuts";
-  import { libraries } from "$lib/state/libraries.svelte";
+  import { pluginData } from "$lib/state/pluginData.svelte";
+  import { librariesFrom, services } from "$lib/state/services.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { ui } from "$lib/state/ui.svelte";
   import { THEME_TOKENS } from "$lib/themes";
@@ -69,7 +70,7 @@
   }
 
   // Dernières valeurs connues de la mini-app : on ne lui renvoie pas ce qu'elle vient d'envoyer.
-  let sentLibraries = "";
+  let sentServices = "";
   let sentPluginData = "";
 
   async function connectFrame(): Promise<void> {
@@ -78,7 +79,7 @@
     ready = false;
     clearTimeout(readyTimer);
     readyTimer = setTimeout(() => (ready = true), 1000);
-    const pluginData = await libraries.loadPlugin(pluginId);
+    const savedData = await pluginData.load(pluginId);
     const channel = new MessageChannel();
     port = channel.port1;
     port.onmessage = (event: MessageEvent<PluginToHost>) => {
@@ -93,7 +94,11 @@
           break;
         case "pluginData":
           sentPluginData = JSON.stringify(message.data);
-          libraries.setPluginData(pluginId, message.data);
+          pluginData.set(pluginId, message.data);
+          break;
+        case "provide":
+          // Le moteur ne garde que les services que le manifeste du plugin déclare (`provides`).
+          services.publish(pluginId, message.name, message.data);
           break;
         case "saveFile":
           api.saveFile(message.file).then(
@@ -111,8 +116,9 @@
           onmessage(message);
       }
     };
-    sentLibraries = JSON.stringify(libraries.current);
-    sentPluginData = JSON.stringify(pluginData);
+    const visible = services.snapshotFor(pluginId);
+    sentServices = JSON.stringify(visible);
+    sentPluginData = JSON.stringify(savedData);
     // Origine opaque du cadre isolé : « * » est la seule cible possible, le port reste privé.
     frame.contentWindow?.postMessage({ type: CONNECT }, "*", [channel.port2]);
     send({
@@ -122,7 +128,8 @@
       appId,
       document: JSON.parse(JSON.stringify(initial)),
       ...readTheme(),
-      libraries: JSON.parse(sentLibraries),
+      libraries: librariesFrom(visible),
+      services: visible,
       pluginData: JSON.parse(sentPluginData),
       // Si le cadre se recharge, les données reçues ne sont pas appliquées une seconde fois.
       incoming: incoming && !incomingSent ? JSON.parse(JSON.stringify(incoming)) : null,
@@ -137,16 +144,20 @@
     if (port) send({ type: "shortcuts", shortcuts: list });
   });
 
-  // Fournisseurs modifiés dans les Paramètres, ou réglages du plugin changés par une autre mini-app.
+  // Un service que ce plugin lit a changé (fournisseurs modifiés…), ou un plugin dont il dépend a été
+  // installé, désinstallé, activé ou désactivé.
   $effect(() => {
-    const json = JSON.stringify(libraries.current);
-    if (!port || json === sentLibraries) return;
-    sentLibraries = json;
-    send({ type: "libraries", libraries: JSON.parse(json) });
+    const visible = services.snapshotFor(pluginId);
+    const json = JSON.stringify(visible);
+    if (!port || json === sentServices) return;
+    sentServices = json;
+    send({ type: "services", services: visible });
+    send({ type: "libraries", libraries: librariesFrom(visible) });
   });
 
+  // Réglages du plugin changés par une autre mini-app.
   $effect(() => {
-    const json = JSON.stringify($state.snapshot(libraries.pluginData[pluginId]) ?? null);
+    const json = JSON.stringify($state.snapshot(pluginData.data[pluginId]) ?? null);
     if (!port || json === sentPluginData) return;
     sentPluginData = json;
     send({ type: "pluginData", data: JSON.parse(json) });

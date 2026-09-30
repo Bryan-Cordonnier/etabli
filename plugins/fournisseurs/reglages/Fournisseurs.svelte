@@ -1,33 +1,27 @@
 <script lang="ts">
-  // Bibliothèque Fournisseurs (cahier des charges, section 3.3) : la matière que vend chaque
-  // fournisseur, avec ses dimensions commerciales, sa tolérance et un prix facultatif.
-  import type { StockKind, SupplierItem } from "@etabli/sdk/protocol";
-  import { PRICE_UNITS, STOCK_KINDS, libraries, newItem } from "$lib/state/libraries.svelte";
-  import Icon from "./Icon.svelte";
+  // Réglages du plugin Fournisseurs : la matière que vend chaque fournisseur, avec ses dimensions
+  // commerciales, sa tolérance et un prix facultatif. Enregistré dès qu'on modifie un champ, et publié
+  // aux plugins qui en dépendent (service « fournisseurs »).
+  import { STOCK_KINDS, type StockKind, type Supplier, type SupplierItem } from "@etabli/sdk";
+  import { Icon, PluginSettings } from "@etabli/ui";
+  import {
+    PRICE_UNITS,
+    changeKind,
+    cleanSuppliers,
+    newItem,
+    newSupplier,
+    setNumber,
+    type NumberKey,
+  } from "../src/fournisseurs";
 
-  const save = () => libraries.saveSuppliers();
-
-  /** Une tôle a une largeur ; une barre non. Les dimensions par défaut changent avec. */
-  function changeKind(item: SupplierItem, kind: StockKind): void {
-    const wasSheet = item.kind === "tole";
-    item.kind = kind;
-    if (kind === "tole" && !wasSheet) Object.assign(item, { length: 2500, width: 1250 });
-    if (kind !== "tole" && wasSheet) Object.assign(item, { length: 6000, width: null });
-    save();
-  }
-
-  /** Champ vidé : 0 pour une dimension, rien pour le prix. */
-  function setNumber(item: SupplierItem, key: "length" | "width" | "tolMinus" | "tolPlus" | "price", raw: string): void {
-    const value = Number(raw.replace(",", "."));
-    const empty = raw.trim() === "" || !Number.isFinite(value);
-    if (key === "price") item.price = empty ? null : Math.max(0, value);
-    else if (key === "width") item.width = empty ? 0 : Math.max(0, value);
-    else item[key] = empty ? 0 : Math.max(0, value);
-    save();
-  }
+  const settings = new PluginSettings<{ suppliers: Supplier[] }>(
+    { suppliers: [] },
+    (saved) => ({ suppliers: cleanSuppliers((saved as { suppliers?: unknown } | null)?.suppliers) }),
+    "fournisseurs",
+  );
 </script>
 
-{#snippet number(item: SupplierItem, key: "length" | "width" | "tolMinus" | "tolPlus" | "price", label: string, placeholder = "")}
+{#snippet number(item: SupplierItem, key: NumberKey, label: string, placeholder = "")}
   <input
     class="num"
     inputmode="decimal"
@@ -38,19 +32,23 @@
   />
 {/snippet}
 
+<p class="intro">
+  La matière que vend chaque fournisseur : longueur des barres, format des tôles, tolérance. Les plugins de calcul
+  s'en servent pour préremplir leurs formulaires ; ils fonctionnent aussi sans. Le prix est facultatif : il ne sert
+  qu'au chiffrage.
+</p>
+
 <div class="suppliers">
-  {#each libraries.suppliers as supplier (supplier.id)}
+  {#each settings.data.suppliers as supplier (supplier.id)}
     <div class="supplier">
       <div class="supplier-head">
-        <input
-          class="name"
-          bind:value={supplier.name}
-          oninput={save}
-          placeholder="Nom du fournisseur"
-          aria-label="Nom du fournisseur"
-          spellcheck="false"
-        />
-        <button class="mini" onclick={() => libraries.removeSupplier(supplier.id)} title="Supprimer ce fournisseur" aria-label="Supprimer le fournisseur {supplier.name}">
+        <input class="name" bind:value={supplier.name} placeholder="Nom du fournisseur" aria-label="Nom du fournisseur" spellcheck="false" />
+        <button
+          class="mini"
+          onclick={() => (settings.data.suppliers = settings.data.suppliers.filter((s) => s.id !== supplier.id))}
+          title="Supprimer ce fournisseur"
+          aria-label="Supprimer le fournisseur {supplier.name}"
+        >
           <Icon name="trash" size={15} />
         </button>
       </div>
@@ -78,8 +76,8 @@
                     {/each}
                   </select>
                 </td>
-                <td><input bind:value={item.material} oninput={save} placeholder="toutes" aria-label="Nuance" spellcheck="false" /></td>
-                <td><input bind:value={item.designation} oninput={save} placeholder="tous" aria-label="Profilé ou épaisseur" spellcheck="false" /></td>
+                <td><input bind:value={item.material} placeholder="toutes" aria-label="Nuance" spellcheck="false" /></td>
+                <td><input bind:value={item.designation} placeholder="tous" aria-label="Profilé ou épaisseur" spellcheck="false" /></td>
                 <td>
                   <span class="pair">
                     {@render number(item, "length", "Longueur")}
@@ -97,7 +95,7 @@
                 <td>
                   <span class="pair">
                     {@render number(item, "price", "Prix", "—")}
-                    <select bind:value={item.priceUnit} onchange={save} aria-label="Unité du prix">
+                    <select bind:value={item.priceUnit} aria-label="Unité du prix">
                       {#each PRICE_UNITS as unit (unit.id)}
                         <option value={unit.id}>{unit.label}</option>
                       {/each}
@@ -107,10 +105,7 @@
                 <td>
                   <button
                     class="mini"
-                    onclick={() => {
-                      supplier.items = supplier.items.filter((i) => i.id !== item.id);
-                      save();
-                    }}
+                    onclick={() => (supplier.items = supplier.items.filter((i) => i.id !== item.id))}
                     aria-label="Retirer cette ligne"
                   >
                     <Icon name="x" size={14} />
@@ -126,18 +121,30 @@
         onclick={() => {
           const last = supplier.items.at(-1);
           supplier.items.push(last ? { ...$state.snapshot(last), id: newItem().id, price: null } : newItem());
-          save();
         }}
       >
         <Icon name="plus" size={14} /> Ajouter une matière
       </button>
     </div>
+  {:else}
+    <p class="none">Aucun fournisseur pour l'instant.</p>
   {/each}
 
-  <button class="btn" onclick={() => libraries.addSupplier()}><Icon name="plus" size={16} /> Ajouter un fournisseur</button>
+  <button class="btn" onclick={() => settings.data.suppliers.push(newSupplier())}><Icon name="plus" size={16} /> Ajouter un fournisseur</button>
 </div>
 
 <style>
+  .intro {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 80ch;
+  }
+  .none {
+    margin: 0;
+    color: var(--faint);
+    font-size: 13px;
+  }
   .suppliers {
     display: flex;
     flex-direction: column;
@@ -163,6 +170,7 @@
     flex: 1;
     font-weight: 600;
     font-size: 15px;
+    background: var(--surface);
   }
   .scroll {
     overflow-x: auto;
@@ -207,9 +215,6 @@
   input::placeholder {
     color: var(--faint);
     font-style: italic;
-  }
-  .name {
-    background: var(--surface);
   }
   .num {
     width: 62px;
@@ -261,5 +266,19 @@
   }
   .add:hover {
     background: var(--accent-soft);
+  }
+  .btn {
+    height: 34px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    font-weight: 500;
+  }
+  .btn:hover {
+    background: var(--surface-2);
   }
 </style>

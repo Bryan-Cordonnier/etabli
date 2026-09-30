@@ -1,6 +1,8 @@
 import { api, inTauri, type PluginSource } from "$lib/api";
 import { ICONS, type IconName } from "$lib/icons";
-import type { MiniAppManifest, PluginManifest } from "$lib/types";
+import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
+import { settings } from "$lib/state/settings.svelte";
+import type { MiniAppManifest, PluginManifest, PluginSettingsPage } from "$lib/types";
 
 /**
  * Plugins installés : remplis au démarrage par `loadPlugins()`, puis rechargés après chaque
@@ -64,6 +66,13 @@ function normalize(raw: unknown, official: boolean, source: PluginSource): Plugi
       accepts: Array.isArray(a.accepts) ? a.accepts.filter((k): k is string => typeof k === "string") : [],
     }));
 
+  const settingsPages: PluginSettingsPage[] = (Array.isArray(m.settings) ? m.settings : [])
+    .filter(
+      (s): s is Record<string, unknown> =>
+        typeof s === "object" && s !== null && typeof s.id === "string" && /^[a-z0-9-]+$/.test(s.id) && typeof s.entry === "string",
+    )
+    .map((s) => ({ id: text(s.id), title: text(s.title, text(s.id)), entry: text(s.entry) }));
+
   return {
     id,
     name: text(m.name, id),
@@ -74,10 +83,20 @@ function normalize(raw: unknown, official: boolean, source: PluginSource): Plugi
     color: text(m.color, "#6b7280"),
     icon: icon(m.icon),
     permissions: Array.isArray(m.permissions) ? m.permissions.filter((p) => typeof p === "string") : [],
+    dependencies: stringMap(m.dependencies),
+    optionalDependencies: stringMap(m.optionalDependencies),
+    provides: stringMap(m.provides),
+    settings: settingsPages,
     official,
     source,
     miniApps,
   };
+}
+
+/** Objet « nom → texte » d'un manifeste ; tout ce qui n'est pas du texte est ignoré. */
+export function stringMap(value: unknown): Record<string, string> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 }
 
 /** Adresse d'un fichier de plugin, servie par le cœur Rust (voir plugins.rs). */
@@ -113,4 +132,28 @@ export function getMiniAppByKey(key: string): MiniAppRef | undefined {
 
 export function allMiniApps(): MiniAppRef[] {
   return PLUGINS.flatMap((plugin) => plugin.miniApps.map((app) => ({ plugin, app })));
+}
+
+/**
+ * Plugins qui ont des mini-apps : les seuls qui apparaissent dans la colonne, l'accueil et la
+ * palette. Un plugin qui n'apporte que des réglages (Fournisseurs, Machines) n'y figure pas.
+ */
+export function pluginsWithApps(): PluginManifest[] {
+  return PLUGINS.filter((p) => p.miniApps.length > 0);
+}
+
+/** Les plugins installés tels que les voit la résolution des dépendances. */
+export function installedNodes(): InstalledNode[] {
+  return PLUGINS.map((p) => ({
+    id: p.id,
+    version: p.version,
+    dependencies: p.dependencies,
+    optionalDependencies: p.optionalDependencies,
+    enabled: settings.isPluginEnabled(p.id),
+  }));
+}
+
+/** Dépendances obligatoires d'un plugin qui ne sont pas satisfaites (absentes, incompatibles, désactivées). */
+export function pluginProblems(plugin: PluginManifest): Problem[] {
+  return problemsOf(plugin, installedNodes());
 }

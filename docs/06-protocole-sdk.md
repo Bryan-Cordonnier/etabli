@@ -16,10 +16,11 @@ facultatifs, nouveaux messages) ne changent pas la version ; le SDK tolère un c
 
 | Message | Contenu |
 | --- | --- |
-| `init` | `pluginId`, `appId`, `document` (`{ id, title, data }`, `data` null pour un nouveau calcul), `theme` + `colorScheme`, `libraries` (`{ suppliers, machines }`), `pluginData` (réglages du plugin ou null), `incoming` (données envoyées par une autre mini-app ou null), `shortcuts` (raccourcis réglés par l'utilisateur, vide par défaut) |
+| `init` | `pluginId`, `appId`, `document` (`{ id, title, data }`, `data` null pour un nouveau calcul), `theme` + `colorScheme`, `services` (données publiées par les plugins dont celui-ci dépend : `{ nom: { plugin, version, data } }`), `libraries` (`{ suppliers, machines }`, dérivé des services `fournisseurs` et `machines`, pour les SDK anciens), `pluginData` (réglages du plugin ou null), `incoming` (données envoyées par une autre mini-app ou null), `shortcuts` (raccourcis réglés par l'utilisateur, vide par défaut) |
 | `shortcuts` | raccourcis modifiés dans les Paramètres |
 | `theme` | nouvelles couleurs (le SDK les applique en variables CSS) |
-| `libraries` | fournisseurs ou machines modifiés dans les Paramètres |
+| `services` | un service lu par ce plugin a changé, ou un plugin dont il dépend a été installé, désinstallé, activé ou désactivé |
+| `libraries` | ancien message, accompagne `services` : fournisseurs et machines |
 | `pluginData` | réglages du plugin modifiés par une autre mini-app du même plugin |
 
 **Mini-app → hôte** (`PluginToHost`)
@@ -35,13 +36,19 @@ facultatifs, nouveaux messages) ne changent pas la version ; le SDK tolère un c
 | `shortcut` `{ key, code, ctrl, shift, alt }` | combinaison réglée par l'utilisateur dans le moteur (`matchesShortcut`, format `Ctrl+Alt+Shift+<code>`), ou Échap ; le reste du clavier appartient à la mini-app |
 | `pluginData` `{ data }` | enregistre les réglages du plugin |
 | `print` `{ fiche }` | imprime une fiche d'atelier (`FichePrint`) |
-| `addMachine` `{ kind }` | crée une machine et ouvre Paramètres → Bibliothèques |
+| `provide` `{ name, data }` | publie les données du service `name` (à déclarer dans `provides` du manifeste) ; le moteur les garde et les relaie aux plugins qui en dépendent |
+| `openSettings` `{ plugin, hash? }` | ouvre la page de réglages d'un autre plugin, avec une intention dans l'adresse (`#add=scie`) ; le catalogue s'ouvre si le plugin manque |
+| `addMachine` `{ kind }` | ancien message : équivaut à `openSettings` sur `machines` avec `add=<kind>` |
 | `send` `{ kind, data }` | ouvre une mini-app qui accepte ce type, dans un nouvel onglet, avec ces données |
 | `saveFile` `{ file }` | boîte « Enregistrer sous » de Windows puis écriture (`SavedFile` : `name`, `content` texte, `extension` sans point, `description` du filtre) ; notification « Enregistré : chemin » |
 
 Types partagés dans `protocol.ts` : `Supplier`, `SupplierItem`, `StockKind` (+ `STOCK_KINDS`),
 `Saw`, `Shear`, `Machine`, `MachineKind`, `SAW_TYPES`, `Libraries`, `FichePrint`, `Incoming`,
-`SavedFile`, `ThemeTokens`.
+`SavedFile`, `ThemeTokens`, `ServiceSnapshot`, `Services`, `FournisseursData`, `MachinesData`.
+
+`@etabli/sdk/deps` (fonctions pures, sans navigateur) : `satisfies(version, plage)`, `compareVersions`,
+`problemsOf`, `dependentsOf`, `planInstall` : versions et dépendances entre plugins (voir
+[07](07-creer-un-plugin.md#dépendances-et-services)).
 
 ## `@etabli/sdk` (bas niveau)
 
@@ -54,7 +61,11 @@ etabli.document.data;                     // null pour un nouveau calcul
 etabli.document.update(donnees);          // enregistrement automatique
 etabli.document.setTitle(t); etabli.document.setSummary(s);
 etabli.ui.notify(texte); await etabli.clipboard.copy(texte);
-etabli.libraries.current;                 // { suppliers, machines }
+etabli.services.get("fournisseurs");       // { plugin, version, data } ou null (lecture seule)
+etabli.services.onChange(fn);             // un service a changé
+etabli.services.provide("nom", donnees);  // publier ses données (déclarées dans « provides »)
+etabli.openSettings("machines", "add=scie");  // ouvrir la page de réglages d'un autre plugin
+etabli.libraries.current;                 // { suppliers, machines } (dérivé des services, ancien SDK)
 etabli.libraries.onChange(fn); etabli.libraries.addMachine("scie" | "cisaille");
 etabli.settings.data; etabli.settings.update(d); etabli.settings.onChange(fn);   // réglages du plugin
 etabli.print(fiche);                      // fiche d'atelier
@@ -74,8 +85,9 @@ directement (seul `Pythagore` le fait encore, par ancienneté).
 | Export | Usage |
 | --- | --- |
 | `MiniAppDocument<T>(defaults, summary, migrate?)` | `doc.data` réactif (lié aux champs), chargé au démarrage, renvoyé au moteur à chaque modification (rien n'est enregistré tant que l'utilisateur ne change rien). `summary(data)` : résumé des anciens calculs. `migrate(saved)` : remet au format actuel un calcul ancien. `doc.copy(texte)`, `doc.notify(texte)` |
-| `PluginSettings<S>(defaults, clean?)` | réglages partagés par les mini-apps d'un plugin, `data` réactif enregistré automatiquement |
-| `Libraries` | `suppliers`, `machines` réactifs ; `addMachine(kind)` |
+| `PluginSettings<S>(defaults, clean?, service?)` | réglages partagés par les mini-apps d'un plugin, `data` réactif enregistré automatiquement ; avec `service`, publiés aussi aux plugins qui en dépendent |
+| `Libraries` | `suppliers`, `machines` réactifs (issus des plugins Fournisseurs et Machines) ; `addMachine(kind)` ouvre les réglages du plugin Machines |
+| `Icon` (`plus`, `x`, `trash`) | quelques icônes pour les boutons |
 | `printFiche(fiche)` | impression d'une fiche d'atelier |
 | `saveFile(file)` | enregistrement d'un fichier texte (DXF, CSV…) par la boîte « Enregistrer sous » |
 | `sendTo(kind, data)` / `onIncoming(kind, handler)` | envoi et réception entre mini-apps (appeler `onIncoming` **après** avoir créé le `MiniAppDocument`) |

@@ -1,0 +1,14 @@
+{
+  "id": "machines",
+  "name": "Machines",
+  "version": "1.0.0",
+  "apiVersion": "^1",
+  "author": "Établi",
+  "description": "Les machines de votre atelier : scies et cisailles, avec leurs réglages. Les plugins de calcul reprennent le trait de scie, les angles, la longueur de lame et la butée.",
+  "color": "#475569",
+  "icon": "wrench",
+  "permissions": [],
+  "provides": { "machines": "1" },
+  "settings": [{ "id": "machines", "title": "Machines", "entry": "reglages/index.html" }],
+  "miniApps": []
+}

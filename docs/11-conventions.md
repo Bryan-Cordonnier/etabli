@@ -29,7 +29,7 @@
   (Ctrl+Alt+Espace est pris par Claude).
 - Résultats : 2D par défaut, 3D au choix ; pas de lettres de repère dans les aperçus à l'écran
   (les fiches imprimées, elles, les gardent).
-- Machines et fournisseurs dans Paramètres → Bibliothèques, jamais dans un bloc du calcul.
+- Machines et fournisseurs dans leurs plugins (Paramètres → Fournisseurs, Machines), jamais dans un bloc du calcul.
 
 ## Code
 
@@ -39,7 +39,7 @@
   tête de fichier la référence au cahier des charges (« cahier des charges, section 9.4 »).
 - **Svelte 5** : runes uniquement (`$state`, `$derived`, `$derived.by`, `$effect`, `$props`,
   `$bindable`, snippets). Les états partagés sont des **classes** avec champs `$state` exportées en
-  singleton (`settings`, `tabs`, `libraries`, `ui`). Pour qu'un composant enfant modifie un état,
+  singleton (`settings`, `tabs`, `services`, `ui`). Pour qu'un composant enfant modifie un état,
   passez-lui l'objet (instance de classe) plutôt qu'une prop à muter.
 - **TypeScript strict** (`noUncheckedIndexedAccess`) : gérer les `undefined`, `!` seulement quand
   c'est prouvé.

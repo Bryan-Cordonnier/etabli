@@ -47,7 +47,7 @@ dans les Releases (voir [14-publier-une-version.md](14-publier-une-version.md)).
 ## Voir l'interface sans Rust (aperçu navigateur)
 
 `npm run dev -w @etabli/desktop` sert l'interface sur `http://localhost:1420`. Hors de Tauri :
-- `lib/api.ts` bascule sur des remplacements : documents et bibliothèques dans `localStorage`,
+- `lib/api.ts` bascule sur des remplacements : documents et données de plugin dans `localStorage`,
   commandes système sans effet ;
 - les plugins sont servis par Vite sous `/__plugins/<id>/…` (middleware dans
   `apps/desktop/vite.config.ts`) ; il faut avoir lancé `npm run build:plugins` ;

@@ -14,7 +14,12 @@ import {
   type Supplier,
 } from "@etabli/sdk";
 
-/** Réglages du plugin, réactifs, partagés par ses mini-apps ouvertes et enregistrés automatiquement. */
+/**
+ * Réglages du plugin, réactifs, partagés par ses mini-apps ouvertes et enregistrés automatiquement.
+ *
+ * Avec `service`, les réglages sont aussi **publiés** aux plugins qui dépendent de celui-ci
+ * (voir `provides` dans le manifeste) : c'est ce que font les plugins Fournisseurs et Machines.
+ */
 export class PluginSettings<S extends object> {
   data = $state() as S;
   ready = $state(false);
@@ -23,8 +28,13 @@ export class PluginSettings<S extends object> {
   /**
    * @param defaults réglages tant que l'utilisateur n'a rien changé
    * @param clean remet en forme des réglages enregistrés (ancienne version, fichier abîmé)
+   * @param service nom du service à publier avec ces réglages, ou rien
    */
-  constructor(defaults: S, clean: (saved: unknown, defaults: S) => S = (saved) => ({ ...defaults, ...(saved as S) })) {
+  constructor(
+    defaults: S,
+    clean: (saved: unknown, defaults: S) => S = (saved) => ({ ...defaults, ...(saved as S) }),
+    service?: string,
+  ) {
     this.data = structuredClone(defaults);
     this.#last = JSON.stringify(this.data);
 
@@ -38,6 +48,8 @@ export class PluginSettings<S extends object> {
       host = connected;
       receive(connected.settings.data);
       connected.settings.onChange(receive);
+      // Remet le service d'aplomb dès l'ouverture (données migrées, fichier réécrit à la main…).
+      if (service) connected.services.provide(service, JSON.parse(this.#last));
       this.ready = true;
     });
 
@@ -47,12 +59,16 @@ export class PluginSettings<S extends object> {
         if (!host || json === this.#last) return;
         this.#last = json;
         host.settings.update(JSON.parse(json));
+        if (service) host.services.provide(service, JSON.parse(json));
       });
     });
   }
 }
 
-/** Bibliothèques saisies dans les Paramètres d'Établi (listes vides si l'utilisateur n'a rien saisi). */
+/**
+ * Fournisseurs et machines des plugins Fournisseurs et Machines (listes vides si le plugin ne les
+ * déclare pas en dépendance, s'ils ne sont pas installés ou si l'utilisateur n'a rien saisi).
+ */
 export class Libraries {
   suppliers = $state<Supplier[]>([]);
   machines = $state<Machine[]>([]);
@@ -71,7 +87,7 @@ export class Libraries {
     this.machines = libraries.machines ?? [];
   }
 
-  /** Ouvre les Paramètres sur une nouvelle machine ; elle arrive ensuite dans `machines`. */
+  /** Ouvre les réglages du plugin Machines sur une nouvelle machine ; elle arrive ensuite dans `machines`. */
   addMachine = (kind: MachineKind): void => {
     this.#host?.libraries.addMachine(kind);
   };

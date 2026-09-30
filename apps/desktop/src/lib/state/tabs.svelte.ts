@@ -9,6 +9,16 @@ interface Session {
 
 const HOME: View = { kind: "home" };
 
+/**
+ * Une page de réglages de plugin peut recevoir une intention (« add=scie ») : elle n'est jamais
+ * enregistrée, ni dans la session ni dans l'historique, pour ne pas être rejouée en revenant sur la page.
+ */
+function withoutHash(view: View): View {
+  if (view.kind !== "settings" || view.hash === undefined) return view;
+  const { hash: _hash, nonce: _nonce, ...rest } = view;
+  return rest;
+}
+
 /** Même page, sans tenir compte du `nonce` (voir types.ts). */
 function sameView(a: View, b: View): boolean {
   if (a.kind !== b.kind) return false;
@@ -30,8 +40,9 @@ const isNavigation = (view: View): boolean => view.kind !== "app";
 
 let nonce = Date.now();
 
-/** Chaque ouverture d'une mini-app reçoit un nouveau `nonce` : l'écran est recréé. */
-const fresh = (view: View): View => (view.kind === "app" ? { ...view, nonce: ++nonce } : view);
+/** Chaque ouverture d'une mini-app (ou d'une page de réglages avec intention) reçoit un nouveau `nonce` : l'écran est recréé. */
+const fresh = (view: View): View =>
+  view.kind === "app" || (view.kind === "settings" && view.hash !== undefined) ? { ...view, nonce: ++nonce } : view;
 
 class Tabs {
   list = $state<Tab[]>([]);
@@ -75,7 +86,7 @@ class Tabs {
     const index = this.list.findIndex((t) => t.id === id);
     if (index < 0) return;
     const [removed] = this.list.splice(index, 1);
-    if (removed) this.#closed.push($state.snapshot(removed.view));
+    if (removed) this.#closed.push(withoutHash($state.snapshot(removed.view)));
 
     if (this.list.length === 0) {
       this.open(HOME);
@@ -104,7 +115,7 @@ class Tabs {
     if (view.kind === "settings" || view.kind === "catalogue") {
       const open = this.list.find((t) => t.view.kind === view.kind);
       if (open) {
-        if (view.kind === "settings" && view.section) open.view = view;
+        if (view.kind === "settings" && view.section) open.view = fresh(view);
         this.activeId = open.id;
         return;
       }
@@ -117,7 +128,7 @@ class Tabs {
       return;
     }
     if (sameView(tab.view, view)) return;
-    tab.history.push($state.snapshot(tab.view));
+    tab.history.push(withoutHash($state.snapshot(tab.view)));
     tab.view = fresh(view);
   }
 
@@ -128,7 +139,7 @@ class Tabs {
       this.open(view);
       return;
     }
-    tab.history.push($state.snapshot(tab.view));
+    tab.history.push(withoutHash($state.snapshot(tab.view)));
     tab.view = fresh(view);
   }
 
@@ -167,7 +178,7 @@ class Tabs {
   /** Mémorise les onglets ouverts pour les restaurer au prochain démarrage. */
   persist(): void {
     save("session", {
-      views: this.list.map((t) => $state.snapshot(t.view)),
+      views: this.list.map((t) => withoutHash($state.snapshot(t.view))),
       active: Math.max(0, this.list.findIndex((t) => t.id === this.activeId)),
     } satisfies Session);
   }

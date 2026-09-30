@@ -1,5 +1,6 @@
 <script lang="ts">
   import CommandPalette from "$lib/components/CommandPalette.svelte";
+  import PluginDialog from "$lib/components/PluginDialog.svelte";
   import Sidebar from "$lib/components/Sidebar.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
   import Toast from "$lib/components/Toast.svelte";
@@ -11,7 +12,7 @@
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
   import { api, system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
-  import { addMachineFromApp } from "$lib/machines";
+  import { openPluginSettings } from "$lib/pluginSettings";
   import { sendToApp } from "$lib/send";
   import { handleShortcut } from "$lib/shortcuts";
   import { loadPlugins } from "$lib/plugins/registry.svelte";
@@ -60,10 +61,10 @@
 
   // « + Ajouter une machine… » et « Envoyer au calepinage » depuis une mini-app de l'aperçu rapide.
   $effect(() => {
-    const machine = system.onMachineRequest(addMachineFromApp);
+    const reglages = system.onSettingsRequest(({ plugin, hash }) => openPluginSettings(plugin, hash));
     const send = system.onSendRequest(({ kind, data, from }) => sendToApp(kind, data, from));
     return () => {
-      void machine.then((stop) => stop());
+      void reglages.then((stop) => stop());
       void send.then((stop) => stop());
     };
   });
@@ -115,7 +116,7 @@
           {:else if view?.kind === "app"}
             <MiniAppPage tabId={tabs.activeId} pluginId={view.pluginId} appId={view.appId} docId={view.docId} />
           {:else if view?.kind === "settings"}
-            <SettingsPage section={view.section} />
+            <SettingsPage section={view.section} hash={view.hash} />
           {:else if view?.kind === "catalogue"}
             <CataloguePage />
           {/if}
@@ -128,6 +129,7 @@
 {#if ui.paletteOpen}
   <CommandPalette />
 {/if}
+<PluginDialog />
 <Toast />
 
 <style>

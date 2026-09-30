@@ -16,7 +16,10 @@ l'onglet actif.
 | `lib/state/settings.svelte.ts` | réglages (`settings`) : thème, thèmes importés, animations, taille du texte, colonne (repliée, largeur), favoris, plugins désactivés, ordre des plugins, raccourci global de l'aperçu (`quickShortcut`), raccourcis de l'application par action (`shortcuts`, vide par défaut), zone de notification, auteur des fiches |
 | `lib/state/tabs.svelte.ts` | onglets (`tabs`) : ouverture, navigation, historique par onglet, onglets fermés, persistance de la session |
 | `lib/state/ui.svelte.ts` | palette ouverte, notification (toast 4 s), focus de la recherche |
-| `lib/state/libraries.svelte.ts` | bibliothèques Fournisseurs et Machines, réglages des plugins (`libraries`) |
+| `lib/state/pluginData.svelte.ts` | réglages de chaque plugin (`pluginData`), fichier `plugin.<id>.json` |
+| `lib/state/services.svelte.ts` | services : données publiées par les plugins (`services`), `snapshotFor(plugin)` (ce qu'un plugin a le droit de lire), `librariesFrom` (ancien format) |
+| `lib/state/lifecycle.svelte.ts` | installer, désinstaller, activer et désactiver un plugin avec ses dépendances (`lifecycle`), fenêtre `PluginDialog` |
+| `lib/dataFiles.ts` | écritures différées des fichiers de données (400 ms), noms valides |
 | `lib/documents.svelte.ts` | `DocumentSession` : un calcul ouvert (chargement, enregistrement différé, historique, duplication, corbeille) |
 | `lib/plugins/registry.svelte.ts` | `PLUGINS` (liste **réactive**, rechargée après chaque installation), `loadPlugins`, validation des manifestes (avec `source`), `pluginUrl`, recherche de mini-apps, ordre officiel |
 | `lib/state/catalogue.svelte.ts` | catalogue (`catalogue`) : entrées publiées, installation avec progression, désinstallation, installation depuis un fichier, `startup` (réinstallation des plugins de qui arrive d'une 0.1.x, puis mises à jour automatiques), `compareVersions` |
@@ -26,7 +29,7 @@ l'onglet actif.
 | `lib/themes.ts`, `lib/appearance.ts` | thèmes et application de l'apparence (thème, animations réduites, zoom) |
 | `lib/icons.ts` | liste fermée des icônes Lucide utilisables par les manifestes |
 | `lib/print/print.ts`, `lib/print/fiche.css` | impression des fiches d'atelier |
-| `lib/machines.ts`, `lib/send.ts` | « + Ajouter une machine… » et envoi entre mini-apps (fenêtre principale) |
+| `lib/pluginSettings.ts`, `lib/send.ts` | ouvrir la page de réglages d'un plugin (« + Ajouter une machine… ») et envoi entre mini-apps (fenêtre principale) |
 | `lib/components/*` | composants (voir plus bas) |
 | `lib/pages/*` | `Home` (bienvenue et bouton du catalogue quand aucun plugin n'est installé), `PluginPage`, `MiniAppPage`, `SettingsPage`, `CataloguePage` |
 
@@ -63,8 +66,9 @@ de la souris : page précédente.
 - **Paramètres** : menu rangé en trois groupes, chaque page avec un titre et une phrase d'explication.
   *Application* : Général (fermeture de la fenêtre : rester en arrière-plan ou quitter ; démarrage de
   Windows ; nom des fiches ; dossier de travail), Apparence, Aperçu rapide, Raccourcis clavier.
-  *Plugins* : Plugins installés, Fournisseurs et machines (provisoire, remplacé par les réglages
-  ajoutés par les plugins). *Aide* : Mises à jour et à propos.
+  *Plugins* : Plugins installés (activation avec dépendances), puis une page par réglage ajouté par
+  un plugin (`plugin:<plugin>:<page>` : Fournisseurs, Machines…, affichée dans un `MiniAppFrame`).
+  *Aide* : Mises à jour et à propos.
 
 ## Composants
 
@@ -73,7 +77,8 @@ redimensionnable, bande Paramètres/Replier en bas), `TabBar` (onglets de **180 
 à la molette avec fondu aux bords, glisser pour réordonner, clic molette pour fermer, bouton « + »),
 `WindowControls`, `CommandPalette`, `MiniAppFrame` (cadre isolé + protocole), `PastCalcs`,
 `RecentDocs`, `AppCard`, `Tile` (icône sur la couleur du plugin, pas d'émoji), `SearchBox`, `ShortcutRecorder`,
-`Switch`, `Toast`, `Logo`, `Icon`, `SuppliersEditor`, `MachinesEditor`.
+`Switch`, `Toast`, `Logo`, `Icon`, `PluginDialog` (confirmations du cycle de vie), `PluginProblems`
+(dépendances non satisfaites : « Il faut installer X » et le bouton qui règle le problème).
 
 ## Thèmes et design
 
@@ -89,7 +94,7 @@ redimensionnable, bande Paramètres/Replier en bas), `TabBar` (onglets de **180 
 
 ## Aperçu rapide (`Apercu.svelte`)
 
-- Ouvert par le raccourci global (Rust émet `apercu:ouvert`) : relit réglages et bibliothèques,
+- Ouvert par le raccourci global (Rust émet `apercu:ouvert`) : relit réglages, plugins et services,
   affiche la grille des favoris (flèches, Entrée, 1–9), ouvre une mini-app **sur place**.
 - Échap : retour à la grille, puis fermeture. Clic dans un autre logiciel : fermeture (perte de
   focus détectée par la page).

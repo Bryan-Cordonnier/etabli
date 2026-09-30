@@ -4,7 +4,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import RecentDocs from "$lib/components/RecentDocs.svelte";
   import SearchBox from "$lib/components/SearchBox.svelte";
-  import { PLUGINS, allMiniApps, appKey, getMiniAppByKey, type MiniAppRef } from "$lib/plugins/registry.svelte";
+  import { allMiniApps, appKey, getMiniAppByKey, pluginsWithApps, type MiniAppRef } from "$lib/plugins/registry.svelte";
   import { catalogue } from "$lib/state/catalogue.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -39,7 +39,7 @@
   }
 </script>
 
-{#if !PLUGINS.length}
+{#if !pluginsWithApps().length}
   <!-- Premier lancement (l'installateur ne contient aucun plugin) : bienvenue et catalogue. -->
   <div class="page">
     <div class="welcome">

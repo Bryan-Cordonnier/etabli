@@ -49,7 +49,7 @@
   type Priority = "matiere" | "temps";
 
   interface Data {
-    /** Scie de la bibliothèque Machines ; vide : réglages saisis à la main. */
+    /** Scie du plugin Machines ; vide : réglages saisis à la main. */
     machine: string;
     profile: ProfileInput;
     material: MaterialId;
@@ -342,7 +342,7 @@
     doc.notify(`${rows.length} pièce${rows.length > 1 ? "s" : ""} collée${rows.length > 1 ? "s" : ""}`);
   }
 
-  // Bibliothèques d'Établi (Paramètres → Bibliothèques) : fournisseurs et machines. Le calcul marche aussi sans.
+  // Plugins Fournisseurs et Machines (dépendances facultatives) : le calcul marche aussi sans.
   const libraries = new Libraries();
   const ADD = "__ajouter__";
 
@@ -538,7 +538,7 @@
       </p>
       <SelectField label="Scie" options={sawOptions} bind:value={doc.data.machine} onchange={pickSaw} />
       {#if saw}
-        <!-- Réglages de la scie : modifiables dans Paramètres → Bibliothèques → Machines. -->
+        <!-- Réglages de la scie : modifiables dans Paramètres → Machines (plugin Machines). -->
         <div class="two">
           <p class="machine-settings">
             Trait de scie <b>{format(saw.kerf)} mm</b> · dressage <b>{format(saw.trim)} mm</b> · angle maxi <b>{format(saw.maxAngle)}°</b>

@@ -35,6 +35,11 @@ l'application : corriger un calcul de Traçage ne demande pas de republier Étab
   `manifest.json` à la racine) et `plugin.zip.minisig` (sa signature, **même clé que les mises à jour**).
   Fabriqué par `scripts/paquet-plugin.mjs` (`npm run paquet -- <id>`), qui met aussi à jour
   `catalogue.json`.
+- **Entrée de catalogue** (`catalogue.json`) : en plus de l'identité du plugin, ses `dependencies`,
+  `optionalDependencies`, `provides` et `settings` (titres des pages de réglages), lus dans son manifeste :
+  l'application s'en sert pour installer les dépendances avant le plugin (`planInstall`, `@etabli/sdk/deps`).
+  **Publier les dépendances d'abord** : un plugin dont une dépendance obligatoire n'est pas au catalogue
+  ne peut pas être installé.
 - **Release « catalogue »** (préversion, jamais « dernière version » : les mises à jour de
   l'application n'y touchent pas) : les paquets et `catalogue.json`, lu par Établi à
   `…/releases/download/catalogue/catalogue.json`.

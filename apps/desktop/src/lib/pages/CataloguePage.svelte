@@ -9,12 +9,11 @@
   import { ICONS, type IconName } from "$lib/icons";
   import { PLUGINS, getPlugin } from "$lib/plugins/registry.svelte";
   import { catalogue } from "$lib/state/catalogue.svelte";
+  import { lifecycle } from "$lib/state/lifecycle.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import type { PluginManifest } from "$lib/types";
 
   let filter = $state<"tous" | "installes">("tous");
-  /** Plugin dont on demande confirmation de la désinstallation. */
-  let confirm = $state<PluginManifest | null>(null);
 
   $effect(() => {
     if (catalogue.status === "idle") void catalogue.load();
@@ -30,6 +29,10 @@
     color: string;
     icon: IconName;
     apps: { name: string }[];
+    /** Titres des pages de réglages que le plugin ajoute aux Paramètres. */
+    settingsPages: string[];
+    needs: string[];
+    optional: string[];
     size: number | null;
   }
 
@@ -47,6 +50,9 @@
       color: entry.color,
       icon: iconOf(entry.icon),
       apps: entry.miniApps.map((a) => ({ name: a.name })),
+      settingsPages: entry.settings.map((s) => s.title),
+      needs: Object.keys(entry.dependencies),
+      optional: Object.keys(entry.optionalDependencies),
       size: entry.size,
     }));
     const others: Card[] = PLUGINS.filter((p) => !catalogue.entries.some((e) => e.id === p.id)).map((p) => ({
@@ -59,6 +65,9 @@
       color: p.color,
       icon: p.icon,
       apps: p.miniApps.map((a) => ({ name: a.name })),
+      settingsPages: p.settings.map((s) => s.title),
+      needs: Object.keys(p.dependencies),
+      optional: Object.keys(p.optionalDependencies),
       size: null,
     }));
     return [...fromCatalogue, ...others];
@@ -68,21 +77,9 @@
 
   const size = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} Mo` : `${Math.round(bytes / 1024)} Ko`);
 
-  async function uninstall(): Promise<void> {
-    const plugin = confirm;
-    confirm = null;
-    if (plugin) await catalogue.uninstall(plugin.id);
-  }
-
-  function onkeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape" && confirm) {
-      event.stopPropagation();
-      confirm = null;
-    }
-  }
+  /** Nom d'un plugin cité par un autre : celui du catalogue, sinon de l'installé, sinon son identifiant. */
+  const nameOf = (id: string) => catalogue.entryOf(id)?.name ?? getPlugin(id)?.name ?? id;
 </script>
-
-<svelte:window {onkeydown} />
 
 <div class="page">
   <header class="head">
@@ -132,9 +129,18 @@
           <p>{card.description}</p>
           <div class="chips">
             {#each card.apps as app (app.name)}<span class="chip">{app.name}</span>{/each}
+            {#each card.settingsPages as page (page)}<span class="chip setting">Réglages : {page}</span>{/each}
           </div>
+          {#if card.needs.length || card.optional.length}
+            <p class="deps">
+              {#if card.needs.length}<span>A besoin de : <b>{card.needs.map(nameOf).join(", ")}</b></span>{/if}
+              {#if card.optional.length}<span>Fonctionne mieux avec : {card.optional.map(nameOf).join(", ")}</span>{/if}
+            </p>
+          {/if}
           <div class="meta">
-            {card.apps.length} mini-app{card.apps.length > 1 ? "s" : ""}{card.size ? ` · ${size(card.size)}` : ""} ·
+            {card.apps.length
+              ? `${card.apps.length} mini-app${card.apps.length > 1 ? "s" : ""}`
+              : "Réglages pour d'autres plugins"}{card.size ? ` · ${size(card.size)}` : ""} ·
             {card.installed?.source === "utilisateur" ? "ajouté à la main" : card.installed?.source === "integre" ? "intégré" : "officiel"}
           </div>
         </div>
@@ -145,17 +151,17 @@
               <small>Installation… {progress > 0 ? `${progress} %` : ""}</small>
             </div>
           {:else if !card.installed && card.entry}
-            <button class="btn primary" disabled={!inTauri} onclick={() => card.entry && void catalogue.install(card.entry)}>Installer</button>
+            <button class="btn primary" disabled={!inTauri} onclick={() => card.entry && lifecycle.askInstall(card.entry)}>Installer</button>
           {:else if card.installed}
             {#if card.entry && catalogue.hasUpdate(card.entry)}
-              <button class="btn primary" onclick={() => card.entry && void catalogue.install(card.entry)}>Mettre à jour</button>
+              <button class="btn primary" onclick={() => card.entry && lifecycle.askInstall(card.entry)}>Mettre à jour</button>
             {/if}
             <div class="switch">
               <span>{enabled ? "Activé" : "Désactivé"}</span>
-              <Switch checked={enabled} label="Activer {card.name}" onchange={() => settings.togglePlugin(card.id)} />
+              <Switch checked={enabled} label="Activer {card.name}" onchange={() => lifecycle.toggle(card.id)} />
             </div>
             {#if card.installed.source === "catalogue"}
-              <button class="btn danger" onclick={() => (confirm = card.installed ?? null)}>Désinstaller</button>
+              <button class="btn danger" onclick={() => lifecycle.askUninstall(card.id)}>Désinstaller</button>
             {/if}
           {/if}
         </div>
@@ -172,24 +178,6 @@
     prévient. Désinstaller un plugin garde vos calculs.
   </p>
 </div>
-
-{#if confirm}
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div class="scrim" onclick={() => (confirm = null)}>
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="titre-desinstaller" tabindex="-1" onclick={(e) => e.stopPropagation()}>
-      <h2 id="titre-desinstaller">Désinstaller {confirm.name} ?</h2>
-      <p>
-        Ses mini-apps disparaissent d'Établi. <b>Vos calculs sont conservés</b> dans le dossier des documents : vous les
-        retrouverez si vous le réinstallez.
-      </p>
-      <div class="buttons">
-        <button class="btn" onclick={() => (confirm = null)}>Annuler</button>
-        <button class="btn primary" onclick={() => void uninstall()}>Désinstaller</button>
-      </div>
-    </div>
-  </div>
-{/if}
 
 <style>
   .head {
@@ -300,6 +288,21 @@
     flex-wrap: wrap;
     gap: 6px;
   }
+  .chip.setting {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .deps {
+    margin: 8px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .deps b {
+    color: var(--text);
+  }
   .chip {
     padding: 2px 8px;
     border-radius: var(--r-xs);
@@ -351,40 +354,6 @@
     font-size: 12px;
     color: var(--muted);
     text-align: right;
-  }
-  .scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    display: grid;
-    place-items: center;
-    padding: 16px;
-    background: var(--scrim);
-    animation: fade-in 0.12s ease-out;
-  }
-  .dialog {
-    width: min(460px, 100%);
-    padding: 20px;
-    border-radius: var(--r-lg);
-    background: var(--surface);
-    box-shadow: var(--shadow);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .dialog h2 {
-    margin: 0;
-    font-size: 16px;
-  }
-  .dialog p {
-    margin: 0;
-    color: var(--muted);
-  }
-  .buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 4px;
   }
   @media (max-width: 760px) {
     .card {

@@ -82,6 +82,11 @@ if (id) {
     color: manifest.color ?? "#6b7280",
     icon: manifest.icon ?? "puzzle",
     apiVersion: manifest.apiVersion ?? "^1",
+    // Dépendances entre plugins : le catalogue s'en sert pour installer ce qui manque (docs/13).
+    dependencies: manifest.dependencies ?? {},
+    optionalDependencies: manifest.optionalDependencies ?? {},
+    provides: manifest.provides ?? {},
+    settings: (manifest.settings ?? []).map((s) => ({ id: s.id, title: s.title ?? s.id })),
     miniApps: (manifest.miniApps ?? []).map((a) => ({
       id: a.id,
       name: a.name,

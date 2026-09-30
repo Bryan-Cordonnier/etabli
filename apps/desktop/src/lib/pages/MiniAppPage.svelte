@@ -10,9 +10,10 @@
   import Tile from "$lib/components/Tile.svelte";
   import { formatDate } from "$lib/dates";
   import { DocumentSession } from "$lib/documents.svelte";
-  import { addMachineFromApp } from "$lib/machines";
+  import { openPluginSettings } from "$lib/pluginSettings";
   import { sendToApp, takeIncoming } from "$lib/send";
-  import { getMiniApp, pluginUrl } from "$lib/plugins/registry.svelte";
+  import PluginProblems from "$lib/components/PluginProblems.svelte";
+  import { getMiniApp, pluginProblems, pluginUrl } from "$lib/plugins/registry.svelte";
   import { handleShortcut } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -56,7 +57,8 @@
     if (message.type === "shortcut") {
       if (message.code) handleShortcut({ code: message.code, ctrl: message.ctrl, shift: message.shift, alt: message.alt });
     }
-    else if (message.type === "addMachine") addMachineFromApp(message.kind);
+    else if (message.type === "openSettings") openPluginSettings(message.plugin, message.hash);
+    else if (message.type === "addMachine") openPluginSettings("machines", `add=${message.kind}`);
     else if (message.type === "send") sendToApp(message.kind, message.data, found?.app.name ?? "");
   }
 
@@ -138,7 +140,9 @@
       <p class="notice">Ce calcul est introuvable : il a peut-être été supprimé ou déplacé. Un nouveau calcul a été ouvert.</p>
     {/if}
 
-    {#if app.entry}
+    {#if pluginProblems(plugin).length}
+      <PluginProblems {plugin} />
+    {:else if app.entry}
       {#if !inTauri}
         <p class="notice">Aperçu navigateur : les calculs sont gardés dans ce navigateur, pas dans des fichiers.</p>
       {/if}

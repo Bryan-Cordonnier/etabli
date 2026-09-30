@@ -11,7 +11,7 @@
 | `src/catalogue.rs` | catalogue de plugins : `catalogue_lire` (catalogue.json de la Release « catalogue »), `plugin_installer` (téléchargement depuis les Releases du dépôt seulement, progression `etabli:installation`), `plugin_installer_fichier`, `plugin_desinstaller` ; paquet `.etabli-plugin` vérifié (minisign, clé de `tauri.conf.json`) avant toute écriture, extraction bornée qui refuse les chemins hors du dossier, remplacement d'un bloc ; `nettoyer` au démarrage ; événement `etabli:plugins` |
 | `src/documents.rs` | `Library` : lister, lire, enregistrer (écriture atomique, renommage si le titre change), mettre à la corbeille ; commandes `documents_*` |
 | `src/store.rs` | `settings.json` : lecture au démarrage et commandes `store_load` / `store_save` |
-| `src/donnees.rs` | fichiers JSON de `<config>/donnees/` (bibliothèques, réglages de plugin) : `donnees_lire` / `donnees_ecrire`, noms validés |
+| `src/donnees.rs` | fichiers JSON de `<config>/donnees/` (réglages de plugin, services publiés par les plugins) : `donnees_lire` / `donnees_ecrire`, noms validés |
 | `src/files.rs` | `write_atomic` (écrit à côté puis renomme), `fichier_enregistrer` (boîte « Enregistrer sous » ; prête pour les exports, pas encore appelée par l'interface), `tests::scratch` (dossier temporaire de test) |
 | `src/apercu.rs` | aperçu rapide : `toggle` (positionne sur l'écran de la souris, affiche, émet `apercu:ouvert`, ou demande la fermeture avec `apercu:fermer`), `show_main`, commandes |
 | `src/raccourci.rs` | raccourci global de l'aperçu (défaut `Ctrl+Shift+Space`), changement à chaud, état et erreur |

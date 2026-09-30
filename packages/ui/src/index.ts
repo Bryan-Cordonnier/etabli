@@ -2,6 +2,7 @@
 export { default as Card } from "./Card.svelte";
 export { default as Check } from "./Check.svelte";
 export { default as Field } from "./Field.svelte";
+export { default as Icon } from "./Icon.svelte";
 export { default as Result } from "./Result.svelte";
 export { default as Segmented } from "./Segmented.svelte";
 export { default as SelectField } from "./SelectField.svelte";

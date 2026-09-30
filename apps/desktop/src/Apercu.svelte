@@ -1,7 +1,7 @@
 <script lang="ts">
   // Aperçu rapide : les mini-apps favorites, utilisables directement par-dessus n'importe quel
   // logiciel. Flèches pour choisir, Entrée pour ouvrir, Échap pour revenir puis fermer.
-  import type { MachineKind, PluginToHost } from "@etabli/sdk/protocol";
+  import type { PluginToHost } from "@etabli/sdk/protocol";
   import { onMount, tick } from "svelte";
   import { inTauri, system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
@@ -11,7 +11,7 @@
   import Toast from "$lib/components/Toast.svelte";
   import { DocumentSession } from "$lib/documents.svelte";
   import { appKey, getMiniAppByKey, loadPlugins, pluginUrl, type MiniAppRef } from "$lib/plugins/registry.svelte";
-  import { libraries } from "$lib/state/libraries.svelte";
+  import { services } from "$lib/state/services.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { reloadStorage } from "$lib/storage";
 
@@ -52,8 +52,10 @@
       closing = false;
       selected = 0;
       shown = true;
-      // Réglages, bibliothèques et plugins (installés ou désinstallés depuis la fenêtre principale).
-      await Promise.all([reloadStorage(), libraries.load(), loadPlugins()]);
+      // Réglages, plugins (installés ou désinstallés depuis la fenêtre principale) et données qu'ils publient.
+      await reloadStorage();
+      await loadPlugins();
+      await services.load();
       settings.reload();
       await tick();
       focusSelected();
@@ -157,7 +159,8 @@
   function onmessage(message: PluginToHost): void {
     if (session?.handle(message)) return;
     if (message.type === "shortcut" && message.key === "Escape") onEscape();
-    else if (message.type === "addMachine") void addMachine(message);
+    else if (message.type === "openSettings") void openSettings(message.plugin, message.hash);
+    else if (message.type === "addMachine") void openSettings("machines", `add=${message.kind}`);
     else if (message.type === "send") void send(message);
   }
 
@@ -168,10 +171,10 @@
     await system.requestSend({ kind, data, from });
   }
 
-  /** Les machines se règlent dans les Paramètres : le calcul passe dans l'Établi, qui les ouvre. */
-  async function addMachine({ kind }: { kind: MachineKind }): Promise<void> {
+  /** Les réglages d'un plugin (machines…) sont dans les Paramètres : le calcul passe dans l'Établi, qui les ouvre. */
+  async function openSettings(plugin: string, hash?: string): Promise<void> {
     await openInEtabli();
-    await system.requestMachine(kind);
+    await system.requestSettings({ plugin, hash });
   }
 </script>
 

@@ -5,7 +5,6 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
-import type { MachineKind } from "@etabli/sdk/protocol";
 import type { AppView } from "./types";
 
 export const inTauri = isTauri();
@@ -63,11 +62,13 @@ export const system = {
     inTauri ? emitTo("main", "etabli:envoyer", request) : Promise.resolve(),
   onSendRequest: (handler: (request: { kind: string; data: unknown; from: string }) => void): Promise<() => void> =>
     inTauri ? listen<{ kind: string; data: unknown; from: string }>("etabli:envoyer", (event) => handler(event.payload)) : Promise.resolve(() => {}),
-  /** Une mini-app de l'aperçu rapide demande une nouvelle machine : la fenêtre principale ouvre les Paramètres. */
-  requestMachine: (kind: MachineKind): Promise<void> =>
-    inTauri ? emitTo("main", "etabli:machine", kind) : Promise.resolve(),
-  onMachineRequest: (handler: (kind: MachineKind) => void): Promise<() => void> =>
-    inTauri ? listen<MachineKind>("etabli:machine", (event) => handler(event.payload)) : Promise.resolve(() => {}),
+  /** Une mini-app de l'aperçu rapide demande la page de réglages d'un plugin : la fenêtre principale l'ouvre. */
+  requestSettings: (request: { plugin: string; hash?: string }): Promise<void> =>
+    inTauri ? emitTo("main", "etabli:reglages", request) : Promise.resolve(),
+  onSettingsRequest: (handler: (request: { plugin: string; hash?: string }) => void): Promise<() => void> =>
+    inTauri
+      ? listen<{ plugin: string; hash?: string }>("etabli:reglages", (event) => handler(event.payload))
+      : Promise.resolve(() => {}),
   onQuickOpened: (handler: () => void): Promise<() => void> =>
     inTauri ? listen("apercu:ouvert", () => handler()) : Promise.resolve(() => {}),
   /** Le raccourci a été pressé alors que l'aperçu était ouvert : il doit se fermer. */
@@ -122,6 +123,14 @@ export interface CatalogueEntry {
   color: string;
   icon: string;
   apiVersion: string;
+  /** Plugins obligatoires (identifiant → plage de versions) ; vide pour un catalogue publié avant la 0.3. */
+  dependencies: Record<string, string>;
+  /** Plugins dont celui-ci profite s'ils sont là. */
+  optionalDependencies: Record<string, string>;
+  /** Données que ce plugin publie pour les autres (nom du service → version du contrat). */
+  provides: Record<string, string>;
+  /** Titres des pages de réglages que ce plugin ajoute aux Paramètres. */
+  settings: { id: string; title: string }[];
   miniApps: { id: string; name: string; description: string; icon: string }[];
   /** Taille du paquet, en octets. */
   size: number;

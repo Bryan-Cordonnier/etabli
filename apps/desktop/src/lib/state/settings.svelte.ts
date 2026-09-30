@@ -44,6 +44,11 @@ interface Persisted {
    * depuis le catalogue (ou il n'y avait rien à réinstaller).
    */
   catalogueMigrated: boolean;
+  /**
+   * Fournisseurs et machines saisis avant les plugins qui les portent : repris dans les plugins
+   * Fournisseurs et Machines (ou il n'y avait rien à reprendre).
+   */
+  librariesMigrated: boolean;
 }
 
 const DEFAULTS: Persisted = {
@@ -62,6 +67,7 @@ const DEFAULTS: Persisted = {
   author: "",
   checkUpdates: true,
   catalogueMigrated: false,
+  librariesMigrated: false,
 };
 
 class Settings {
@@ -80,6 +86,7 @@ class Settings {
   author = $state(DEFAULTS.author);
   checkUpdates = $state(DEFAULTS.checkUpdates);
   catalogueMigrated = $state(DEFAULTS.catalogueMigrated);
+  librariesMigrated = $state(DEFAULTS.librariesMigrated);
 
   constructor() {
     this.reload();
@@ -103,6 +110,7 @@ class Settings {
     this.author = saved.author;
     this.checkUpdates = saved.checkUpdates;
     this.catalogueMigrated = saved.catalogueMigrated;
+    this.librariesMigrated = saved.librariesMigrated;
   }
 
   #save(): void {
@@ -122,11 +130,12 @@ class Settings {
       author: this.author,
       checkUpdates: this.checkUpdates,
       catalogueMigrated: this.catalogueMigrated,
+      librariesMigrated: this.librariesMigrated,
     } satisfies Persisted);
   }
 
   /** Modifie un réglage simple et l'enregistre. */
-  set<K extends "theme" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author" | "checkUpdates" | "catalogueMigrated">(
+  set<K extends "theme" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author" | "checkUpdates" | "catalogueMigrated" | "librariesMigrated">(
     key: K,
     value: Settings[K],
   ): void {

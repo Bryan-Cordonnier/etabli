@@ -1,13 +1,14 @@
 {
   "id": "economie",
   "name": "Économie de matière",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "apiVersion": "^1",
   "author": "Établi",
   "description": "Optimiser les débits de barres et le calepinage de tôles",
   "color": "#16a34a",
   "icon": "layers",
   "permissions": [],
+  "optionalDependencies": { "fournisseurs": "^1", "machines": "^1" },
   "miniApps": [
     {
       "id": "debit-tubes",
