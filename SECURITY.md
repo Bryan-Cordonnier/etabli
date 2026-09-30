@@ -10,9 +10,9 @@
 Décrivez ce que vous avez trouvé, comment le reproduire, la version d'Établi et de Windows, et l'effet
 possible. Une preuve de concept aide, un long rapport n'est pas nécessaire.
 
-Ce que vous pouvez attendre : un accusé de réception sous **7 jours**, une première analyse sous
-**15 jours**, puis un correctif publié selon la gravité (quelques jours pour une faille grave, la
-version suivante sinon). Une fois le correctif publié, la faille est décrite dans un avis de
+Ce que vous pouvez attendre : un accusé de réception sous **14 jours**, une première analyse sous
+**30 jours**, puis un correctif publié selon la gravité (le plus vite possible pour une faille grave,
+la version suivante sinon). Une fois le correctif publié, la faille est décrite dans un avis de
 sécurité et dans le [journal des changements](CHANGELOG.md), avec le nom de la personne qui l'a
 signalée si elle le souhaite.
 

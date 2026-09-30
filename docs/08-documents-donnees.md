@@ -63,9 +63,9 @@ démarrage. Enregistrement différé de 300 ms.
 
 | Fichier | Contenu | Absent → |
 | --- | --- | --- |
-| `fournisseurs.json` | liste de `Supplier` | liste vide |
-| `machines.json` | liste de `Machine` (scies, cisailles) | atelier type : une scie à ruban, une cisaille 2050 |
 | `plugin.<id>.json` | réglages d'un plugin (`PluginSettings`) | valeurs par défaut du plugin |
+| `service.<plugin>.<nom>.json` | données qu'un plugin publie pour les autres (`fournisseurs`, `machines`) | rien publié : les plugins qui les lisent n'ont ni fournisseur ni machine |
+| `fournisseurs.json`, `machines.json` | **anciens** fichiers de la 0.2 : lus une seule fois pour être repris dans les plugins Fournisseurs et Machines, jamais effacés | ignorés |
 
 Écrits 400 ms après la dernière modification ; tant qu'une écriture est en attente, la relecture
 du disque est ignorée (sinon elle écraserait la saisie). Voir `lib/dataFiles.ts`, `lib/state/pluginData.svelte.ts` et `lib/state/services.svelte.ts`.

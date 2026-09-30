@@ -106,6 +106,7 @@ npm test                      # tests des plugins, du SDK et du kit
 npm run test:scripts          # tests des scripts de publication
 npm run build:plugins         # compile tous les plugins
 npm run valider -- --tous     # vérifie chaque plugin
+npm run liens                 # vérifie les liens de la documentation
 
 # si vous avez touché au Rust (apps/desktop/src-tauri) :
 cargo fmt

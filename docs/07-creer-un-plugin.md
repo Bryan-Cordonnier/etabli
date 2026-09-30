@@ -1,6 +1,18 @@
 # 07 — Créer un plugin ou une mini-app
 
-Le plus simple : **copier le plugin `plugins/tolerie`** (petit, récent, complet) et l'adapter.
+## Démarrage rapide
+
+```bash
+npm install
+npm run nouveau-plugin -- soudage "Soudage"     # options : --couleur "#d9480f" --icone flame --reglages
+npm run dev                                      # lance Établi avec votre plugin
+npm run valider -- soudage                       # manifeste, journal, contenu
+```
+
+`nouveau-plugin` crée `plugins/soudage/` : manifeste, une mini-app d'exemple (aire et périmètre d'un rectangle), son calcul
+et ses tests, un `CHANGELOG.md`, et si vous le demandez une page de réglages. Le résultat compile, passe `npm run check` et
+`npm run valider` : modifiez-le pas à pas. Avant de proposer le plugin : [CONTRIBUTING.md](../CONTRIBUTING.md#écrire-un-plugin).
+Pour un exemple complet, lisez **`plugins/tolerie`** (petit, récent, complet).
 
 ## 1. Structure d'un plugin
 
@@ -17,6 +29,7 @@ plugins/<id>/
   src/<calcul>.ts       calculs purs, sans interface (testables)
   src/<calcul>.test.ts  tests Vitest
   src/data/*.json       tables de référence (avec leur source)
+  CHANGELOG.md          une section par version (devient les « Nouveautés » du catalogue)
 ```
 
 Puis `npm install` à la racine (lie le nouveau workspace), `npm run build -w @etabli/plugin-<id>`.
@@ -145,7 +158,8 @@ instantané JSON de `doc.data`, comme `plugins/economie/apps/debit-tubes/DebitTu
 - [ ] Tout en français ; unités : mm, degrés, kg, N, MPa (tonnes en complément pour les presses).
 - [ ] Couleurs par variables CSS, arrondis `var(--r-sm)` / `var(--r-md)`.
 - [ ] Aucun accès réseau ni disque, aucune dépendance lourde sans chargement à la demande.
-- [ ] `npm run check`, `npm test`, `npm run build:plugins` sans erreur.
+- [ ] `npm run check`, `npm test`, `npm run build:plugins` et `npm run valider -- <id>` sans erreur.
+- [ ] `CHANGELOG.md` du plugin : une section datée pour la version du manifeste, écrite pour l'utilisateur.
 
 ## Dépendances et services
 

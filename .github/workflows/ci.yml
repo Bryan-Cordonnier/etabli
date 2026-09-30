@@ -46,6 +46,9 @@ jobs:
       - name: Scripts de publication (tests)
         run: npm run test:scripts
 
+      - name: Liens de la documentation
+        run: npm run liens
+
       - name: Plugins (build)
         run: npm run build:plugins
 

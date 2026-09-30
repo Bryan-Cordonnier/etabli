@@ -18,7 +18,7 @@ Un **plugin** ? Utilisez plutôt le modèle « plugin » : ajoutez `?template=pl
 ## Vérifications
 
 - [ ] `npm run check`, `npm test`, `npm run test:scripts` et `npm run build:plugins` passent
-- [ ] `npm run valider -- --tous` passe (si un plugin est touché)
+- [ ] `npm run valider -- --tous` passe (si un plugin est touché) et `npm run liens` (si la documentation est touchée)
 - [ ] Rust touché : `cargo fmt`, `cargo clippy --all-targets -- -D warnings` et `cargo test` passent
 - [ ] Tests ajoutés ou mis à jour
 - [ ] Documentation mise à jour (`docs/`, `README`…)
