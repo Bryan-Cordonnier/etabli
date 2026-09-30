@@ -3,6 +3,24 @@
   "private": true,
   "description": "Boîte à outils de bureau extensible par plugins, pour la chaudronnerie (BTS CRCI)",
   "license": "MIT",
+  "author": "Bryan Cordonnier",
+  "homepage": "https://github.com/Bryan-Cordonnier/etabli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bryan-Cordonnier/etabli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Bryan-Cordonnier/etabli/issues"
+  },
+  "keywords": [
+    "chaudronnerie",
+    "tôlerie",
+    "atelier",
+    "calculs",
+    "plugins",
+    "tauri",
+    "svelte"
+  ],
   "workspaces": [
     "apps/*",
     "packages/*",
@@ -14,8 +32,11 @@
     "build:plugins": "npm run build -w plugins --if-present",
     "version:app": "node scripts/version.mjs",
     "paquet": "node scripts/paquet-plugin.mjs",
+    "nouveau-plugin": "node scripts/nouveau-plugin.mjs",
+    "valider": "node scripts/valider-plugin.mjs",
     "check": "npm run check --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "test:scripts": "node --test \"scripts/*.test.mjs\""
   },
   "engines": {
     "node": ">=22"

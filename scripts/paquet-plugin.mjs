@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, wri
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
+import { notesDuPlugin } from "./notes-catalogue.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const RELEASE = "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue";
@@ -93,6 +94,11 @@ if (id) {
       description: a.description ?? "",
       icon: a.icon ?? "puzzle",
     })),
+    // Nouveautés de cette version, tirées du CHANGELOG.md du plugin (texte brut, affiché dans la page Catalogue).
+    ...(() => {
+      const { notes, date } = notesDuPlugin(manifest.id, manifest.version, join(root, "plugins"));
+      return { notes, notesDate: date };
+    })(),
     size: paquet.length,
     url: `${RELEASE}/${encodeURIComponent(fichier)}`,
     published: new Date().toISOString(),
