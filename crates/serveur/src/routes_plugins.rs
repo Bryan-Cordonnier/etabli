@@ -20,9 +20,11 @@ use serde_json::{json, Value};
 use std::path::PathBuf;
 
 /// Politique de sécurité des pages de plugins : aucun accès réseau, seulement leurs propres fichiers.
+/// `sandbox allow-scripts` (sans `allow-same-origin`) impose une origine opaque même si la page est ouverte
+/// directement dans un onglet : un plugin ne peut jamais lire ce que l'application garde pour l'origine du serveur.
 const CSP_PLUGIN: &str = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; \
     img-src 'self' data: blob:; font-src 'self' data:; worker-src 'self' blob:; connect-src 'none'; \
-    base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
+    base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts";
 
 pub async fn lister(State(etat): State<Etat>, session: Session) -> Resultat<Json<Vec<Value>>> {
     let manifestes: Vec<String> = etat
