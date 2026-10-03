@@ -5,9 +5,15 @@ import "@fontsource/jetbrains-mono/500.css";
 import "@fontsource/jetbrains-mono/600.css";
 import "./app.css";
 import { reportErrors } from "./lib/errors";
+import { api } from "./lib/api";
 import { initStorage } from "./lib/storage";
 
 reportErrors();
+
+// Version web construite : le service worker garde l'application et ses plugins pour l'utiliser hors ligne.
+if (api.id === "web" && import.meta.env.PROD && "serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").catch((err) => console.error("Mode hors ligne indisponible :", err));
+}
 
 const target = document.getElementById("app");
 if (!target) throw new Error("Élément #app introuvable dans index.html");

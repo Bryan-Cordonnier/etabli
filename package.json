@@ -37,7 +37,9 @@
     "liens": "node scripts/verifier-liens.mjs",
     "check": "npm run check --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "test:scripts": "node --test \"scripts/*.test.mjs\""
+    "test:scripts": "node --test \"scripts/*.test.mjs\"",
+    "build:web": "npm run build:plugins && npm run build:web -w @etabli/desktop && node scripts/construire-web.mjs",
+    "preview:web": "node scripts/servir-web.mjs"
   },
   "engines": {
     "node": ">=22"

@@ -38,6 +38,8 @@ Après avoir ajouté un workspace (nouveau plugin), lancer `npm install` pour le
 | `npm run dev` | compile les plugins puis lance l'application Tauri en développement (Vite sur le port 1420) |
 | `npm run build` | compile les plugins puis produit l'installateur Windows |
 | `npm run build:plugins` | `vite build` de chaque plugin → `plugins/<id>/dist/` |
+| `npm run build:web` | compile les plugins, l'interface (`vite.web.config.ts`) puis `scripts/construire-web.mjs` → `apps/desktop/dist-web/` (version web installable, hors ligne) |
+| `npm run preview:web` | sert `dist-web` sur `http://localhost:4180` pour l'essayer |
 | `npm run check` | `svelte-check` / `tsc` de tous les workspaces |
 | `npm test` | Vitest dans chaque workspace qui a des tests |
 | `npm run dev -w @etabli/desktop` | interface seule dans un navigateur (sans Rust), voir [02-environnement.md](02-environnement.md) |

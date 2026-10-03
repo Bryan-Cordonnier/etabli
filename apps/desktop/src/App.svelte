@@ -1,5 +1,6 @@
 <script lang="ts">
   import CommandPalette from "$lib/components/CommandPalette.svelte";
+  import MobileBar from "$lib/components/MobileBar.svelte";
   import PluginDialog from "$lib/components/PluginDialog.svelte";
   import Sidebar from "$lib/components/Sidebar.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
@@ -19,11 +20,12 @@
   import { catalogue } from "$lib/state/catalogue.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
-  import { ui } from "$lib/state/ui.svelte";
+  import { suivreEcran, ui } from "$lib/state/ui.svelte";
   import { updates } from "$lib/state/updates.svelte";
   import type { View } from "$lib/types";
 
   $effect(() => applyAppearance());
+  $effect(() => suivreEcran());
   $effect(() => tabs.persist());
 
   // Nouvelle version sur GitHub : cherchée une fois, quelques secondes après le démarrage (le
@@ -103,8 +105,12 @@
 
 <div class="shell">
   <Sidebar />
+  {#if ui.compact && ui.menuOpen}
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+    <div class="voile" onclick={() => (ui.menuOpen = false)}></div>
+  {/if}
   <section class="main">
-    <TabBar />
+    {#if ui.compact}<MobileBar />{:else}<TabBar />{/if}
     <UpdateBanner />
     <main class="content">
       {#key viewKey}
@@ -149,6 +155,13 @@
     background: var(--surface);
   }
   .view {
+    animation: fade-in 0.18s ease-out;
+  }
+  .voile {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgb(0 0 0 / 0.45);
     animation: fade-in 0.18s ease-out;
   }
 </style>

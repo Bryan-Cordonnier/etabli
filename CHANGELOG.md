@@ -13,6 +13,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Ajouté
 
+- **Version web** (`npm run build:web`) : Établi dans un navigateur, installable comme une application et utilisable **hors ligne**.
+  Les calculs sont gardés dans le navigateur (IndexedDB). Les plugins du dépôt y sont inclus ; pas de catalogue dans cette version.
+- **Interface adaptée aux petits écrans** (moins de 760 px) : la colonne des plugins devient un tiroir, une barre simple remplace les
+  onglets. Sans effet sur l'application Windows.
 - La page **Catalogue** et la fenêtre de mise à jour d'un plugin affichent les **nouveautés** de la version (« Nouveautés de la version… »).
 - **Signaler un problème** (Paramètres → Mises à jour et à propos) ouvre le formulaire « Bug » du dépôt avec la version d'Établi et
   la liste des plugins déjà remplies.
@@ -22,9 +26,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 ### Modifié
 
 - **Interne : couche de stockage unifiée** (`lib/fond/`). Les calculs, réglages et plugins passent par une interface unique, avec une
-  version « fichiers » (application) et une version « navigateur » (aperçu de développement). Aucun changement visible dans
-  l'application ; dans l'aperçu navigateur, les réglages sont désormais gardés sous une seule clé (`etabli.store`) et les anciennes
-  clés sont reprises au premier lancement. Première étape du mode serveur facultatif (docs/16).
+  version « fichiers » (application) et une version « navigateur » (IndexedDB). Aucun changement visible dans l'application ;
+  dans un navigateur, les données de l'ancien aperçu (`localStorage`) sont reprises une fois au premier lancement.
+  Première étape du mode serveur facultatif (docs/16).
 - Mise à jour de Tauri (le cadre de l'application) et de ses extensions, des bibliothèques qui vérifient les signatures et
   ouvrent les paquets de plugins, et des outils de l'interface. Aucun changement visible ; vérifié sur une version compilée
   (installation de plugins depuis le catalogue, mini-app, réglages).

@@ -90,8 +90,8 @@ export interface Capacites {
 
 /** Couche de stockage et de plugins de l'application. L'interface ne parle qu'à elle. */
 export interface Fond {
-  /** « tauri » (fichiers via Rust) ou « navigateur » (localStorage). */
-  readonly id: "tauri" | "navigateur";
+  /** « tauri » (fichiers via Rust) ou « web » (IndexedDB du navigateur). */
+  readonly id: "tauri" | "web";
   readonly capacites: Capacites;
 
   pluginsList(): Promise<PluginInfo[]>;

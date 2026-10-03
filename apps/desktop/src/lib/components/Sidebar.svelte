@@ -4,6 +4,7 @@
   import { shortcutHint } from "$lib/shortcuts";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
+  import { ui } from "$lib/state/ui.svelte";
   import type { PluginManifest, View } from "$lib/types";
   import Icon from "./Icon.svelte";
   import Logo from "./Logo.svelte";
@@ -29,7 +30,8 @@
   let justDragged = false;
 
   function startDrag(event: PointerEvent, id: string): void {
-    if (event.button !== 0) return;
+    // Au doigt, glisser fait défiler la liste : pas de réorganisation en mode compact.
+    if (event.button !== 0 || ui.compact) return;
     drag = { id, startY: event.clientY, moved: false };
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   }
@@ -70,6 +72,7 @@
   }
 
   function go(target: View, event: MouseEvent): void {
+    ui.menuOpen = false;
     tabs.navigate(target, { newTab: event.ctrlKey || event.button === 1 });
   }
 
@@ -114,10 +117,13 @@
 
 <aside
   class="side"
-  class:collapsed={settings.sidebarCollapsed}
-  class:folded
+  class:drawer={ui.compact}
+  class:open={ui.compact && ui.menuOpen}
+  class:collapsed={settings.sidebarCollapsed && !ui.compact}
+  class:folded={folded && !ui.compact}
   class:resizing
-  style:width={settings.sidebarCollapsed ? "64px" : `${settings.sidebarWidth}px`}
+  inert={ui.compact && !ui.menuOpen}
+  style:width={ui.compact ? undefined : settings.sidebarCollapsed ? "64px" : `${settings.sidebarWidth}px`}
 >
   <div class="brand-row">
     <button class="brand" onclick={(e) => go({ kind: "home" }, e)} title="Accueil">
@@ -221,6 +227,29 @@
   }
   .side.resizing {
     transition: none;
+  }
+
+  /* Écran étroit : la colonne devient un tiroir qui glisse depuis la gauche, par-dessus la page. */
+  .side.drawer {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(86vw, 320px);
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease-out;
+    box-shadow: none;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .side.drawer.open {
+    transform: none;
+    box-shadow: var(--shadow);
+  }
+  .side.drawer .resizer,
+  .side.drawer .strip-btn.fold {
+    display: none;
+  }
+  .side.drawer .item {
+    min-height: 44px;
   }
 
   /* Mêmes marges repliée ou dépliée : logo et tuiles ne bougent pas pendant l'animation,

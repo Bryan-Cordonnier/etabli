@@ -58,6 +58,9 @@ jobs:
       - name: Interface (vite build)
         run: npm run build -w @etabli/desktop
 
+      - name: Version web (build, plugins, service worker)
+        run: npm run build:web -w @etabli/desktop && node scripts/construire-web.mjs
+
       - name: Format Rust
         working-directory: apps/desktop/src-tauri
         run: cargo fmt --check

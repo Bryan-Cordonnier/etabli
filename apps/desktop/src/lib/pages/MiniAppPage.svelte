@@ -143,8 +143,8 @@
     {#if pluginProblems(plugin).length}
       <PluginProblems {plugin} />
     {:else if app.entry}
-      {#if api.id === "navigateur"}
-        <p class="notice">Aperçu navigateur : les calculs sont gardés dans ce navigateur, pas dans des fichiers.</p>
+      {#if api.id === "web"}
+        <p class="notice">Version navigateur : les calculs sont gardés dans ce navigateur, pas dans des fichiers.</p>
       {/if}
       {#if session?.initial}
         <MiniAppFrame
