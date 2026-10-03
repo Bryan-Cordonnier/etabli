@@ -7,7 +7,7 @@
 
 - **Un moteur, plusieurs produits.** Établi, l'application de budget/agenda et l'ERP sont des *distributions* du même moteur :
   seuls le nom, le logo, les plugins embarqués et le registre changent (configuration de build, pas de copie du code).
-- **Moteur ouvert, plugins dans des dépôts privés** (un dépôt par plugin). Licence du moteur à confirmer (Apache-2.0 proposé) ;
+- **Moteur ouvert, plugins dans des dépôts privés** (un dépôt par plugin). **Licence du moteur : Apache-2.0 (décidé).**
   la marque (nom, logo) est protégée à part. À décider avant d'accepter des contributions extérieures.
 - **La logique des plugins reste toujours locale.** Aucun plugin ne s'exécute sur un serveur. Le serveur ne fait que : comptes,
   droits, permissions, stockage des données.
@@ -135,8 +135,8 @@ Un seul identifiant doit servir aux deux niveaux. Le serveur de données accepte
 
 ## 13. Questions ouvertes
 
-1. Licence du moteur : Apache-2.0 (proposé) ou MIT ?
-2. Durée du bail : 7 jours (proposé) ?
-3. Sièges : nominatifs d'abord, flottants ensuite ?
+1. ~~Licence du moteur~~ : **Apache-2.0, décidé.**
+2. Durée du bail : 7 jours proposés ; Bryan n'a pas encore compris le principe (expliqué dans la conversation) — à rediscuter.
+3. ~~Sièges~~ : **nominatifs d'abord, flottants ensuite, décidé.**
 4. Prestataire de paiement : à choisir plus tard.
-5. Gratuit : local seulement ; la synchronisation et l'hébergement par toi sont-ils payants ou plafonnés ?
+5. Gratuit : local seulement ; la synchronisation et l'hébergement par toi sont-ils payants ou plafonnés ? **À discuter.**
