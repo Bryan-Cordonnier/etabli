@@ -34,6 +34,7 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/guide-utilisateur.md](docs/guide-utilisateur.md) | Guide de l'utilisateur (installer, catalogue, raccourcis, données, dépannage) | vous documentez ou vous répondez à un utilisateur |
 | [docs/16-spec-serveur-utilisateurs-mobile.md](docs/16-spec-serveur-utilisateurs-mobile.md) | Spécification du mode serveur facultatif, des utilisateurs, des espaces partagés et du mobile (brouillon) | vous touchez au stockage, à `api.ts` ou au mobile |
 | [docs/17-serveur.md](docs/17-serveur.md) | Le serveur facultatif `etabli-serveur` : lancer, sécuriser, API, limites, code | vous touchez à `crates/` ou au mode serveur |
+| [docs/18-spec-plateforme-comptes-licences.md](docs/18-spec-plateforme-comptes-licences.md) | Spécification (brouillon) : plateforme, comptes, licences, baux, registre, mobile, étapes | vous touchez aux licences, comptes, droits, registre ou à la stratégie produit |
 | [docs/14-publier-une-version.md](docs/14-publier-une-version.md) | Releases GitHub, mises à jour automatiques signées, clé, publier une version, installer | vous publiez une version ou touchez aux mises à jour |
 
 Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](CONTRIBUTING.md) (règles pour les contributeurs),
