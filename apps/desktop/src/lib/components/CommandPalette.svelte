@@ -1,5 +1,6 @@
 <script lang="ts">
   // Palette de commandes (bouton de recherche de la barre d'onglets, ou raccourci réglé dans les Paramètres) : ouvrir une page, un plugin ou une mini-app au clavier.
+  import { api } from "$lib/api";
   import type { IconName } from "$lib/icons";
   import { allMiniApps, pluginsWithApps } from "$lib/plugins/registry.svelte";
   import { settings } from "$lib/state/settings.svelte";
@@ -20,7 +21,9 @@
 
   const entries: Entry[] = [
     { label: "Accueil", detail: "Page", view: { kind: "home" }, color: "var(--accent)", icon: "home" },
-    { label: "Catalogue", detail: "Installer des plugins", view: { kind: "catalogue" }, color: "var(--accent)", icon: "store" },
+    ...(api.capacites.catalogue
+      ? [{ label: "Catalogue", detail: "Installer des plugins", view: { kind: "catalogue" } as const, color: "var(--accent)", icon: "store" as const }]
+      : []),
     { label: "Paramètres", detail: "Page", view: { kind: "settings" }, color: "var(--faint)", icon: "settings" },
     ...pluginsWithApps().map((p) => ({
       label: p.name,

@@ -75,6 +75,18 @@ fn creer_session(c: &rusqlite::Connection, utilisateur_id: &str) -> Resultat<Str
     Ok(jeton)
 }
 
+/// État public du serveur : l'application s'en sert pour savoir s'il faut proposer la connexion ou
+/// l'installation initiale. Ne révèle que « installé ou non » et la version.
+pub async fn etat_public(State(etat): State<Etat>) -> Resultat<Json<Value>> {
+    let installe: i64 = etat
+        .base
+        .executer(|c| Ok(c.query_row("SELECT count(*) FROM utilisateurs", [], |l| l.get(0))?))
+        .await?;
+    Ok(Json(
+        json!({ "serveur": "etabli", "version": env!("CARGO_PKG_VERSION"), "installe": installe > 0 }),
+    ))
+}
+
 /// Premier lancement : crée l'administrateur. Possible une seule fois, avec le code affiché dans la
 /// console du serveur.
 pub async fn installation(

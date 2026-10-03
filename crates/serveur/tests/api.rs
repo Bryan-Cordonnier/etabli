@@ -1392,3 +1392,83 @@ async fn connexions_simultanees_toutes_traitees() {
         assert_eq!(t.await.unwrap(), StatusCode::OK);
     }
 }
+
+#[tokio::test]
+async fn etat_public_sans_session() {
+    let b = Banc::nouveau().await;
+    let avant = b.get("/api/etat", None).await;
+    assert_eq!(avant.statut, StatusCode::OK);
+    assert_eq!(avant.json()["serveur"], "etabli");
+    assert_eq!(avant.json()["installe"], false);
+    b.installer().await;
+    assert_eq!(b.get("/api/etat", None).await.json()["installe"], true);
+    // Rien d'autre n'est révélé : ni utilisateurs, ni plugins, ni chemins.
+    let champs: Vec<String> = b
+        .get("/api/etat", None)
+        .await
+        .json()
+        .as_object()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect();
+    assert_eq!(champs.len(), 3, "{champs:?}");
+}
+
+#[tokio::test]
+async fn plugins_livres_avec_l_application_web_servis_en_repli() {
+    // La version web contient une copie des plugins (mode « Établi seul ») ; la route /plugins ne doit pas la masquer.
+    let dossier_app =
+        std::env::temp_dir().join(format!("etabli-app-{}", uuid::Uuid::new_v4().simple()));
+    std::fs::create_dir_all(dossier_app.join("plugins/livre/apps")).unwrap();
+    std::fs::create_dir_all(dossier_app.join("plugins/essai")).unwrap();
+    std::fs::write(dossier_app.join("index.html"), "<title>Établi</title>").unwrap();
+    std::fs::write(
+        dossier_app.join("plugins/livre/manifest.json"),
+        r#"{"id":"livre"}"#,
+    )
+    .unwrap();
+    std::fs::write(
+        dossier_app.join("plugins/livre/apps/a.html"),
+        "<p>livré</p>",
+    )
+    .unwrap();
+    std::fs::write(
+        dossier_app.join("plugins/essai/manifest.json"),
+        r#"{"id":"essai","origine":"livre avec l'application"}"#,
+    )
+    .unwrap();
+    std::fs::write(dossier_app.join("secret.txt"), "secret").unwrap();
+    let chemin = dossier_app.clone();
+    let b = Banc::avec(move |c| c.application = Some(chemin)).await;
+    let admin = b.installer().await;
+
+    let livre = b.get("/plugins/livre/apps/a.html", None).await;
+    assert_eq!(livre.statut, StatusCode::OK);
+    assert!(String::from_utf8_lossy(&livre.octets).contains("livré"));
+    // Même politique d'isolation que les plugins du serveur.
+    assert!(livre.en_tetes[header::CONTENT_SECURITY_POLICY]
+        .to_str()
+        .unwrap()
+        .contains("sandbox allow-scripts"));
+
+    // Un plugin installé sur le serveur l'emporte sur la copie livrée du même nom.
+    assert_eq!(b.installer_plugin(&admin).await.statut, StatusCode::CREATED);
+    let installe = b.get("/plugins/essai/manifest.json", None).await;
+    assert!(!String::from_utf8_lossy(&installe.octets).contains("livre avec l'application"));
+
+    // Les mêmes garde-fous de chemin s'appliquent au repli.
+    for chemin in [
+        "/plugins/livre/..%2F..%2Fsecret.txt",
+        "/plugins/livre/%2e%2e/%2e%2e/secret.txt",
+        "/plugins/inconnu/manifest.json",
+    ] {
+        let r = b.get(chemin, None).await;
+        assert_ne!(r.statut, StatusCode::OK, "{chemin}");
+        assert!(
+            !String::from_utf8_lossy(&r.octets).contains("secret"),
+            "{chemin}"
+        );
+    }
+    let _ = std::fs::remove_dir_all(dossier_app);
+}

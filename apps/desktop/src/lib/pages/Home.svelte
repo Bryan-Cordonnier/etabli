@@ -49,13 +49,15 @@
         La boîte à outils de chaudronnerie : débits, développés, traçage, masses, taraudages… Chaque plugin ajoute ses
         calculs d'atelier. Installez ceux dont vous avez besoin.
       </p>
-      <button class="btn primary big" onclick={() => tabs.navigate({ kind: "catalogue" })}>
-        <Icon name="store" size={18} /> Ouvrir le catalogue pour installer des plugins
-      </button>
       {#if api.capacites.catalogue}
+        <button class="btn primary big" onclick={() => tabs.navigate({ kind: "catalogue" })}>
+          <Icon name="store" size={18} /> Ouvrir le catalogue pour installer des plugins
+        </button>
         <button class="link" onclick={() => void catalogue.installFile()}>Installer depuis un fichier…</button>
+        <p class="hint">Les plugins sont signés : Établi vérifie chaque installation.</p>
+      {:else if api.id === "serveur"}
+        <p class="hint">Aucun plugin n'est encore disponible sur ce serveur : demandez à l'administrateur d'en installer (Paramètres → Administration).</p>
       {/if}
-      <p class="hint">Les plugins sont signés : Établi vérifie chaque installation.</p>
     </div>
   </div>
 {:else}

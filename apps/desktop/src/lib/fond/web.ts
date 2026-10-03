@@ -100,6 +100,19 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
     // CORS ; un hébergement statique quelconque ne le garantit pas. Les plugins de la version web sont ceux
     // livrés avec elle (officiels). Le mode serveur (docs/16) rétablira l'isolation complète.
     capacites: { catalogue: false, miseAJour: false, fenetresNatives: false, isolationComplete: false, journal: false },
+    urlPlugins: pluginsBase(),
+
+    async exporterTout() {
+      const db = await base;
+      const lireTout = <T>(magasin: string) => attendre<T[]>(db.transaction(magasin).objectStore(magasin).getAll());
+      const cles = await attendre<IDBValidKey[]>(db.transaction(DONNEES).objectStore(DONNEES).getAllKeys());
+      const valeurs = await lireTout<unknown>(DONNEES);
+      return {
+        documents: await lireTout<DocumentFile>(DOCUMENTS),
+        donnees: Object.fromEntries(cles.map((cle, i) => [String(cle), valeurs[i]])),
+        reglages: (await lire<Record<string, unknown>>(REGLAGES, CLE_REGLAGES)) ?? {},
+      };
+    },
 
     pluginsList: () => plugins(),
     catalogueRead: indisponible("Le catalogue"),

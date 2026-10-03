@@ -81,6 +81,7 @@ async fn en_tetes(requete: Request, suite: Next) -> Response {
 
 pub fn application(etat: Etat) -> Router {
     let api = Router::new()
+        .route("/etat", get(routes_session::etat_public))
         .route("/installation", post(routes_session::installation))
         .route(
             "/session",

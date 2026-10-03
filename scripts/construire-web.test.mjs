@@ -30,3 +30,10 @@ test("serviceWorker : seules les requêtes GET de la même origine passent par l
   assert.match(code, /requete\.method !== "GET"/);
   assert.match(code, /origin !== self\.location\.origin/);
 });
+
+test("serviceWorker : plugins d'un serveur réseau d'abord, API jamais interceptée", () => {
+  const code = serviceWorker("v", ["index.html"]);
+  assert.match(code, /pathname\.includes\("\/plugins\/"\)/);
+  assert.match(code, /pathname\.includes\("\/api\/"\)\) return;/);
+  assert.doesNotThrow(() => new Script(code));
+});

@@ -73,8 +73,16 @@ pub async fn fichier(
     State(etat): State<Etat>,
     Path((id, chemin)): Path<(String, String)>,
 ) -> Result<Response<Body>, Erreur> {
-    let racine = etat.dossier_plugins();
-    let Some(fichier) = chemin_sur(&racine, &id, &chemin) else {
+    // D'abord les plugins installés sur le serveur ; à défaut, ceux livrés avec la version web servie à la racine
+    // (`<application>/plugins/`), que le mode « Établi seul » utilise : sans ce repli, cette route les masquerait.
+    let mut racines = vec![etat.dossier_plugins()];
+    if let Some(application) = &etat.config.application {
+        racines.push(application.join("plugins"));
+    }
+    let Some(fichier) = racines
+        .iter()
+        .find_map(|racine| chemin_sur(racine, &id, &chemin))
+    else {
         return Err(Erreur::Introuvable);
     };
     let octets = tokio::fs::read(&fichier)

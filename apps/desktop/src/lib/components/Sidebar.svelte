@@ -1,5 +1,6 @@
 <script lang="ts">
   // Colonne des plugins (cahier des charges, section 5.2).
+  import { api } from "$lib/api";
   import { pluginsWithApps } from "$lib/plugins/registry.svelte";
   import { shortcutHint } from "$lib/shortcuts";
   import { settings } from "$lib/state/settings.svelte";
@@ -146,17 +147,19 @@
       <Tile color="var(--muted)" icon="home" variant="plain" />
       <span class="label">Accueil</span>
     </button>
-    <button
-      class="item"
-      class:active={view?.kind === "catalogue"}
-      onclick={(e) => go({ kind: "catalogue" }, e)}
-      onauxclick={(e) => e.button === 1 && go({ kind: "catalogue" }, e)}
-      onmousedown={preventAutoscroll}
-      title="Catalogue des plugins"
-    >
-      <Tile color="var(--muted)" icon="store" variant="plain" />
-      <span class="label">Catalogue</span>
-    </button>
+    {#if api.capacites.catalogue}
+      <button
+        class="item"
+        class:active={view?.kind === "catalogue"}
+        onclick={(e) => go({ kind: "catalogue" }, e)}
+        onauxclick={(e) => e.button === 1 && go({ kind: "catalogue" }, e)}
+        onmousedown={preventAutoscroll}
+        title="Catalogue des plugins"
+      >
+        <Tile color="var(--muted)" icon="store" variant="plain" />
+        <span class="label">Catalogue</span>
+      </button>
+    {/if}
 
     <div class="section-label label">Plugins</div>
     {#if !plugins.length}
