@@ -56,8 +56,10 @@ Un seul identifiant doit servir aux deux niveaux. Le serveur de données accepte
 ## 5. Baux
 
 - Un bail est un jeton **signé par le service central** (Ed25519), qui contient : compte, appareil, droits, date d'expiration.
-- **Durée proposée : 7 jours** (à confirmer). Raison : un week-end hors ligne dépasse 48 h (vendredi 18 h → lundi 8 h : 62 h) ;
-  et un bail court ne protège presque rien, car après une résiliation l'ex-client n'a que quelques jours de plus.
+- **Durée : 48 heures (décidé par Bryan)**, réglable par offre (une seule valeur de configuration). Point de vigilance consigné :
+  un week-end hors ligne (vendredi 18 h → lundi 8 h : 62 h) dépasse 48 h ; un poste éteint ou sans réseau tout le week-end
+  perdra ses plugins payants jusqu'à sa prochaine connexion. Prévoir un message clair, et l'emprunt hors ligne (section 6)
+  pour les déplacements. À réévaluer avec les premiers retours d'utilisateurs.
 - Le client renouvelle le bail dès qu'il est en ligne. L'heure fait foi côté serveur ; le client garde un compteur monotone
   et refuse un bail dont l'heure semble reculée.
 - **À l'expiration** : les plugins payants ne s'ouvrent plus, mais les données restent lisibles et exportables.
@@ -136,7 +138,7 @@ Un seul identifiant doit servir aux deux niveaux. Le serveur de données accepte
 ## 13. Questions ouvertes
 
 1. ~~Licence du moteur~~ : **Apache-2.0, décidé.**
-2. Durée du bail : 7 jours proposés ; Bryan n'a pas encore compris le principe (expliqué dans la conversation) — à rediscuter.
+2. ~~Durée du bail~~ : **48 heures, décidé** (réglable par offre).
 3. ~~Sièges~~ : **nominatifs d'abord, flottants ensuite, décidé.**
 4. Prestataire de paiement : à choisir plus tard.
 5. Gratuit : local seulement ; la synchronisation et l'hébergement par toi sont-ils payants ou plafonnés ? **À discuter.**
