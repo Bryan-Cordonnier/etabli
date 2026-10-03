@@ -14,7 +14,7 @@ mod routes_session;
 pub mod securite;
 
 use axum::{
-    extract::{DefaultBodyLimit, Request},
+    extract::{DefaultBodyLimit, Request, State},
     http::{header, HeaderName, HeaderValue, Method},
     middleware::{self, Next},
     response::Response,
@@ -47,7 +47,7 @@ const PAQUET_MAX: usize = 70 * 1024 * 1024;
 const CORPS_MAX: usize = 256 * 1024;
 
 /// En-têtes de sécurité communs. Les pages de plugins portent leur propre politique.
-async fn en_tetes(requete: Request, suite: Next) -> Response {
+async fn en_tetes(State(etat): State<Etat>, requete: Request, suite: Next) -> Response {
     let chemin = requete.uri().path().to_string();
     let mut reponse = suite.run(requete).await;
     let h = reponse.headers_mut();
@@ -62,20 +62,55 @@ async fn en_tetes(requete: Request, suite: Next) -> Response {
     if chemin.starts_with("/api/") {
         h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     } else if !chemin.starts_with("/plugins/") {
-        // Pages de l'application : aucune ressource extérieure, pas d'intégration dans un autre site.
-        h.insert(
-            header::CONTENT_SECURITY_POLICY,
-            HeaderValue::from_static(
-                "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; \
-                 img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self'; \
-                 worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
-            ),
+        // Pages de l'application : aucune ressource extérieure, pas d'intégration dans un autre site. Les cadres
+        // des mini-apps peuvent venir de l'origine dédiée aux plugins, si elle est configurée.
+        let cadres = match etat.config.url_plugins.as_deref() {
+            Some(url) if !url.contains([';', ' ', '\n', '\r']) => format!("'self' {url}"),
+            _ => "'self'".to_string(),
+        };
+        let politique = format!(
+            "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; \
+             img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src {cadres}; \
+             worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
         );
+        if let Ok(valeur) = HeaderValue::from_str(&politique) {
+            h.insert(header::CONTENT_SECURITY_POLICY, valeur);
+        }
         h.insert(
             HeaderName::from_static("x-frame-options"),
             HeaderValue::from_static("DENY"),
         );
     }
+    reponse
+}
+
+/// Routeur de l'origine dédiée aux plugins (second port) : fichiers des plugins et service worker, rien d'autre —
+/// ni API, ni application, ni donnée d'utilisateur.
+pub fn application_plugins(etat: Etat) -> Router {
+    Router::new()
+        .route(
+            "/plugins/{id}/{*chemin}",
+            get(routes_plugins::fichier_origine),
+        )
+        .route("/enregistrer.html", get(routes_plugins::page_enregistrer))
+        .route("/enregistrer.js", get(routes_plugins::script_enregistrer))
+        .route("/sw-plugins.js", get(routes_plugins::service_worker))
+        .layer(middleware::from_fn(en_tetes_plugins))
+        .with_state(etat)
+}
+
+/// En-têtes communs de l'origine des plugins (la politique propre à chaque réponse est posée par les routes).
+async fn en_tetes_plugins(requete: Request, suite: Next) -> Response {
+    let mut reponse = suite.run(requete).await;
+    let h = reponse.headers_mut();
+    h.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    h.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
     reponse
 }
 
@@ -156,7 +191,7 @@ pub fn application(etat: Etat) -> Router {
         .iter()
         .filter_map(|o| o.parse().ok())
         .collect();
-    let mut app = app.layer(middleware::from_fn(en_tetes));
+    let mut app = app.layer(middleware::from_fn_with_state(etat.clone(), en_tetes));
     if !origines.is_empty() {
         app = app.layer(
             CorsLayer::new()

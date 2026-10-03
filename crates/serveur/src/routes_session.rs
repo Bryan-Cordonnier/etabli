@@ -83,7 +83,7 @@ pub async fn etat_public(State(etat): State<Etat>) -> Resultat<Json<Value>> {
         .executer(|c| Ok(c.query_row("SELECT count(*) FROM utilisateurs", [], |l| l.get(0))?))
         .await?;
     Ok(Json(
-        json!({ "serveur": "etabli", "version": env!("CARGO_PKG_VERSION"), "installe": installe > 0 }),
+        json!({ "serveur": "etabli", "version": env!("CARGO_PKG_VERSION"), "installe": installe > 0, "urlPlugins": etat.config.url_plugins }),
     ))
 }
 

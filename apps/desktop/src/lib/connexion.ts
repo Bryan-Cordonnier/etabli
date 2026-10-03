@@ -10,7 +10,7 @@ export interface UtilisateurConnecte {
 
 export type Connexion =
   | { mode: "local" }
-  | { mode: "serveur"; url: string; jeton: string; utilisateur: UtilisateurConnecte };
+  | { mode: "serveur"; url: string; jeton: string; utilisateur: UtilisateurConnecte; urlPlugins?: string };
 
 type Stockage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
@@ -40,7 +40,8 @@ export function lireConnexion(stockage: Stockage | null = stockageNavigateur()):
       c.utilisateur !== null &&
       typeof (c.utilisateur as UtilisateurConnecte).id === "string"
     ) {
-      return { mode: "serveur", url: c.url, jeton: c.jeton, utilisateur: c.utilisateur as UtilisateurConnecte };
+      const urlPlugins = typeof c.urlPlugins === "string" && c.urlPlugins ? c.urlPlugins : undefined;
+      return { mode: "serveur", url: c.url, jeton: c.jeton, utilisateur: c.utilisateur as UtilisateurConnecte, ...(urlPlugins ? { urlPlugins } : {}) };
     }
   } catch {
     // Contenu illisible : comme si rien n'était mémorisé.
@@ -96,10 +97,14 @@ export function normaliserAdresse(texte: string): { url: string } | { erreur: st
 }
 
 /** Le serveur est-il là, et est-il déjà installé ? `null` si rien ne répond comme un serveur Établi. */
-export async function sonderServeur(url: string, fetchImpl?: typeof fetch): Promise<{ installe: boolean; version: string } | null> {
+export async function sonderServeur(
+  url: string,
+  fetchImpl?: typeof fetch,
+): Promise<{ installe: boolean; version: string; urlPlugins?: string } | null> {
   try {
-    const etat = await new ClientApi({ base: url, fetch: fetchImpl, delai: 5000 }).requete<{ serveur?: string; installe?: boolean; version?: string }>("GET", "/api/etat");
-    return etat?.serveur === "etabli" ? { installe: !!etat.installe, version: etat.version ?? "" } : null;
+    const etat = await new ClientApi({ base: url, fetch: fetchImpl, delai: 5000 }).requete<{ serveur?: string; installe?: boolean; version?: string; urlPlugins?: string | null }>("GET", "/api/etat");
+    if (etat?.serveur !== "etabli") return null;
+    return { installe: !!etat.installe, version: etat.version ?? "", ...(typeof etat.urlPlugins === "string" && etat.urlPlugins ? { urlPlugins: etat.urlPlugins } : {}) };
   } catch {
     return null;
   }
@@ -110,8 +115,9 @@ interface ReponseSession {
   utilisateur: { id: string; nom: string; role: string };
 }
 
-function versConnexion(url: string, r: ReponseSession): Connexion {
+function versConnexion(url: string, r: ReponseSession, urlPlugins?: string): Connexion {
   return {
+    ...(urlPlugins ? { urlPlugins } : {}),
     mode: "serveur",
     url,
     jeton: r.jeton,
@@ -121,12 +127,12 @@ function versConnexion(url: string, r: ReponseSession): Connexion {
 
 export async function ouvrirSession(url: string, nom: string, motDePasse: string, fetchImpl?: typeof fetch): Promise<Connexion> {
   const r = await new ClientApi({ base: url, fetch: fetchImpl }).requete<ReponseSession>("POST", "/api/session", { nom, motDePasse });
-  return versConnexion(url, r);
+  return versConnexion(url, r, (await sonderServeur(url, fetchImpl))?.urlPlugins);
 }
 
 export async function installerServeur(url: string, code: string, nom: string, motDePasse: string, fetchImpl?: typeof fetch): Promise<Connexion> {
   const r = await new ClientApi({ base: url, fetch: fetchImpl }).requete<ReponseSession>("POST", "/api/installation", { code, nom, motDePasse });
-  return versConnexion(url, r);
+  return versConnexion(url, r, (await sonderServeur(url, fetchImpl))?.urlPlugins);
 }
 
 /** Phrase à montrer pour une erreur de connexion. */

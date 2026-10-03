@@ -22,7 +22,7 @@ function choisir(): { fond: Fond; client: ClientApi | null } {
   const connexion = lireConnexion();
   if (connexion?.mode === "serveur") {
     const client = new ClientApi({ base: connexion.url, jeton: connexion.jeton });
-    const fond = avecCache(creerFondServeur(client), {
+    const fond = avecCache(creerFondServeur(client, connexion.urlPlugins), {
       nom: `etabli-cache-${empreinte(`${connexion.url}|${connexion.utilisateur.id}`)}`,
       rapport: synchro.rapport,
     });

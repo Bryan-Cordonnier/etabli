@@ -6,7 +6,9 @@ use axum::{
     http::{header, Method, Request, StatusCode},
     Router,
 };
-use etabli_serveur::{application, base::Base, preparer_installation, Config, Interne};
+use etabli_serveur::{
+    application, application_plugins, base::Base, preparer_installation, Config, Interne,
+};
 use http_body_util::BodyExt;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -19,6 +21,7 @@ const MDP: &str = "une phrase de passe";
 
 struct Banc {
     app: Router,
+    plugins: Router,
     dossier: PathBuf,
     code: String,
 }
@@ -52,6 +55,7 @@ impl Banc {
             origines: vec![],
             proxy_de_confiance: false,
             quota_utilisateur: 500 * 1024 * 1024,
+            url_plugins: None,
         };
         regler(&mut config);
         let etat = Interne::nouveau(config, base);
@@ -60,7 +64,8 @@ impl Banc {
             .unwrap()
             .expect("code d'installation");
         Self {
-            app: application(etat),
+            app: application(etat.clone()),
+            plugins: application_plugins(etat),
             dossier,
             code,
         }
@@ -85,6 +90,18 @@ impl Banc {
             None => Body::empty(),
         };
         self.terminer(requete.body(corps).unwrap()).await
+    }
+
+    /// Requête sur l'origine dédiée aux plugins (second port).
+    async fn get_plugins(&self, chemin: &str) -> Reponse {
+        let requete = Request::builder().uri(chemin).body(Body::empty()).unwrap();
+        let reponse = self.plugins.clone().oneshot(requete).await.unwrap();
+        let (parts, corps) = reponse.into_parts();
+        Reponse {
+            statut: parts.status,
+            en_tetes: parts.headers,
+            octets: corps.collect().await.unwrap().to_bytes().to_vec(),
+        }
     }
 
     async fn terminer(&self, requete: Request<Body>) -> Reponse {
@@ -1403,7 +1420,7 @@ async fn etat_public_sans_session() {
     b.installer().await;
     assert_eq!(b.get("/api/etat", None).await.json()["installe"], true);
     // Rien d'autre n'est révélé : ni utilisateurs, ni plugins, ni chemins.
-    let champs: Vec<String> = b
+    let mut champs: Vec<String> = b
         .get("/api/etat", None)
         .await
         .json()
@@ -1412,7 +1429,12 @@ async fn etat_public_sans_session() {
         .keys()
         .cloned()
         .collect();
-    assert_eq!(champs.len(), 3, "{champs:?}");
+    champs.sort();
+    assert_eq!(
+        champs,
+        ["installe", "serveur", "urlPlugins", "version"],
+        "seuls ces champs sont publics"
+    );
 }
 
 #[tokio::test]
@@ -1470,5 +1492,128 @@ async fn plugins_livres_avec_l_application_web_servis_en_repli() {
             "{chemin}"
         );
     }
+    let _ = std::fs::remove_dir_all(dossier_app);
+}
+
+#[tokio::test]
+async fn origine_dediee_aux_plugins() {
+    let dossier_app =
+        std::env::temp_dir().join(format!("etabli-app-{}", uuid::Uuid::new_v4().simple()));
+    std::fs::create_dir_all(&dossier_app).unwrap();
+    std::fs::write(dossier_app.join("index.html"), "<title>Établi</title>").unwrap();
+    let chemin = dossier_app.clone();
+    let b = Banc::avec(move |c| {
+        c.application = Some(chemin);
+        c.url_plugins = Some("http://192.168.1.20:4301".into());
+    })
+    .await;
+    let admin = b.installer().await;
+    assert_eq!(b.installer_plugin(&admin).await.statut, StatusCode::CREATED);
+
+    // L'état public et la liste des plugins disent où sont les plugins et quels fichiers garder hors ligne.
+    assert_eq!(
+        b.get("/api/etat", None).await.json()["urlPlugins"],
+        "http://192.168.1.20:4301"
+    );
+    let plugins = b.get("/api/plugins", Some(&admin)).await.json();
+    let fichiers: Vec<&str> = plugins[0]["fichiers"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|f| f.as_str().unwrap())
+        .collect();
+    assert!(
+        fichiers.contains(&"manifest.json") && fichiers.contains(&"apps/bonjour/index.html"),
+        "{fichiers:?}"
+    );
+
+    // Sur l'origine des plugins : les fichiers, sans la directive « sandbox » (le cadre l'ajoute), et rien d'autre.
+    let page = b
+        .get_plugins("/plugins/essai/apps/bonjour/index.html")
+        .await;
+    assert_eq!(page.statut, StatusCode::OK);
+    let csp = page.en_tetes[header::CONTENT_SECURITY_POLICY]
+        .to_str()
+        .unwrap();
+    assert!(
+        csp.contains("connect-src 'none'") && !csp.contains("sandbox"),
+        "{csp}"
+    );
+    assert_eq!(page.en_tetes[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
+    for interdit in [
+        "/api/etat",
+        "/api/moi",
+        "/",
+        "/index.html",
+        "/api/documents",
+    ] {
+        assert_eq!(
+            b.get_plugins(interdit).await.statut,
+            StatusCode::NOT_FOUND,
+            "{interdit}"
+        );
+    }
+    // Les mêmes garde-fous de chemin.
+    std::fs::write(b.dossier.join("secret.txt"), "secret").unwrap();
+    for chemin in [
+        "/plugins/essai/..%2F..%2Fsecret.txt",
+        "/plugins/essai/%2e%2e/%2e%2e/secret.txt",
+        "/plugins/..%2Fetabli.sqlite/x",
+    ] {
+        let r = b.get_plugins(chemin).await;
+        assert_ne!(r.statut, StatusCode::OK, "{chemin}");
+        assert!(
+            !String::from_utf8_lossy(&r.octets).contains("secret"),
+            "{chemin}"
+        );
+    }
+
+    // Service worker et page d'enregistrement.
+    let sw = b.get_plugins("/sw-plugins.js").await;
+    assert_eq!(sw.statut, StatusCode::OK);
+    assert_eq!(sw.en_tetes["service-worker-allowed"], "/");
+    let code = String::from_utf8_lossy(&sw.octets);
+    assert!(
+        code.contains("startsWith('/plugins/')") && !code.contains("/api/"),
+        "le service worker ne touche qu'aux plugins"
+    );
+    assert_eq!(
+        b.get_plugins("/enregistrer.html").await.statut,
+        StatusCode::OK
+    );
+    assert_eq!(
+        b.get_plugins("/enregistrer.js").await.statut,
+        StatusCode::OK
+    );
+
+    // La page de l'application autorise ces cadres, et eux seulement.
+    let accueil = b.get("/", None).await;
+    let csp_app = accueil.en_tetes[header::CONTENT_SECURITY_POLICY]
+        .to_str()
+        .unwrap();
+    assert!(
+        csp_app.contains("frame-src 'self' http://192.168.1.20:4301;"),
+        "{csp_app}"
+    );
+    let _ = std::fs::remove_dir_all(dossier_app);
+}
+
+#[tokio::test]
+async fn sans_origine_dediee_les_cadres_restent_sur_l_origine_principale() {
+    let dossier_app =
+        std::env::temp_dir().join(format!("etabli-app-{}", uuid::Uuid::new_v4().simple()));
+    std::fs::create_dir_all(&dossier_app).unwrap();
+    std::fs::write(dossier_app.join("index.html"), "<title>Établi</title>").unwrap();
+    let chemin = dossier_app.clone();
+    let b = Banc::avec(move |c| c.application = Some(chemin)).await;
+    assert_eq!(
+        b.get("/api/etat", None).await.json()["urlPlugins"],
+        Value::Null
+    );
+    let csp = b.get("/", None).await.en_tetes[header::CONTENT_SECURITY_POLICY]
+        .to_str()
+        .unwrap()
+        .to_string();
+    assert!(csp.contains("frame-src 'self';"), "{csp}");
     let _ = std::fs::remove_dir_all(dossier_app);
 }

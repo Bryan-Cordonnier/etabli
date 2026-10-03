@@ -29,6 +29,14 @@ describe("connexion mémorisée", () => {
     expect(s.m.get("etabli.derniere-connexion")).not.toContain("jeton");
   });
 
+  it("l'adresse de l'origine des plugins est mémorisée avec la connexion", () => {
+    const s = memoire();
+    ecrireConnexion({ ...serveur, urlPlugins: "http://192.168.1.20:4301" }, s);
+    expect(lireConnexion(s)).toEqual({ ...serveur, urlPlugins: "http://192.168.1.20:4301" });
+    ecrireConnexion({ ...serveur }, s);
+    expect(lireConnexion(s)).not.toHaveProperty("urlPlugins");
+  });
+
   it("contenu corrompu ou incomplet : comme si rien n'était mémorisé", () => {
     for (const brut of ["pas du json", '{"mode":"serveur"}', '{"mode":"serveur","url":"x","jeton":"","utilisateur":{"id":"1"}}', '{"mode":"inconnu"}', "null"]) {
       const s = memoire();
@@ -66,6 +74,17 @@ describe("sonde et ouverture de session", () => {
   it("reconnaît un serveur Établi, installé ou non", async () => {
     expect(await sonderServeur("https://s.fr", (async () => json({ serveur: "etabli", version: "0.4.0", installe: true })) as unknown as typeof fetch)).toEqual({ installe: true, version: "0.4.0" });
     expect(await sonderServeur("https://s.fr", (async () => json({ serveur: "etabli", version: "0.4.0", installe: false })) as unknown as typeof fetch)).toMatchObject({ installe: false });
+  });
+
+  it("la sonde et l'ouverture de session rapportent l'origine des plugins", async () => {
+    const f = (async (url: string) =>
+      String(url).endsWith("/api/etat")
+        ? json({ serveur: "etabli", version: "0.4.0", installe: true, urlPlugins: "http://h:4301" })
+        : json({ jeton: "J", utilisateur: { id: "u1", nom: "alice", role: "utilisateur" } })) as unknown as typeof fetch;
+    expect(await sonderServeur("http://h:4300", f)).toMatchObject({ urlPlugins: "http://h:4301" });
+    expect(await ouvrirSession("http://h:4300", "alice", "x", f)).toMatchObject({ urlPlugins: "http://h:4301" });
+    const sans = (async () => json({ serveur: "etabli", version: "0.4.0", installe: true, urlPlugins: null })) as unknown as typeof fetch;
+    expect(await sonderServeur("http://h:4300", sans)).not.toHaveProperty("urlPlugins");
   });
 
   it("autre chose qu'un serveur Établi : null", async () => {

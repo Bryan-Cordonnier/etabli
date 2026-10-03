@@ -31,6 +31,8 @@ etabli-serveur --donnees ./donnees --application apps/desktop/dist-web
 | `--application` (`ETABLI_APPLICATION`) | dossier de la version web (`npm run build:web`) servi à la racine | aucun |
 | `--cle-publique` (`ETABLI_CLE_PUBLIQUE`) | clé minisign qui signe les plugins acceptés | celle d'Établi (`tauri.conf.json`) |
 | `--origine` | autre site autorisé à appeler l'API (répétable) | aucun (même origine seulement) |
+| `--ecoute-plugins` (`ETABLI_ECOUTE_PLUGINS`) | second port réservé aux fichiers des plugins (origine dédiée, requise pour les mini-apps hors ligne) | aucun |
+| `--url-plugins` (`ETABLI_URL_PLUGINS`) | adresse publique de cette origine, annoncée aux clients (ex. `https://plugins.maison.fr`) | aucune |
 | `--proxy-de-confiance` | lire l'adresse du client dans `X-Forwarded-For` | non |
 | `--quota-mo` (`ETABLI_QUOTA_MO`) | place maximale des calculs d'un utilisateur | 500 |
 
@@ -103,6 +105,9 @@ Les formats de calcul sont ceux des fichiers `.etabli` ([08](08-documents-donnee
 - Le blocage par identifiant permet à quelqu'un qui connaît un identifiant de **bloquer ce compte 10 minutes** en échouant 5 fois : c'est
   le prix d'une protection contre les essais en série. Il ne donne aucun accès.
 - Les **fichiers d'un plugin sont publics** (sans compte) : ils ne contiennent aucune donnée d'utilisateur, mais ne mettez pas de secret dans un plugin.
+- **Mini-apps hors ligne** : elles exigent l'origine dédiée (`--ecoute-plugins` + `--url-plugins`, hôte ou port différent de l'application). Sans
+  elle, calculs et réglages marchent hors ligne mais les mini-apps ont besoin du réseau. Tous les plugins partagent cette origine (aucune donnée
+  d'utilisateur n'y vit). L'application de bureau (Tauri) ne sait pas encore se connecter à un serveur.
 - Un seul serveur, une seule base SQLite : adapté à une classe ou à une maison, pas à des milliers d'utilisateurs.
 
 ## Code

@@ -21,6 +21,10 @@ pub struct Config {
     pub proxy_de_confiance: bool,
     /// Place maximale occupée par les calculs d'un utilisateur, en octets.
     pub quota_utilisateur: u64,
+    /// Adresse publique de l'origine dédiée aux plugins (second port ou second nom d'hôte). Elle permet aux
+    /// mini-apps de fonctionner hors ligne tout en restant séparées de l'application. Doit différer de
+    /// l'origine de l'application.
+    pub url_plugins: Option<String>,
 }
 
 pub struct Interne {

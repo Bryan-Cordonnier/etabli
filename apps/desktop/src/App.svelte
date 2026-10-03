@@ -13,6 +13,7 @@
   import PluginPage from "$lib/pages/PluginPage.svelte";
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
   import { api, system } from "$lib/api";
+  import { preparerPluginsHorsLigne } from "$lib/serveur/horsLigne";
   import { applyAppearance } from "$lib/appearance";
   import { openPluginSettings } from "$lib/pluginSettings";
   import { sendToApp } from "$lib/send";
@@ -26,6 +27,8 @@
   import type { View } from "$lib/types";
 
   $effect(() => applyAppearance());
+  // Mode serveur avec origine dédiée aux plugins : garde les mini-apps pour le hors ligne.
+  $effect(() => preparerPluginsHorsLigne(api));
   $effect(() => suivreEcran());
   $effect(() => tabs.persist());
 

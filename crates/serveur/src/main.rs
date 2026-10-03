@@ -2,7 +2,8 @@
 
 use clap::Parser;
 use etabli_serveur::{
-    application, base::Base, cle_publique_officielle, preparer_installation, Config, Interne,
+    application, application_plugins, base::Base, cle_publique_officielle, preparer_installation,
+    Config, Interne,
 };
 use std::{net::SocketAddr, path::PathBuf};
 
@@ -39,6 +40,16 @@ struct Arguments {
     #[arg(long, env = "ETABLI_QUOTA_MO", default_value_t = 500)]
     quota_mo: u64,
 
+    /// Second port d'écoute, réservé aux fichiers des plugins : les mini-apps y vivent sur une origine séparée de
+    /// l'application et fonctionnent hors ligne (service worker). À utiliser avec --url-plugins.
+    #[arg(long, env = "ETABLI_ECOUTE_PLUGINS", requires = "url_plugins")]
+    ecoute_plugins: Option<SocketAddr>,
+
+    /// Adresse publique de ce second port (exemple : http://192.168.1.20:4301, ou https://plugins.exemple.fr
+    /// derrière un proxy). Doit être une autre origine que celle de l'application.
+    #[arg(long, env = "ETABLI_URL_PLUGINS")]
+    url_plugins: Option<String>,
+
     /// Lire l'adresse du client dans X-Forwarded-For (seulement derrière un proxy inverse de confiance).
     #[arg(long, env = "ETABLI_PROXY_DE_CONFIANCE")]
     proxy_de_confiance: bool,
@@ -64,7 +75,17 @@ async fn lancer(args: Arguments) -> Result<(), String> {
         origines: args.origines,
         proxy_de_confiance: args.proxy_de_confiance,
         quota_utilisateur: args.quota_mo.saturating_mul(1024 * 1024),
+        url_plugins: args
+            .url_plugins
+            .map(|u| u.trim_end_matches('/').to_string()),
     };
+    if let Some(url) = &config.url_plugins {
+        if !(url.starts_with("http://") || url.starts_with("https://"))
+            || url.contains([' ', ';', '\n', '\r'])
+        {
+            return Err("--url-plugins doit être une adresse http:// ou https:// sans espace ni point-virgule.".into());
+        }
+    }
     let etat = Interne::nouveau(config, base);
 
     if let Some(code) = preparer_installation(&etat)
@@ -85,6 +106,21 @@ async fn lancer(args: Arguments) -> Result<(), String> {
         env!("CARGO_PKG_VERSION"),
         args.ecoute
     );
+    if let Some(adresse) = args.ecoute_plugins {
+        let ecouteur_plugins = tokio::net::TcpListener::bind(adresse)
+            .await
+            .map_err(|e| format!("impossible d'écouter les plugins sur {adresse} : {e}"))?;
+        eprintln!(
+            "Origine des plugins sur http://{adresse} (adresse publique : {})",
+            etat.config.url_plugins.as_deref().unwrap_or("?")
+        );
+        let routeur = application_plugins(etat.clone());
+        tokio::spawn(async move {
+            if let Err(e) = axum::serve(ecouteur_plugins, routeur).await {
+                eprintln!("Erreur de l'origine des plugins : {e}");
+            }
+        });
+    }
     axum::serve(
         ecouteur,
         application(etat).into_make_service_with_connect_info::<SocketAddr>(),

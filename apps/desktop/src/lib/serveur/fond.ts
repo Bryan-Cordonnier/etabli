@@ -23,12 +23,32 @@ const parametres = (filtre: DocumentFilter): string => {
   return texte ? `?${texte}` : "";
 };
 
-export function creerFondServeur(client: ClientApi): Fond {
+/**
+ * Origine dédiée aux plugins, si le serveur en annonce une VRAIMENT différente de celle de l'application et du serveur.
+ * Sinon `undefined` : les plugins restent servis par le serveur dans un cadre à origine opaque (en ligne seulement).
+ */
+export function originePluginsSure(urlPlugins: string | undefined, client: ClientApi, pageOrigin: string | undefined = typeof location === "undefined" ? undefined : location.origin): string | undefined {
+  if (!urlPlugins) return undefined;
+  try {
+    const origine = new URL(urlPlugins).origin;
+    const serveur = client.base ? new URL(client.base).origin : pageOrigin;
+    if ((origine === serveur || origine === pageOrigin) || !/^https?:$/.test(new URL(urlPlugins).protocol)) return undefined;
+    return origine;
+  } catch {
+    return undefined;
+  }
+}
+
+export function creerFondServeur(client: ClientApi, urlPlugins?: string): Fond {
+  const origine = originePluginsSure(urlPlugins, client);
   return {
     id: "serveur",
-    // Les plugins viennent du serveur avec une politique sans réseau et une origine opaque : isolation complète.
-    capacites: { catalogue: false, miseAJour: false, fenetresNatives: false, isolationComplete: true, journal: false },
-    urlPlugins: `${client.base}/plugins`,
+    // Sans origine dédiée : plugins en cadre à origine opaque (isolation complète, en ligne seulement). Avec elle :
+    // le cadre garde son origine, qui n'est ni celle de l'application ni celle du serveur, et le service worker de
+    // cette origine rend les mini-apps utilisables hors ligne.
+    capacites: { catalogue: false, miseAJour: false, fenetresNatives: false, isolationComplete: !origine, journal: false },
+    urlPlugins: origine ? `${origine}/plugins` : `${client.base}/plugins`,
+    originePlugins: origine,
 
     pluginsList: () => client.requete<PluginInfo[]>("GET", "/api/plugins"),
     catalogueRead: gereParLAdmin("Le catalogue"),

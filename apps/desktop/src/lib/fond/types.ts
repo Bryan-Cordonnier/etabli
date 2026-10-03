@@ -36,6 +36,8 @@ export interface DocumentInput {
 export type PluginSource = "integre" | "catalogue" | "utilisateur";
 
 export interface PluginInfo {
+  /** Fichiers du plugin (chemins relatifs), fournis par un serveur pour les garder d'avance hors ligne. */
+  fichiers?: string[];
   manifest: unknown;
   official: boolean;
   source?: PluginSource;
@@ -105,6 +107,11 @@ export interface Fond {
 
   /** Dossier d'où sont servis les fichiers des plugins, quand ce n'est pas le protocole de l'application. */
   readonly urlPlugins?: string;
+  /**
+   * Origine dédiée aux plugins d'un serveur (autre port ou autre nom d'hôte) : les mini-apps y gardent un service worker
+   * qui les rend utilisables hors ligne, sans jamais partager l'origine de l'application.
+   */
+  readonly originePlugins?: string;
 
   /** Tout ce que ce fond contient, pour l'importer dans un serveur (fonds locaux seulement). */
   exporterTout?(): Promise<ExportComplet>;

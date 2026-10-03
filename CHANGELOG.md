@@ -15,8 +15,13 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 - **Serveur facultatif** (`etabli-serveur`, version préliminaire) : comptes, calculs et plugins d'une classe, d'un atelier ou d'une maison,
   sur une machine que vous hébergez vous-même. Un seul administrateur choisit les plugins et crée les comptes ; chaque utilisateur ne
-  voit que ses calculs. **L'application ne s'y connecte pas encore** (étape suivante) : Établi continue de fonctionner seul, comme
-  avant. Mode d'emploi et limites : [docs/17-serveur.md](docs/17-serveur.md).
+  voit que ses calculs. Mode d'emploi et limites : [docs/17-serveur.md](docs/17-serveur.md).
+- **Version web connectée au serveur** : écran de connexion, choix « Établi seul » ou « Serveur », Paramètres › Serveur et
+  Administration (comptes, plugins, journal, export), import de vos calculs locaux vers le serveur. **L'application de bureau
+  (Tauri) ne se connecte pas encore** : seule la version web servie par `etabli-serveur` le fait.
+- **Hors ligne** (version web connectée) : calculs, réglages et mini-apps restent utilisables sans réseau ; vos modifications
+  attendent sur l'appareil puis partent au retour du réseau (en cas de conflit, une « copie hors ligne » est créée). Pour les
+  mini-apps hors ligne, le serveur doit exposer une origine dédiée aux plugins (`--ecoute-plugins` et `--url-plugins`).
 
 ### Pour les contributeurs
 
