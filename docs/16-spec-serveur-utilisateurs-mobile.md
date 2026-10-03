@@ -1,8 +1,7 @@
 # Spécification — Établi : mode serveur facultatif, utilisateurs, mobile
 
-Statut : **réponses de Bryan intégrées (3 oct. 2026), en attente de validation finale** (règle d'`AGENTS.md` : pas de gros développement sans spécification validée).
-Cible : le dépôt `Bryan-Cordonnier/etabli` (moteur). Cette spécification est écrite ici faute d'accès en écriture à ce dépôt ;
-elle sera déplacée dans `docs/` d'Établi à la validation.
+Statut : **réponses de Bryan intégrées (3 oct. 2026), en attente de sa validation finale avant E1** (règle d'`AGENTS.md` : pas de gros développement sans spécification validée).
+Cible : le dépôt `Bryan-Cordonnier/etabli` (moteur). 
 
 ---
 
@@ -171,9 +170,8 @@ Décidés : hors ligne PC et mobile (cache + file d'écritures) ; serveur Rust +
 d'espaces dans cette série ; mode local possible sur mobile en v1, mode serveur mobile juste après.
 
 Restants :
-1. **Choix par plugin** (stockage serveur ou local au poste, fixé par l'admin) : proposé **non en v1** ; à reprendre plus tard si besoin.
-2. **Accès au dépôt** : l'application GitHub Claude doit être installée sur `Bryan-Cordonnier/etabli` pour que j'y pousse
-   (aujourd'hui : lecture seule). Branche proposée : `moteur-serveur`, sans demande de fusion tant que Bryan ne la demande pas.
+1. **Serveur = tout sur le serveur** (décidé, sans exception) : pas de choix de stockage par plugin.
+2. Branche de travail : `moteur-serveur`, sans demande de fusion tant que Bryan ne la demande pas.
 
 ## 10. Fork (après E7)
 

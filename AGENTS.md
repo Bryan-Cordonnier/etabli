@@ -32,6 +32,7 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/13-specs-a-venir.md](docs/13-specs-a-venir.md) | Spécifications (formules, cas de test) des Projets et des plugins pas encore codés | vous codez une de ces fonctionnalités |
 | [docs/15-gerer-le-depot.md](docs/15-gerer-le-depot.md) | Réglages GitHub à activer, relire une demande de fusion et un plugin d'un autre auteur, tri des tickets | vous maintenez le dépôt |
 | [docs/guide-utilisateur.md](docs/guide-utilisateur.md) | Guide de l'utilisateur (installer, catalogue, raccourcis, données, dépannage) | vous documentez ou vous répondez à un utilisateur |
+| [docs/16-spec-serveur-utilisateurs-mobile.md](docs/16-spec-serveur-utilisateurs-mobile.md) | Spécification du mode serveur facultatif, des utilisateurs, des espaces partagés et du mobile (brouillon) | vous touchez au stockage, à `api.ts` ou au mobile |
 | [docs/14-publier-une-version.md](docs/14-publier-une-version.md) | Releases GitHub, mises à jour automatiques signées, clé, publier une version, installer | vous publiez une version ou touchez aux mises à jour |
 
 Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](CONTRIBUTING.md) (règles pour les contributeurs),
