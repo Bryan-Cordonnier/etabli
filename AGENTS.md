@@ -33,6 +33,7 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/15-gerer-le-depot.md](docs/15-gerer-le-depot.md) | Réglages GitHub à activer, relire une demande de fusion et un plugin d'un autre auteur, tri des tickets | vous maintenez le dépôt |
 | [docs/guide-utilisateur.md](docs/guide-utilisateur.md) | Guide de l'utilisateur (installer, catalogue, raccourcis, données, dépannage) | vous documentez ou vous répondez à un utilisateur |
 | [docs/16-spec-serveur-utilisateurs-mobile.md](docs/16-spec-serveur-utilisateurs-mobile.md) | Spécification du mode serveur facultatif, des utilisateurs, des espaces partagés et du mobile (brouillon) | vous touchez au stockage, à `api.ts` ou au mobile |
+| [docs/17-serveur.md](docs/17-serveur.md) | Le serveur facultatif `etabli-serveur` : lancer, sécuriser, API, limites, code | vous touchez à `crates/` ou au mode serveur |
 | [docs/14-publier-une-version.md](docs/14-publier-une-version.md) | Releases GitHub, mises à jour automatiques signées, clé, publier une version, installer | vous publiez une version ou touchez aux mises à jour |
 
 Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](CONTRIBUTING.md) (règles pour les contributeurs),
@@ -42,6 +43,8 @@ Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](
 ## Carte du dépôt
 
 ```
+crates/noyau/             règles communes (identifiants, calculs, paquets signés) — sans entrée-sortie
+crates/serveur/           serveur facultatif : comptes, calculs, plugins (docs/17)
 apps/desktop/src-tauri/   cœur Rust : fenêtres, plugins, documents, réglages, raccourci global
 apps/desktop/src/         interface hôte Svelte (fenêtre principale + aperçu rapide)
 packages/sdk/             @etabli/sdk : protocole et API des mini-apps

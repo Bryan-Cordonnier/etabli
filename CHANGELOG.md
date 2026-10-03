@@ -11,6 +11,18 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Ajouté
+
+- **Serveur facultatif** (`etabli-serveur`, version préliminaire) : comptes, calculs et plugins d'une classe, d'un atelier ou d'une maison,
+  sur une machine que vous hébergez vous-même. Un seul administrateur choisit les plugins et crée les comptes ; chaque utilisateur ne
+  voit que ses calculs. **L'application ne s'y connecte pas encore** (étape suivante) : Établi continue de fonctionner seul, comme
+  avant. Mode d'emploi et limites : [docs/17-serveur.md](docs/17-serveur.md).
+
+### Pour les contributeurs
+
+- Espace de travail Cargo à la racine : `crates/noyau` (règles communes) et `crates/serveur`. L'application Tauri
+  (`apps/desktop/src-tauri`) reste à part, avec son propre `Cargo.lock`. La CI vérifie aussi le serveur (format, analyse, 51 tests).
+
 ## [0.4.0] — 2026-10-03
 
 ### Ajouté

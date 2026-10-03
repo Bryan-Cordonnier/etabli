@@ -1,0 +1,15 @@
+[package]
+name = "etabli-noyau"
+description = "Établi : règles communes à l'application et au serveur (identifiants, documents, paquets de plugins)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+minisign-verify = "0.3"
+base64 = "0.23"
+zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
+flate2 = "1"

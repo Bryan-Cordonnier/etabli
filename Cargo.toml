@@ -1,0 +1,25 @@
+# Espace de travail des crates Rust partagées et du serveur facultatif (docs/16).
+# L'application Tauri (apps/desktop/src-tauri) garde son propre Cargo.lock et reste hors de cet espace :
+# sa compilation, ses plugins et sa CI ne changent pas.
+[workspace]
+resolver = "2"
+members = ["crates/noyau", "crates/serveur"]
+exclude = ["apps/desktop/src-tauri"]
+
+[workspace.package]
+version = "0.4.0"
+edition = "2021"
+rust-version = "1.90"
+license = "MIT"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+
+# Argon2 est volontairement lent : en développement et en test, on l'optimise pour ne pas attendre.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3

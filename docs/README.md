@@ -38,3 +38,4 @@ Toute la documentation est **en français**. Choisissez selon ce que vous voulez
 | [08-documents-donnees.md](08-documents-donnees.md) | fichiers `.etabli`, réglages, emplacements, migrations |
 | [11-conventions.md](11-conventions.md) | règles de code et de collaboration, décisions d'interface |
 | [12-a-faire.md](12-a-faire.md) · [13-specs-a-venir.md](13-specs-a-venir.md) | ce qui reste à faire, spécifications |
+| [16-spec-serveur-utilisateurs-mobile.md](16-spec-serveur-utilisateurs-mobile.md) · [17-serveur.md](17-serveur.md) | mode serveur facultatif : conception, étapes · mode d'emploi, API, sécurité |
