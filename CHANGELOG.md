@@ -11,6 +11,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+## [0.4.0] — 2026-10-03
+
 ### Ajouté
 
 - **Version web** (`npm run build:web`) : Établi dans un navigateur, installable comme une application et utilisable **hors ligne**.
@@ -25,10 +27,6 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Modifié
 
-- **Interne : couche de stockage unifiée** (`lib/fond/`). Les calculs, réglages et plugins passent par une interface unique, avec une
-  version « fichiers » (application) et une version « navigateur » (IndexedDB). Aucun changement visible dans l'application ;
-  dans un navigateur, les données de l'ancien aperçu (`localStorage`) sont reprises une fois au premier lancement.
-  Première étape du mode serveur facultatif (docs/16).
 - Mise à jour de Tauri (le cadre de l'application) et de ses extensions, des bibliothèques qui vérifient les signatures et
   ouvrent les paquets de plugins, et des outils de l'interface. Aucun changement visible ; vérifié sur une version compilée
   (installation de plugins depuis le catalogue, mini-app, réglages).
@@ -42,6 +40,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Pour les contributeurs
 
+- **Couche de stockage unifiée** (`lib/fond/`) : les calculs, réglages et plugins passent par une interface unique (« fond »), avec
+  une version « fichiers » (application, inchangée pour l'utilisateur : ses calculs sont conservés) et une version « navigateur »
+  (IndexedDB). Première étape du mode serveur facultatif (docs/16).
 - Nouveaux fichiers du dépôt : guide de contribution, code de conduite, politique de sécurité, aide, feuille de route, guide de
   l'utilisateur, guide des mainteneurs, modèles de tickets (bug, résultat de calcul faux, idée, plugin) et de demandes de fusion,
   mises à jour automatiques des dépendances (Dependabot), propriétaires du code et étiquettes.
@@ -190,7 +191,8 @@ Développement du moteur et des plugins, sans version publiée.
 - **Cinq plugins** : Maths et géométrie, Économie de matière (débit de tubes, calepinage de tôles), Tôlerie, Traçage et
   Matériaux et fixation.
 
-[Non publié]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.3.0...HEAD
+[Non publié]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.1.3...v0.2.0
