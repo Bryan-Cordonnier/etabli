@@ -8,7 +8,9 @@
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
   import PluginProblems from "$lib/components/PluginProblems.svelte";
   import AdministrationSection from "./AdministrationSection.svelte";
+  import AlarmesSection from "./AlarmesSection.svelte";
   import ServeurSection from "./ServeurSection.svelte";
+  import { estNatif } from "$lib/mobile/alarmes";
   import ShortcutRecorder from "$lib/components/ShortcutRecorder.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
@@ -59,6 +61,11 @@
       title: "Administration du serveur",
       lead: "Comptes, plugins, journal et sauvegarde. Réservé à l'administrateur.",
     },
+    alarmes: {
+      label: "Alarmes",
+      title: "Alarmes du téléphone",
+      lead: "Vérifiez que les rappels sonnent à l'heure, application fermée.",
+    },
     plugins: {
       label: "Plugins installés",
       title: "Plugins installés",
@@ -78,6 +85,7 @@
   const GROUPS: { title: string; sections: FixedSection[] }[] = [
     { title: "Application", sections: ["general", "apparence", "apercu", "raccourcis"] },
     { title: "Serveur", sections: estAdmin ? ["serveur", "administration"] : ["serveur"] },
+    ...(estNatif() ? [{ title: "Téléphone", sections: ["alarmes" as const] }] : []),
     { title: "Plugins", sections: ["plugins"] },
     { title: "Aide", sections: ["a-propos"] },
   ];
@@ -286,6 +294,8 @@
         </div>
       {:else if active === "serveur"}
         <ServeurSection />
+      {:else if active === "alarmes"}
+        <AlarmesSection />
       {:else if active === "administration"}
         <AdministrationSection />
       {:else if active === "general"}

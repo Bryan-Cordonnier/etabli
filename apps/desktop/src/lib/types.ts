@@ -12,6 +12,7 @@ export type SettingsSection =
   | "raccourcis"
   | "serveur"
   | "administration"
+  | "alarmes"
   | "a-propos"
   | `plugin:${string}`;
 

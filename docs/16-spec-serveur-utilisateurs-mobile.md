@@ -135,6 +135,12 @@ de compte.
   (politique des magasins et simplicité) ; en mode serveur, l'admin les distribue.
 - **Test préalable** (maquette jetable, avant d'investir) : une alarme locale exacte Android 17 sonne-t-elle application
   fermée avec Capacitor ? Si non, repli sur Tauri mobile.
+- **Réalisé (E5)** : projet `apps/mobile` (Capacitor 7, `fr.etabli.app`, permissions notifications / alarmes exactes / redémarrage),
+  `npm run apk` (dans `apps/mobile`) ou workflow GitHub « Android (APK de test) » ; Paramètres › Alarmes (visible dans l'application
+  Android seulement) programme une alarme exacte à N minutes pour l'essai. Capacitor supprime `public/plugins/` à chaque `cap sync`
+  (réservé à Cordova) : `scripts/preparer.mjs` le remet. Pour le mode serveur depuis l'application Android, l'origine de la page est
+  `https://localhost` : lancer le serveur avec `--origine https://localhost`. Le serveur doit être joignable en HTTPS (le contenu
+  mixte est refusé). iPhone : balises de page d'accueil ajoutées ; notifications à l'heure près non garanties (limites d'iOS).
 
 ## 7. Capacités facultatives pour les plugins (permissions du manifeste)
 
@@ -156,7 +162,7 @@ Utilité générique : rappels d'échéance, imports de données, mises à jour 
 | E2 | Build web de l'hôte (`fond/web`, IndexedDB), plugins servis en statique, hôte adaptatif (< 760 px), PWA hors ligne (service worker). **Fait** (branche `moteur-serveur`). Le cache de données et la file d'écritures sont propres au fond serveur : ils arrivent en E4. Limite : sans en-têtes CORS du serveur de plugins, les mini-apps de la version web gardent leur origine (`isolationComplete` faux) ; le serveur (E3) rétablit l'isolation. | essai navigateur (parcours, hors ligne, mobile), tests Vitest et `node:test` ; essai sur téléphone par Bryan |
 | E3 | `etabli-serveur` : utilisateurs, sessions, documents, réglages, services, plugins, export. **Fait** (branche `serveur`) : voir [17](17-serveur.md). La crate `etabli-noyau` est créée (identifiants, calculs, paquets) ; **l'application de bureau ne l'utilise pas encore** (bascule ultérieure, à vérifier par la CI Windows). Pas d'espaces partagés (E6). | `cargo test --workspace` (51 tests dont l'API de bout en bout), revue de sécurité faite (voir 17), essai du binaire réel |
 | E4 | `FondServeur` (cache + file d'écritures), écran de connexion, choix du mode, pages d'administration (utilisateurs, plugins), import local → serveur. | parcours Playwright + essai par Bryan |
-| E5 | **Mobile** : Capacitor Android (local, puis serveur) et PWA iPhone. Test d'alarme Android en premier. | essai sur le téléphone de Bryan |
+| E5 | **Mobile** : Capacitor Android (local, puis serveur) et PWA iPhone. Test d'alarme Android en premier. **Fait côté code** (`apps/mobile`, page Paramètres › Alarmes, workflow `android.yml`, balises iPhone) ; l'APK n'a pas pu être fabriqué dans l'environnement de développement (pas de SDK Android) : il sort de la CI. **Reste : l'essai d'alarme sur le téléphone de Bryan** avant de brancher les rappels réels (E7). | essai sur le téléphone de Bryan |
 | E6 | Espaces partagés (§3.6) et pages d'administration associées. | tests d'API (droits), Playwright |
 | E7 | Permissions `notifications` et `reseau`. | essai sur appareil |
 | E8 | Habillage (nom, icône, plugins par défaut) paramétrable → base du fork. | build des deux produits |

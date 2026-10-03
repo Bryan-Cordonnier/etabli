@@ -47,6 +47,7 @@ crates/noyau/             règles communes (identifiants, calculs, paquets sign�
 crates/serveur/           serveur facultatif : comptes, calculs, plugins (docs/17)
 apps/desktop/src-tauri/   cœur Rust : fenêtres, plugins, documents, réglages, raccourci global
 apps/desktop/src/         interface hôte Svelte (fenêtre principale + aperçu rapide)
+apps/mobile/              emballage Android (Capacitor) de la version web ; APK de test par la CI
 packages/sdk/             @etabli/sdk : protocole et API des mini-apps
 packages/ui/              @etabli/ui : composants et outils communs des mini-apps
 plugins/maths/            7 mini-apps de géométrie

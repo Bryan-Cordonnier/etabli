@@ -13,6 +13,11 @@ function pwa(): Plugin {
       { tag: "link", attrs: { rel: "manifest", href: "manifest.webmanifest" }, injectTo: "head" },
       { tag: "link", attrs: { rel: "icon", href: "icone-256.png" }, injectTo: "head" },
       { tag: "meta", attrs: { name: "theme-color", content: "#2b63d9" }, injectTo: "head" },
+      // iPhone (« Sur l'écran d'accueil ») : plein écran, icône et nom de l'application.
+      { tag: "link", attrs: { rel: "apple-touch-icon", href: "icone-512.png" }, injectTo: "head" },
+      { tag: "meta", attrs: { name: "apple-mobile-web-app-capable", content: "yes" }, injectTo: "head" },
+      { tag: "meta", attrs: { name: "mobile-web-app-capable", content: "yes" }, injectTo: "head" },
+      { tag: "meta", attrs: { name: "apple-mobile-web-app-title", content: "Établi" }, injectTo: "head" },
     ],
   };
 }

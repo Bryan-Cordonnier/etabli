@@ -23,6 +23,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   attendent sur l'appareil puis partent au retour du réseau (en cas de conflit, une « copie hors ligne » est créée). Pour les
   mini-apps hors ligne, le serveur doit exposer une origine dédiée aux plugins (`--ecoute-plugins` et `--url-plugins`).
 
+- **Android (version préliminaire)** : projet Capacitor (`apps/mobile`) et page Paramètres › Alarmes pour **tester que les rappels sonnent
+  à l'heure**, application fermée. L'APK de test se fabrique par le workflow GitHub « Android (APK de test) ». iPhone : la version web
+  s'ajoute à l'écran d'accueil (plein écran, icône).
+
 ### Pour les contributeurs
 
 - Espace de travail Cargo à la racine : `crates/noyau` (règles communes) et `crates/serveur`. L'application Tauri
