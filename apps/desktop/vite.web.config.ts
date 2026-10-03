@@ -1,0 +1,33 @@
+// Version web de l'hôte : une seule page (pas d'aperçu rapide), chemins relatifs pour pouvoir être
+// hébergée dans un sous-dossier, manifeste PWA. Les plugins et le service worker sont ajoutés par
+// scripts/construire-web.mjs (npm run build:web à la racine).
+import { fileURLToPath } from "node:url";
+import { defineConfig, type Plugin } from "vite";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+
+/** Lien vers le manifeste PWA et couleur de la barre : seulement dans la version web, pas dans Tauri. */
+function pwa(): Plugin {
+  return {
+    name: "etabli-pwa",
+    transformIndexHtml: () => [
+      { tag: "link", attrs: { rel: "manifest", href: "manifest.webmanifest" }, injectTo: "head" },
+      { tag: "link", attrs: { rel: "icon", href: "icone-256.png" }, injectTo: "head" },
+      { tag: "meta", attrs: { name: "theme-color", content: "#2b63d9" }, injectTo: "head" },
+    ],
+  };
+}
+
+export default defineConfig({
+  base: "./",
+  plugins: [svelte(), pwa()],
+  resolve: {
+    alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) },
+  },
+  publicDir: fileURLToPath(new URL("./public-web", import.meta.url)),
+  build: {
+    outDir: "dist-web",
+    emptyOutDir: true,
+    target: "es2022",
+    rollupOptions: { input: { main: fileURLToPath(new URL("./index.html", import.meta.url)) } },
+  },
+});

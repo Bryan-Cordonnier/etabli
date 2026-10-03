@@ -1,6 +1,6 @@
 // Réglages et onglets ouverts. Dans l'application : fichier settings.json du dossier de
-// configuration (cahier des charges, section 7.3). Dans un navigateur : localStorage.
-import { api, inTauri } from "./api";
+// configuration (cahier des charges, section 7.3). Dans un navigateur : localStorage (même chemin, via le fond).
+import { api } from "./api";
 
 const PREFIX = "etabli.";
 const SAVE_DELAY = 300;
@@ -15,7 +15,6 @@ let readable = false;
 
 /** À appeler une fois avant de créer l'interface : les réglages sont lus de façon synchrone ensuite. */
 export async function initStorage(): Promise<void> {
-  if (!inTauri) return;
   try {
     cache = await api.storeLoad();
     readable = true;
@@ -23,7 +22,8 @@ export async function initStorage(): Promise<void> {
     console.error("Réglages illisibles, rien ne sera enregistré :", err);
     cache = {};
   }
-  // Premier lancement avec settings.json : on reprend ce que la version précédente avait mémorisé.
+  // Premier lancement avec settings.json (ou avec le fond navigateur) : on reprend ce que la version précédente
+  // avait mémorisé dans localStorage, clé par clé.
   if (Object.keys(cache).length === 0) {
     for (const key of ["settings", "session"]) {
       const legacy = readLocal(key);
@@ -40,7 +40,6 @@ export const wasUsedBefore = (): boolean => usedBefore;
 
 /** Relit settings.json : une autre fenêtre (la principale) a pu le modifier. */
 export async function reloadStorage(): Promise<void> {
-  if (!inTauri) return;
   try {
     cache = await api.storeLoad();
     readable = true;
@@ -50,15 +49,10 @@ export async function reloadStorage(): Promise<void> {
 }
 
 export function load<T>(key: string, fallback: T): T {
-  if (!inTauri) return (readLocal(key) as T | undefined) ?? fallback;
   return key in cache ? (cache[key] as T) : fallback;
 }
 
 export function save(key: string, value: unknown): void {
-  if (!inTauri) {
-    writeLocal(key, value);
-    return;
-  }
   cache[key] = value;
   if (!readable) return;
   clearTimeout(timer);
@@ -73,13 +67,5 @@ function readLocal(key: string): unknown {
     return raw === null ? undefined : JSON.parse(raw);
   } catch {
     return undefined;
-  }
-}
-
-function writeLocal(key: string, value: unknown): void {
-  try {
-    localStorage.setItem(PREFIX + key, JSON.stringify(value));
-  } catch {
-    // Stockage indisponible : l'application continue sans mémoriser.
   }
 }

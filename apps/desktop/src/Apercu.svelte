@@ -3,7 +3,7 @@
   // logiciel. Flèches pour choisir, Entrée pour ouvrir, Échap pour revenir puis fermer.
   import type { PluginToHost } from "@etabli/sdk/protocol";
   import { onMount, tick } from "svelte";
-  import { inTauri, system } from "$lib/api";
+  import { api, system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
@@ -26,7 +26,7 @@
 
   // Le contenu est effacé en fondu AVANT de masquer la fenêtre : à la réouverture, la fenêtre
   // réapparaît vide, puis le panneau apparaît en fondu (aucun ancien contenu qui saute).
-  let shown = $state(!inTauri);
+  let shown = $state(!api.capacites.fenetresNatives);
 
   /** Clic dans un autre logiciel : l'aperçu se ferme. Le focus qui passe dans une mini-app
    *  (son cadre) déclenche aussi « blur », mais le document garde alors le focus. */

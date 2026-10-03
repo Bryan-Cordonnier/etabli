@@ -3,7 +3,7 @@
   // cadre isolé, le titre du calcul, l'enregistrement automatique et la liste des anciens calculs.
   import type { PluginToHost } from "@etabli/sdk/protocol";
   import { onMount } from "svelte";
-  import { inTauri } from "$lib/api";
+  import { api } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
   import PastCalcs from "$lib/components/PastCalcs.svelte";
@@ -143,8 +143,8 @@
     {#if pluginProblems(plugin).length}
       <PluginProblems {plugin} />
     {:else if app.entry}
-      {#if !inTauri}
-        <p class="notice">Aperçu navigateur : les calculs sont gardés dans ce navigateur, pas dans des fichiers.</p>
+      {#if api.id === "web"}
+        <p class="notice">Version navigateur : les calculs sont gardés dans ce navigateur, pas dans des fichiers.</p>
       {/if}
       {#if session?.initial}
         <MiniAppFrame

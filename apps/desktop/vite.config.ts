@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
@@ -22,6 +22,17 @@ const MIME: Record<string, string> = {
   ".wasm": "application/wasm",
 };
 
+/** Manifestes des plugins du dépôt (compilés dans dist/, sinon sans code), dans l'ordre alphabétique. */
+function listePlugins(): { manifest: unknown; official: boolean }[] {
+  if (!existsSync(PLUGINS_DIR)) return [];
+  return readdirSync(PLUGINS_DIR)
+    .sort()
+    .flatMap((id) => {
+      const fichier = [join(PLUGINS_DIR, id, "dist", "manifest.json"), join(PLUGINS_DIR, id, "manifest.json")].find(existsSync);
+      return fichier ? [{ manifest: JSON.parse(readFileSync(fichier, "utf-8")) as unknown, official: true }] : [];
+    });
+}
+
 /**
  * Aperçu dans un navigateur : sert les fichiers des plugins sous /__plugins/<id>/<chemin>,
  * comme le fait le cœur Rust dans l'application (voir src-tauri/src/plugins.rs).
@@ -32,6 +43,12 @@ function servePlugins(): Plugin {
     configureServer(server) {
       server.middlewares.use("/__plugins", (req, res, next) => {
         const path = decodeURIComponent((req.url ?? "").split("?")[0] ?? "");
+        // Liste des plugins du dépôt, au même format que le plugins/index.json de la version web.
+        if (path === "/index.json") {
+          res.setHeader("Content-Type", MIME[".json"] ?? "application/json");
+          res.end(JSON.stringify(listePlugins()));
+          return;
+        }
         const [, id = "", ...rest] = path.split("/");
         const root = [join(PLUGINS_DIR, id, "dist"), join(PLUGINS_DIR, id)].find((dir) =>
           existsSync(join(dir, "manifest.json")),

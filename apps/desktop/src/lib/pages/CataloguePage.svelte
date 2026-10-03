@@ -2,7 +2,7 @@
   // Catalogue des plugins (maquette validée par Bryan, docs/13) : installer, mettre à jour, activer,
   // désactiver, désinstaller, ou installer depuis un fichier. Le travail est fait par Rust.
   import type { CatalogueEntry } from "$lib/api";
-  import { inTauri } from "$lib/api";
+  import { api } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
@@ -92,7 +92,7 @@
       <p class="sub">Les plugins officiels d'Établi. Tout est gratuit et fonctionne sans compte.</p>
       <span class="trust"><Icon name="shield" size={14} /> Signés et vérifiés avant chaque installation</span>
     </div>
-    {#if inTauri}
+    {#if api.capacites.catalogue}
       <button class="btn" onclick={() => void catalogue.installFile()}><Icon name="package" size={16} /> Installer depuis un fichier…</button>
     {/if}
   </header>
@@ -161,7 +161,7 @@
               <small>Installation… {progress > 0 ? `${progress} %` : ""}</small>
             </div>
           {:else if !card.installed && card.entry}
-            <button class="btn primary" disabled={!inTauri} onclick={() => card.entry && lifecycle.askInstall(card.entry)}>Installer</button>
+            <button class="btn primary" disabled={!api.capacites.catalogue} onclick={() => card.entry && lifecycle.askInstall(card.entry)}>Installer</button>
           {:else if card.installed}
             {#if card.entry && catalogue.hasUpdate(card.entry)}
               <button class="btn primary" onclick={() => card.entry && lifecycle.askInstall(card.entry)}>Mettre à jour</button>

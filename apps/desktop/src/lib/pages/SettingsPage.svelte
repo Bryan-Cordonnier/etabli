@@ -2,7 +2,7 @@
   // Paramètres (cahier des charges, section 5.10). Les plugins peuvent y ajouter leurs propres pages
   // de réglages (fournisseurs, machines…) : elles s'affichent dans le menu, sous « Plugins ».
   import type { PluginToHost } from "@etabli/sdk/protocol";
-  import { inTauri, system, type AppInfo } from "$lib/api";
+  import { api, system, type AppInfo } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
   import PluginProblems from "$lib/components/PluginProblems.svelte";
@@ -511,7 +511,7 @@
         <div class="box">
           <h3>Mises à jour</h3>
           <p>Version installée : Établi <b>{info?.version ?? "…"}</b></p>
-          {#if !inTauri}
+          {#if !api.capacites.miseAJour}
             <p class="hint">Mises à jour indisponibles dans l'aperçu navigateur.</p>
           {:else if updates.status === "available" || updates.status === "downloading" || updates.status === "installing"}
             <div class="update">

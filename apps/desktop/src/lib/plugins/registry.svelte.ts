@@ -1,4 +1,5 @@
-import { api, inTauri, type PluginSource } from "$lib/api";
+import { api, type PluginSource } from "$lib/api";
+import { pluginsBase } from "$lib/fond/web";
 import { ICONS, type IconName } from "$lib/icons";
 import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
 import { settings } from "$lib/state/settings.svelte";
@@ -16,11 +17,11 @@ export interface MiniAppRef {
 }
 
 /**
- * Charge les manifestes (cahier des charges, section 8.2) : depuis le cœur Rust dans
- * l'application, depuis les fichiers du dépôt dans l'aperçu navigateur.
+ * Charge les manifestes (cahier des charges, section 8.2) via le fond : cœur Rust dans l'application,
+ * `plugins/index.json` servi avec la version web (et par Vite en développement).
  */
 export async function loadPlugins(): Promise<void> {
-  const raw = inTauri ? await api.pluginsList().catch(() => []) : repositoryManifests();
+  const raw = await api.pluginsList().catch(() => []);
   const plugins = raw
     .map(({ manifest, official, source }) => normalize(manifest, official, source ?? (official ? "integre" : "utilisateur")))
     .filter((p) => p !== null);
@@ -34,14 +35,6 @@ const rank = (plugin: PluginManifest) => {
   const index = OFFICIAL_ORDER.indexOf(plugin.id);
   return plugin.official && index >= 0 ? index : OFFICIAL_ORDER.length;
 };
-
-function repositoryManifests(): { manifest: unknown; official: boolean; source?: PluginSource }[] {
-  const files = import.meta.glob<unknown>(
-    ["../../../../../plugins/*/manifest.json", "../../../../../plugins/*/public/manifest.json"],
-    { eager: true, import: "default" },
-  );
-  return Object.values(files).map((manifest) => ({ manifest, official: true }));
-}
 
 const text = (value: unknown, fallback = ""): string => (typeof value === "string" ? value : fallback);
 const icon = (value: unknown): IconName => (typeof value === "string" && value in ICONS ? (value as IconName) : "puzzle");
@@ -102,9 +95,10 @@ export function stringMap(value: unknown): Record<string, string> {
 /** Adresse d'un fichier de plugin, servie par le cœur Rust (voir plugins.rs). */
 export function pluginUrl(pluginId: string, path: string): string {
   // Sous Windows, WebView2 expose les protocoles personnalisés en http://<nom>.localhost.
-  // Dans l'aperçu navigateur, c'est le serveur Vite qui sert les plugins (voir vite.config.ts).
-  const base = !inTauri
-    ? "/__plugins"
+  // Dans un navigateur, ce sont des fichiers statiques : `plugins/` de la version construite, ou le serveur
+  // Vite en développement (voir vite.config.ts).
+  const base = api.id === "web"
+    ? pluginsBase()
     : navigator.userAgent.includes("Windows")
       ? "http://plugins.localhost"
       : "plugins://localhost";

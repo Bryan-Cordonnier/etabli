@@ -26,3 +26,4 @@ Thumbs.db
 
 # Réglages locaux de l'assistant
 .claude/
+dist-web/

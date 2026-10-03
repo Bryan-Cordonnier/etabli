@@ -47,22 +47,25 @@ dans les Releases (voir [14-publier-une-version.md](14-publier-une-version.md)).
 ## Voir l'interface sans Rust (aperçu navigateur)
 
 `npm run dev -w @etabli/desktop` sert l'interface sur `http://localhost:1420`. Hors de Tauri :
-- `lib/api.ts` bascule sur des remplacements : documents et données de plugin dans `localStorage`,
-  commandes système sans effet ;
-- les plugins sont servis par Vite sous `/__plugins/<id>/…` (middleware dans
+- le **fond** (`lib/fond/`) est `web` : calculs, données de plugin et réglages dans **IndexedDB** (base `etabli`) ;
+  les anciennes données de l'aperçu (clés `localStorage` `etabli.preview-*`, `etabli.store`) sont reprises une fois ;
+  les commandes système (`system`) sont sans effet ;
+- les plugins sont servis par Vite sous `/__plugins/<id>/…`, avec la liste `/__plugins/index.json` (middleware dans
   `apps/desktop/vite.config.ts`) ; il faut avoir lancé `npm run build:plugins` ;
-- le cadre des mini-apps reçoit `allow-same-origin` (certains navigateurs bloquent les cadres à
-  origine opaque) ; dans l'application, il reste strictement isolé.
+- le cadre des mini-apps reçoit `allow-same-origin` (voir `Capacites.isolationComplete`) ; dans l'application, il reste
+  strictement isolé ;
+- sous 760 px de large, l'interface passe en mode compact (tiroir des plugins, barre simple) : redimensionner la fenêtre suffit pour le voir.
 
-Le fichier local `.claude/launch.json` (ignoré par Git) déclare cette configuration pour l'outil de
-prévisualisation de l'agent (serveur « interface », port 1420).
+## Version web (installable, hors ligne)
 
-**Une mini-app seule** : `npx vite plugins/<id> --port 518x` sert le plugin sans le moteur
-(`http://localhost:518x/apps/<mini-app>/index.html`). La mini-app s'affiche avec ses valeurs par
-défaut (`connect()` n'aboutit jamais : rien n'est enregistré, les réglages du plugin restent ceux par
-défaut) ; on remplit les champs en déclenchant l'évènement `input`. Configurations locales :
-« plugin-tracage » (5181), « plugin-materiaux » (5182), « plugin-economie » (5183). Chaque
-modification recharge la page : les valeurs saisies sont perdues.
+`npm run build:web` à la racine produit `apps/desktop/dist-web/` : l'interface (une seule page, chemins relatifs), les
+plugins compilés sous `plugins/<id>/`, `plugins/index.json`, un manifeste PWA et `sw.js` (service worker qui garde tous
+les fichiers : l'application démarre sans réseau). `npm run preview:web` la sert sur `http://localhost:4180`.
+- Hébergement : n'importe quel serveur de fichiers statiques, à la racine ou dans un sous-dossier ; **HTTPS** pour
+  l'installation sur téléphone (sauf `localhost`).
+- Une nouvelle version prend la main quand tous les onglets de l'ancienne ont été fermés (pas de `skipWaiting`).
+- Les calculs restent dans le navigateur de l'appareil (IndexedDB). Le mode serveur (docs/16) les centralisera.
+- Pas de catalogue ni d'installation de plugins dans cette version : elle contient les plugins du dépôt.
 
 ## Pièges connus
 

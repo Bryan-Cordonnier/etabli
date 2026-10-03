@@ -11,8 +11,14 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+## [0.4.0] — 2026-10-03
+
 ### Ajouté
 
+- **Version web** (`npm run build:web`) : Établi dans un navigateur, installable comme une application et utilisable **hors ligne**.
+  Les calculs sont gardés dans le navigateur (IndexedDB). Les plugins du dépôt y sont inclus ; pas de catalogue dans cette version.
+- **Interface adaptée aux petits écrans** (moins de 760 px) : la colonne des plugins devient un tiroir, une barre simple remplace les
+  onglets. Sans effet sur l'application Windows.
 - La page **Catalogue** et la fenêtre de mise à jour d'un plugin affichent les **nouveautés** de la version (« Nouveautés de la version… »).
 - **Signaler un problème** (Paramètres → Mises à jour et à propos) ouvre le formulaire « Bug » du dépôt avec la version d'Établi et
   la liste des plugins déjà remplies.
@@ -34,6 +40,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Pour les contributeurs
 
+- **Couche de stockage unifiée** (`lib/fond/`) : les calculs, réglages et plugins passent par une interface unique (« fond »), avec
+  une version « fichiers » (application, inchangée pour l'utilisateur : ses calculs sont conservés) et une version « navigateur »
+  (IndexedDB). Première étape du mode serveur facultatif (docs/16).
 - Nouveaux fichiers du dépôt : guide de contribution, code de conduite, politique de sécurité, aide, feuille de route, guide de
   l'utilisateur, guide des mainteneurs, modèles de tickets (bug, résultat de calcul faux, idée, plugin) et de demandes de fusion,
   mises à jour automatiques des dépendances (Dependabot), propriétaires du code et étiquettes.
@@ -182,7 +191,8 @@ Développement du moteur et des plugins, sans version publiée.
 - **Cinq plugins** : Maths et géométrie, Économie de matière (débit de tubes, calepinage de tôles), Tôlerie, Traçage et
   Matériaux et fixation.
 
-[Non publié]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.3.0...HEAD
+[Non publié]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Bryan-Cordonnier/etabli/compare/v0.1.3...v0.2.0

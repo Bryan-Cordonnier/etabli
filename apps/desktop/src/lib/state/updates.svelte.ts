@@ -4,7 +4,7 @@
 // Tauri refuse un fichier dont la signature ne correspond pas à la clé publique de tauri.conf.json.
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
-import { inTauri } from "$lib/api";
+import { api } from "$lib/api";
 
 export type UpdateStatus = "idle" | "checking" | "uptodate" | "available" | "downloading" | "installing" | "error";
 
@@ -30,7 +30,7 @@ class Updates {
    * injoignable, aucune version publiée) ne s'affiche pas.
    */
   async check(silent = false): Promise<void> {
-    if (!inTauri || this.busy) return;
+    if (!api.capacites.miseAJour || this.busy) return;
     this.status = "checking";
     this.error = "";
     try {
