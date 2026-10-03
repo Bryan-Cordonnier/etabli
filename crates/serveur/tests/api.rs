@@ -1005,10 +1005,15 @@ async fn plugin_signe_installe_liste_et_servi() {
         page.en_tetes[header::CONTENT_TYPE],
         "text/html; charset=utf-8"
     );
-    assert!(page.en_tetes[header::CONTENT_SECURITY_POLICY]
+    let csp = page.en_tetes[header::CONTENT_SECURITY_POLICY]
         .to_str()
-        .unwrap()
-        .contains("connect-src 'none'"));
+        .unwrap();
+    assert!(csp.contains("connect-src 'none'"));
+    // Origine opaque même hors d'un cadre (page ouverte directement) : jamais `allow-same-origin`.
+    assert!(
+        csp.contains("sandbox allow-scripts") && !csp.contains("allow-same-origin"),
+        "{csp}"
+    );
     assert_eq!(page.en_tetes[header::ACCESS_CONTROL_ALLOW_ORIGIN], "*");
     assert_eq!(page.en_tetes[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
 

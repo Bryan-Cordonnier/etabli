@@ -87,7 +87,8 @@ Les formats de calcul sont ceux des fichiers `.etabli` ([08](08-documents-donnee
   factice de même durée) ; blocage après 5 échecs par identifiant (10 min) et 30 par adresse.
 - **Plugins** : signature minisign vérifiée **avant** toute écriture ; chemins du zip contrôlés (`..`, `/`, `\`, `:`), 5000 fichiers et
   256 Mo décompressés au plus ; mise en place atomique (l'ancienne version revient si quelque chose échoue) ; service des fichiers
-  avec chemins simples seulement et contrôle après résolution des liens symboliques.
+  avec chemins simples seulement et contrôle après résolution des liens symboliques, et une politique `sandbox allow-scripts` qui
+  impose une origine opaque même si la page est ouverte directement dans un onglet.
 - **En-têtes** : `nosniff`, `no-referrer`, `no-store` sur l'API ; pages de l'application avec une politique `default-src 'self'` et
   `frame-ancestors 'none'` ; pas de CORS sans `--origine`.
 - **Limites** : corps de requête borné (256 Ko, 1 Mo pour les réglages, 5 Mo pour un calcul, 70 Mo pour un paquet), 10 000 calculs et
