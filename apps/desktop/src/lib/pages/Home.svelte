@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { inTauri } from "$lib/api";
+  import { api } from "$lib/api";
   import AppCard from "$lib/components/AppCard.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import RecentDocs from "$lib/components/RecentDocs.svelte";
@@ -52,7 +52,7 @@
       <button class="btn primary big" onclick={() => tabs.navigate({ kind: "catalogue" })}>
         <Icon name="store" size={18} /> Ouvrir le catalogue pour installer des plugins
       </button>
-      {#if inTauri}
+      {#if api.capacites.catalogue}
         <button class="link" onclick={() => void catalogue.installFile()}>Installer depuis un fichier…</button>
       {/if}
       <p class="hint">Les plugins sont signés : Établi vérifie chaque installation.</p>

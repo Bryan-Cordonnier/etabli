@@ -152,7 +152,7 @@ Utilité générique : rappels d'échéance, imports de données, mises à jour 
 
 | Étape | Contenu | Test |
 | --- | --- | --- |
-| E1 | Interface `Fond` + `FondTauri` : refonte de `api.ts` sans changement de comportement. `etabli-noyau` extraite. | tests existants, CI Windows |
+| E1 | Interface `Fond` + `fond/tauri` + `fond/navigateur` : refonte de `api.ts` sans changement de comportement, capacités (`api.capacites`). **Fait** (branche `moteur-serveur`). La crate `etabli-noyau` est extraite en E3, avec le serveur qui la réutilise (la modifier plus tôt aurait touché le Rust de l'application sans pouvoir la compiler ici). | tests Vitest, `svelte-check`, parcours navigateur ; essai Windows par Bryan |
 | E2 | Build web de l'hôte (`FondWeb`, IndexedDB), plugins servis en statique, hôte adaptatif ; cache hors ligne commun à tous les fonds. | Playwright, PWA installable |
 | E3 | `etabli-serveur` : utilisateurs, sessions, documents, réglages, services, plugins, export. | `cargo test`, tests d'API, revue de sécurité |
 | E4 | `FondServeur` (cache + file d'écritures), écran de connexion, choix du mode, pages d'administration (utilisateurs, plugins), import local → serveur. | parcours Playwright + essai par Bryan |

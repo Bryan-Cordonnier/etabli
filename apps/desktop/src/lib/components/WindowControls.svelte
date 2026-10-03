@@ -1,11 +1,11 @@
 <script lang="ts">
   // Boutons réduire / agrandir / fermer de la barre de titre personnalisée.
   // Hors de Tauri (aperçu dans un navigateur), ils ne s'affichent pas.
-  import { isTauri } from "@tauri-apps/api/core";
+  import { api } from "$lib/api";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import Icon from "./Icon.svelte";
 
-  const inTauri = isTauri();
+  const inTauri = api.capacites.fenetresNatives;
   let maximized = $state(false);
 
   $effect(() => {

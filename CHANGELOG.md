@@ -21,6 +21,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Modifié
 
+- **Interne : couche de stockage unifiée** (`lib/fond/`). Les calculs, réglages et plugins passent par une interface unique, avec une
+  version « fichiers » (application) et une version « navigateur » (aperçu de développement). Aucun changement visible dans
+  l'application ; dans l'aperçu navigateur, les réglages sont désormais gardés sous une seule clé (`etabli.store`) et les anciennes
+  clés sont reprises au premier lancement. Première étape du mode serveur facultatif (docs/16).
 - Mise à jour de Tauri (le cadre de l'application) et de ses extensions, des bibliothèques qui vérifient les signatures et
   ouvrent les paquets de plugins, et des outils de l'interface. Aucun changement visible ; vérifié sur une version compilée
   (installation de plugins depuis le catalogue, mini-app, réglages).

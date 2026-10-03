@@ -19,8 +19,9 @@
 
 ## Commandes appelées par l'interface
 
-Toutes passent par `apps/desktop/src/lib/api.ts` (objets `api` et `system`), qui fournit un
-remplacement quand l'interface tourne dans un simple navigateur.
+Le stockage, les plugins et le catalogue passent par le **fond** (`apps/desktop/src/lib/fond/`, exporté sous le nom `api`
+par `lib/api.ts`) : `fond/tauri.ts` appelle ces commandes, `fond/navigateur.ts` les remplace dans un simple navigateur.
+Les commandes de fenêtre, de raccourci et de démarrage (objet `system`) restent dans `lib/api.ts`.
 
 | Commande | Rôle |
 | --- | --- |
@@ -68,8 +69,10 @@ remplacement quand l'interface tourne dans un simple navigateur.
    ```
    Renvoyer `Result<_, String>` avec un message en français lisible par l'utilisateur.
 2. L'ajouter à `tauri::generate_handler![…]` dans `lib.rs`.
-3. L'exposer dans `apps/desktop/src/lib/api.ts`, avec un remplacement pour l'aperçu navigateur
-   (`inTauri ? invoke("ma_commande", { nom }) : …`). Les noms d'arguments côté JS sont ceux de Rust.
+3. L'exposer dans l'interface `Fond` (`lib/fond/types.ts`), l'implémenter dans `fond/tauri.ts` (`invoke("ma_commande", { nom })`)
+   **et** dans `fond/navigateur.ts` (ou la faire échouer avec un message clair), puis ajouter son cas à
+   `fond/tauri.test.ts` (noms de commande et d'arguments). Les noms d'arguments côté JS sont ceux de Rust. Une commande de
+   fenêtre ou de système va plutôt dans l'objet `system` de `lib/api.ts`.
 4. Test unitaire dans le module (`#[cfg(test)] mod tests`, dossier temporaire via
    `crate::files::tests::scratch("nom")`).
 5. `cargo fmt`, `cargo clippy --all-targets` (zéro avertissement), `cargo test`.

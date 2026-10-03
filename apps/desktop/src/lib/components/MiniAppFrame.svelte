@@ -11,7 +11,7 @@
     type PluginToHost,
     type ThemeTokens,
   } from "@etabli/sdk/protocol";
-  import { api, inTauri } from "$lib/api";
+  import { api } from "$lib/api";
   import { printFiche } from "$lib/print/print";
   import { frameShortcuts } from "$lib/shortcuts";
   import { pluginData } from "$lib/state/pluginData.svelte";
@@ -23,7 +23,7 @@
   // Dans l'application : origine opaque, isolation totale. Dans l'aperçu navigateur de développement
   // (plugins officiels uniquement), certains navigateurs refusent les cadres opaques : on les autorise
   // alors à garder leur origine.
-  const sandbox = inTauri ? "allow-scripts" : "allow-scripts allow-same-origin";
+  const sandbox = api.capacites.isolationComplete ? "allow-scripts" : "allow-scripts allow-same-origin";
 
   interface Props {
     src: string;

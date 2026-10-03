@@ -47,8 +47,8 @@ dans les Releases (voir [14-publier-une-version.md](14-publier-une-version.md)).
 ## Voir l'interface sans Rust (aperçu navigateur)
 
 `npm run dev -w @etabli/desktop` sert l'interface sur `http://localhost:1420`. Hors de Tauri :
-- `lib/api.ts` bascule sur des remplacements : documents et données de plugin dans `localStorage`,
-  commandes système sans effet ;
+- le **fond** (`lib/fond/`) devient `navigateur` : documents, données de plugin et réglages dans `localStorage`
+  (clés `etabli.preview-documents`, `etabli.preview-data.<nom>`, `etabli.store`) ; les commandes système (`system`) sont sans effet ;
 - les plugins sont servis par Vite sous `/__plugins/<id>/…` (middleware dans
   `apps/desktop/vite.config.ts`) ; il faut avoir lancé `npm run build:plugins` ;
 - le cadre des mini-apps reçoit `allow-same-origin` (certains navigateurs bloquent les cadres à
