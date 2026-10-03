@@ -78,4 +78,4 @@ export const system = {
 
 // Les types de documents et de plugins, et l'objet `api` (stockage, plugins), vivent dans `./fond`.
 export * from "./fond/types";
-export { fond as api } from "./fond";
+export { fond as api, clientServeur, fondServeur } from "./fond";

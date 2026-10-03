@@ -1,5 +1,4 @@
 import { api, type PluginSource } from "$lib/api";
-import { pluginsBase } from "$lib/fond/web";
 import { ICONS, type IconName } from "$lib/icons";
 import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
 import { settings } from "$lib/state/settings.svelte";
@@ -97,8 +96,8 @@ export function pluginUrl(pluginId: string, path: string): string {
   // Sous Windows, WebView2 expose les protocoles personnalisés en http://<nom>.localhost.
   // Dans un navigateur, ce sont des fichiers statiques : `plugins/` de la version construite, ou le serveur
   // Vite en développement (voir vite.config.ts).
-  const base = api.id === "web"
-    ? pluginsBase()
+  const base = api.urlPlugins
+    ? api.urlPlugins
     : navigator.userAgent.includes("Windows")
       ? "http://plugins.localhost"
       : "plugins://localhost";

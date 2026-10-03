@@ -36,6 +36,19 @@ updates:
         patterns: ["*"]
         exclude-patterns: ["tauri", "tauri-*"]
 
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["dépendances"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      serveur:
+        patterns: ["*"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

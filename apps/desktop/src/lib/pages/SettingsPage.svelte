@@ -3,9 +3,14 @@
   // de réglages (fournisseurs, machines…) : elles s'affichent dans le menu, sous « Plugins ».
   import type { PluginToHost } from "@etabli/sdk/protocol";
   import { api, system, type AppInfo } from "$lib/api";
+  import { lireConnexion } from "$lib/connexion";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
   import PluginProblems from "$lib/components/PluginProblems.svelte";
+  import AdministrationSection from "./AdministrationSection.svelte";
+  import AlarmesSection from "./AlarmesSection.svelte";
+  import ServeurSection from "./ServeurSection.svelte";
+  import { estNatif } from "$lib/mobile/alarmes";
   import ShortcutRecorder from "$lib/components/ShortcutRecorder.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
@@ -46,6 +51,21 @@
       title: "Raccourcis clavier",
       lead: "Aucun raccourci n'est réglé d'avance (sauf l'aperçu rapide) : choisissez ceux dont vous avez besoin.",
     },
+    serveur: {
+      label: "Serveur et compte",
+      title: "Serveur et compte",
+      lead: "Établi fonctionne seul sur cet appareil. Un serveur facultatif réunit vos calculs et ceux de votre équipe.",
+    },
+    administration: {
+      label: "Administration",
+      title: "Administration du serveur",
+      lead: "Comptes, plugins, journal et sauvegarde. Réservé à l'administrateur.",
+    },
+    alarmes: {
+      label: "Alarmes",
+      title: "Alarmes du téléphone",
+      lead: "Vérifiez que les rappels sonnent à l'heure, application fermée.",
+    },
     plugins: {
       label: "Plugins installés",
       title: "Plugins installés",
@@ -58,8 +78,14 @@
     },
   };
 
+  /** Administrateur du serveur auquel on est connecté (le seul à voir la page Administration). */
+  const connexion = lireConnexion();
+  const estAdmin = api.id === "serveur" && connexion?.mode === "serveur" && connexion.utilisateur.role === "admin";
+
   const GROUPS: { title: string; sections: FixedSection[] }[] = [
     { title: "Application", sections: ["general", "apparence", "apercu", "raccourcis"] },
+    { title: "Serveur", sections: estAdmin ? ["serveur", "administration"] : ["serveur"] },
+    ...(estNatif() ? [{ title: "Téléphone", sections: ["alarmes" as const] }] : []),
     { title: "Plugins", sections: ["plugins"] },
     { title: "Aide", sections: ["a-propos"] },
   ];
@@ -266,6 +292,12 @@
             onmessage={onPluginMessage}
           />
         </div>
+      {:else if active === "serveur"}
+        <ServeurSection />
+      {:else if active === "alarmes"}
+        <AlarmesSection />
+      {:else if active === "administration"}
+        <AdministrationSection />
       {:else if active === "general"}
         <div class="box">
           <h3>Quand je ferme la fenêtre</h3>

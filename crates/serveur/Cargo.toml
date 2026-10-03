@@ -1,0 +1,32 @@
+[package]
+name = "etabli-serveur"
+description = "Établi : serveur facultatif (comptes, documents, plugins) pour l'équipe ou la maison"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "etabli-serveur"
+path = "src/main.rs"
+
+[dependencies]
+etabli-noyau = { path = "../noyau" }
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time"] }
+tower-http = { version = "0.6", features = ["cors", "limit", "set-header", "fs"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+argon2 = { version = "0.5", features = ["std"] }
+password-hash = { version = "0.5", features = ["getrandom"] }
+rand = "0.9"
+sha2 = "0.10"
+base64 = "0.23"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4", features = ["derive", "env"] }
+uuid = { version = "1", features = ["v4"] }
+subtle = "2"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"

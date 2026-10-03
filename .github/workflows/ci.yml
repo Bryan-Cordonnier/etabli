@@ -32,7 +32,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: apps/desktop/src-tauri
+          workspaces: |
+            apps/desktop/src-tauri
+            .
 
       - name: Dépendances npm
         run: npm ci
@@ -60,6 +62,12 @@ jobs:
 
       - name: Version web (build, plugins, service worker)
         run: npm run build:web -w @etabli/desktop && node scripts/construire-web.mjs
+
+      - name: Serveur et noyau (format, analyse, tests)
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace
 
       - name: Format Rust
         working-directory: apps/desktop/src-tauri

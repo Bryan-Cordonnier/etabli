@@ -40,7 +40,25 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const requete = event.request;
-  if (requete.method !== "GET" || new URL(requete.url).origin !== self.location.origin) return;
+  const adresse = new URL(requete.url);
+  if (requete.method !== "GET" || adresse.origin !== self.location.origin) return;
+  // Les plugins servis par un serveur Établi peuvent changer à tout moment (mise à jour par l'administrateur) :
+  // réseau d'abord, copie gardée seulement pour le hors ligne. Jamais l'API : le cache des données est dans l'application.
+  if (adresse.pathname.includes("/plugins/")) {
+    event.respondWith(
+      fetch(requete)
+        .then((reponse) => {
+          if (reponse.ok) {
+            const copie = reponse.clone();
+            caches.open(CACHE).then((cache) => cache.put(requete, copie));
+          }
+          return reponse;
+        })
+        .catch(() => caches.match(requete, { ignoreSearch: true }).then((trouve) => trouve ?? Response.error())),
+    );
+    return;
+  }
+  if (adresse.pathname.includes("/api/")) return;
   event.respondWith(
     caches.match(requete, { ignoreSearch: true }).then(
       (trouve) =>

@@ -28,12 +28,16 @@ export interface DocumentInput {
   title: string;
   summary: string;
   data: unknown;
+  /** Version du calcul lue par le client ; le serveur refuse l'enregistrement (409) si elle a changé ailleurs. */
+  versionAttendue?: number;
 }
 
 /** D'où vient un plugin : livré avec l'application, installé depuis le catalogue, ou déposé à la main. */
 export type PluginSource = "integre" | "catalogue" | "utilisateur";
 
 export interface PluginInfo {
+  /** Fichiers du plugin (chemins relatifs), fournis par un serveur pour les garder d'avance hors ligne. */
+  fichiers?: string[];
   manifest: unknown;
   official: boolean;
   source?: PluginSource;
@@ -88,11 +92,29 @@ export interface Capacites {
   journal: boolean;
 }
 
+/** Contenu complet d'un fond local : calculs, données de plugin, réglages. */
+export interface ExportComplet {
+  documents: DocumentFile[];
+  donnees: Record<string, unknown>;
+  reglages: Record<string, unknown>;
+}
+
 /** Couche de stockage et de plugins de l'application. L'interface ne parle qu'à elle. */
 export interface Fond {
-  /** « tauri » (fichiers via Rust) ou « web » (IndexedDB du navigateur). */
-  readonly id: "tauri" | "web";
+  /** « tauri » (fichiers via Rust), « web » (IndexedDB du navigateur) ou « serveur » (serveur Établi, avec cache hors ligne). */
+  readonly id: "tauri" | "web" | "serveur";
   readonly capacites: Capacites;
+
+  /** Dossier d'où sont servis les fichiers des plugins, quand ce n'est pas le protocole de l'application. */
+  readonly urlPlugins?: string;
+  /**
+   * Origine dédiée aux plugins d'un serveur (autre port ou autre nom d'hôte) : les mini-apps y gardent un service worker
+   * qui les rend utilisables hors ligne, sans jamais partager l'origine de l'application.
+   */
+  readonly originePlugins?: string;
+
+  /** Tout ce que ce fond contient, pour l'importer dans un serveur (fonds locaux seulement). */
+  exporterTout?(): Promise<ExportComplet>;
 
   pluginsList(): Promise<PluginInfo[]>;
   /** Catalogue des plugins officiels (lu sur GitHub par Rust). */

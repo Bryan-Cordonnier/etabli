@@ -1,0 +1,7 @@
+{
+  "appId": "fr.etabli.app",
+  "appName": "Établi",
+  "webDir": "../desktop/dist-web",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}

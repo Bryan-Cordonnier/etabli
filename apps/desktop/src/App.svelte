@@ -2,6 +2,7 @@
   import CommandPalette from "$lib/components/CommandPalette.svelte";
   import MobileBar from "$lib/components/MobileBar.svelte";
   import PluginDialog from "$lib/components/PluginDialog.svelte";
+  import SynchroBanner from "$lib/components/SynchroBanner.svelte";
   import Sidebar from "$lib/components/Sidebar.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
   import Toast from "$lib/components/Toast.svelte";
@@ -12,6 +13,7 @@
   import PluginPage from "$lib/pages/PluginPage.svelte";
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
   import { api, system } from "$lib/api";
+  import { preparerPluginsHorsLigne } from "$lib/serveur/horsLigne";
   import { applyAppearance } from "$lib/appearance";
   import { openPluginSettings } from "$lib/pluginSettings";
   import { sendToApp } from "$lib/send";
@@ -25,6 +27,8 @@
   import type { View } from "$lib/types";
 
   $effect(() => applyAppearance());
+  // Mode serveur avec origine dédiée aux plugins : garde les mini-apps pour le hors ligne.
+  $effect(() => preparerPluginsHorsLigne(api));
   $effect(() => suivreEcran());
   $effect(() => tabs.persist());
 
@@ -112,6 +116,7 @@
   <section class="main">
     {#if ui.compact}<MobileBar />{:else}<TabBar />{/if}
     <UpdateBanner />
+    <SynchroBanner />
     <main class="content">
       {#key viewKey}
         <div class="view">

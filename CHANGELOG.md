@@ -11,6 +11,27 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Ajouté
+
+- **Serveur facultatif** (`etabli-serveur`, version préliminaire) : comptes, calculs et plugins d'une classe, d'un atelier ou d'une maison,
+  sur une machine que vous hébergez vous-même. Un seul administrateur choisit les plugins et crée les comptes ; chaque utilisateur ne
+  voit que ses calculs. Mode d'emploi et limites : [docs/17-serveur.md](docs/17-serveur.md).
+- **Version web connectée au serveur** : écran de connexion, choix « Établi seul » ou « Serveur », Paramètres › Serveur et
+  Administration (comptes, plugins, journal, export), import de vos calculs locaux vers le serveur. **L'application de bureau
+  (Tauri) ne se connecte pas encore** : seule la version web servie par `etabli-serveur` le fait.
+- **Hors ligne** (version web connectée) : calculs, réglages et mini-apps restent utilisables sans réseau ; vos modifications
+  attendent sur l'appareil puis partent au retour du réseau (en cas de conflit, une « copie hors ligne » est créée). Pour les
+  mini-apps hors ligne, le serveur doit exposer une origine dédiée aux plugins (`--ecoute-plugins` et `--url-plugins`).
+
+- **Android (version préliminaire)** : projet Capacitor (`apps/mobile`) et page Paramètres › Alarmes pour **tester que les rappels sonnent
+  à l'heure**, application fermée. L'APK de test se fabrique par le workflow GitHub « Android (APK de test) ». iPhone : la version web
+  s'ajoute à l'écran d'accueil (plein écran, icône).
+
+### Pour les contributeurs
+
+- Espace de travail Cargo à la racine : `crates/noyau` (règles communes) et `crates/serveur`. L'application Tauri
+  (`apps/desktop/src-tauri`) reste à part, avec son propre `Cargo.lock`. La CI vérifie aussi le serveur (format, analyse, 51 tests).
+
 ## [0.4.0] — 2026-10-03
 
 ### Ajouté

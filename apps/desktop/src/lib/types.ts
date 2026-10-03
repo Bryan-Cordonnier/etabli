@@ -10,6 +10,9 @@ export type SettingsSection =
   | "plugins"
   | "apercu"
   | "raccourcis"
+  | "serveur"
+  | "administration"
+  | "alarmes"
   | "a-propos"
   | `plugin:${string}`;
 
