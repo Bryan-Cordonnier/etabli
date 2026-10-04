@@ -30,6 +30,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   (`https://{id}.plugins.maison.fr`) : chaque plugin a son propre nom d'hôte et ne peut ni lire l'application ni un autre
   plugin. Les mini-apps restent utilisables hors ligne. Voir [docs/17](docs/17-serveur.md).
 
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
+
 ### Pour les contributeurs
 
 - Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
@@ -56,6 +59,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - **Android (version préliminaire)** : projet Capacitor (`apps/mobile`) et page Paramètres › Alarmes pour **tester que les rappels sonnent
   à l'heure**, application fermée. L'APK de test se fabrique par le workflow GitHub « Android (APK de test) ». iPhone : la version web
   s'ajoute à l'écran d'accueil (plein écran, icône).
+
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
 
 ### Pour les contributeurs
 
@@ -88,6 +94,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   facultative) et `npm run valider -- <id>` le vérifie : manifeste, dépendances, journal des changements, appels réseau ou
   exécution de code dans les sources, contenu du plugin compilé. La publication d'un plugin lance cette validation.
 - Chaque plugin a un `CHANGELOG.md` ; sa section pour la version publiée devient les nouveautés du catalogue.
+
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
 
 ### Pour les contributeurs
 
