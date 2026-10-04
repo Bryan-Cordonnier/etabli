@@ -174,6 +174,67 @@ export interface MachinesData {
   machines: Machine[];
 }
 
+/** Niveau d'accès d'une fonction de service : lire seulement, ou modifier des données chez le fournisseur. */
+export type ServiceAccess = "lecture" | "ecriture";
+
+/**
+ * Codes d'erreur d'un appel de fonction de service (docs/24, A.1.3). Les sept premiers sont décidés par le
+ * moteur ; `argument_invalide`, `introuvable`, `limite_atteinte`, `occupe`, `permission_refusee` et `erreur`
+ * peuvent aussi venir du fournisseur (`SERVICE_PROVIDER_CODES`).
+ */
+export type ServiceErrorCode =
+  | "service_absent"
+  | "contrat_incompatible"
+  | "permission_refusee"
+  | "argument_invalide"
+  | "introuvable"
+  | "limite_atteinte"
+  | "delai_depasse"
+  | "occupe"
+  | "profondeur_max"
+  | "erreur";
+
+export const SERVICE_ERROR_CODES: readonly ServiceErrorCode[] = [
+  "service_absent",
+  "contrat_incompatible",
+  "permission_refusee",
+  "argument_invalide",
+  "introuvable",
+  "limite_atteinte",
+  "delai_depasse",
+  "occupe",
+  "profondeur_max",
+  "erreur",
+];
+
+/** Codes qu'un fournisseur a le droit de renvoyer : jamais ceux qui décrivent l'état du moteur (absent, délai…). */
+export const SERVICE_PROVIDER_CODES: readonly ServiceErrorCode[] = [
+  "argument_invalide",
+  "introuvable",
+  "limite_atteinte",
+  "occupe",
+  "permission_refusee",
+  "erreur",
+];
+
+/** Réponse à un appel : jamais d'exception, toujours l'un de ces deux cas. */
+export type ServiceResult<T = unknown> = { ok: true; valeur: T } | { ok: false; code: ServiceErrorCode; message: string };
+
+export interface ServiceCallOptions {
+  /** Délai total en ms, file d'attente comprise (défaut 5 000, entre 100 et 10 000). */
+  timeoutMs?: number;
+}
+
+export const SERVICE_TIMEOUT_DEFAULT_MS = 5000;
+export const SERVICE_TIMEOUT_MIN_MS = 100;
+export const SERVICE_TIMEOUT_MAX_MS = 10_000;
+
+/** Contexte d'un appel reçu par un fournisseur : l'identité vient du moteur, jamais de l'appelant. */
+export interface ServiceCallContext {
+  /** Identifiant du plugin appelant, écrit par le moteur. */
+  caller: string;
+}
+
 export type HostToPlugin =
   | {
       type: "init";
@@ -204,7 +265,11 @@ export type HostToPlugin =
   | { type: "libraries"; libraries: Libraries }
   | { type: "services"; services: Services }
   | { type: "pluginData"; data: unknown }
-  | { type: "shortcuts"; shortcuts: string[] };
+  | { type: "shortcuts"; shortcuts: string[] }
+  /** Réponse du moteur à un `serviceCall` de cette mini-app. */
+  | { type: "serviceReply"; id: string; result: ServiceResult }
+  /** Appel d'une fonction de service reçu par la page `serviceEntry` du fournisseur ; `caller` est écrit par le moteur. */
+  | { type: "serviceInvoke"; id: string; service: string; fn: string; args: unknown; caller: string };
 
 export type PluginToHost =
   | { type: "update"; data: unknown }
@@ -225,7 +290,13 @@ export type PluginToHost =
   /** Ancien message : équivaut à `openSettings` sur le plugin `machines` avec `add=<kind>`. */
   | { type: "addMachine"; kind: MachineKind }
   | { type: "send"; kind: string; data: unknown }
-  | { type: "saveFile"; file: SavedFile };
+  | { type: "saveFile"; file: SavedFile }
+  /** Appelle la fonction `fn` du service `service` d'un autre plugin (permission `appelle:<service>:<accès>`). */
+  | { type: "serviceCall"; id: string; service: string; fn: string; args: unknown; timeoutMs?: number }
+  /** Page `serviceEntry` seulement : les gestionnaires de fonctions sont enregistrés, le moteur peut envoyer l'appel. */
+  | { type: "serviceReady" }
+  /** Page `serviceEntry` seulement : réponse à un `serviceInvoke`. */
+  | { type: "serviceResult"; id: string; result: ServiceResult };
 
 /** Fichier produit par une mini-app (DXF, CSV…) : le moteur ouvre « Enregistrer sous » puis l'écrit. */
 export interface SavedFile {
