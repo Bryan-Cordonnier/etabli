@@ -2,6 +2,7 @@ import { api, type PluginSource } from "$lib/api";
 import { ICONS, type IconName } from "$lib/icons";
 import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
 import { settings } from "$lib/state/settings.svelte";
+import { cheminRelatif, fonctionsDe } from "./manifeste";
 import type { MiniAppManifest, PluginManifest, PluginSettingsPage } from "$lib/types";
 
 /**
@@ -78,6 +79,9 @@ function normalize(raw: unknown, official: boolean, source: PluginSource): Plugi
     dependencies: stringMap(m.dependencies),
     optionalDependencies: stringMap(m.optionalDependencies),
     provides: stringMap(m.provides),
+    services: stringMap(m.services),
+    serviceEntry: cheminRelatif(m.serviceEntry),
+    functions: fonctionsDe(m.functions, stringMap(m.provides)),
     settings: settingsPages,
     official,
     source,

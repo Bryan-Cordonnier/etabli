@@ -50,8 +50,12 @@ class ServiceStore {
     const services: Services = {};
     for (const [providerId, range] of Object.entries({ ...consumer.optionalDependencies, ...consumer.dependencies })) {
       const provider = getPlugin(providerId);
-      if (!provider || !settings.isPluginEnabled(providerId) || !satisfies(provider.version, range)) continue;
+      if (!provider || !settings.isPluginEnabled(providerId)) continue;
       for (const [name, version] of Object.entries(provider.provides)) {
+        // Le consommateur qui déclare une plage de CONTRAT (`services`) est jugé sur la version du contrat ; sinon, comme
+        // avant, sur la version du plugin (docs/24, M4 : un plugin en 2.0 qui garde son contrat 1 n'est plus coupé à tort).
+        const contrat = Object.hasOwn(consumer.services, name) ? consumer.services[name] : undefined;
+        if (contrat !== undefined ? !satisfies(version, contrat) : !satisfies(provider.version, range)) continue;
         services[name] = {
           plugin: providerId,
           version,

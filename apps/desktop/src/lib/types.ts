@@ -100,6 +100,15 @@ export interface PluginManifest {
   optionalDependencies: Record<string, string>;
   /** Données que ce plugin publie pour les autres : nom du service → version du contrat. */
   provides: Record<string, string>;
+  /**
+   * Plage de **version de contrat** que ce plugin accepte pour les services qu'il lit ou appelle (« finances »: « ^1 »),
+   * à ne pas confondre avec `dependencies`, qui vise la version du plugin (docs/24, M4). Vide : l'ancien comportement.
+   */
+  services: Record<string, string>;
+  /** Page sans interface qui répond aux appels de fonctions de service (« service/index.html »), ou null. */
+  serviceEntry: string | null;
+  /** Fonctions que ce plugin offre aux autres : service → fonction → accès (« lecture » ou « ecriture »). */
+  functions: Record<string, Record<string, "lecture" | "ecriture">>;
   /** Pages de réglages que ce plugin ajoute aux Paramètres. */
   settings: PluginSettingsPage[];
   official: boolean;

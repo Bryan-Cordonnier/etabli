@@ -1,7 +1,16 @@
 // Garde de l'hôte (docs/19) : tout message d'une mini-app est contrôlé ici avant que le moteur n'y touche. Une mini-app
 // est un code qu'on ne maîtrise pas (un jour, celui d'un tiers) : on ne lui fait confiance ni sur la forme, ni sur la
 // taille, ni sur ce qu'elle a le droit de demander.
-import type { PluginToHost, SavedFile } from "@etabli/sdk/protocol";
+import {
+  SERVICE_PROVIDER_CODES,
+  SERVICE_TIMEOUT_MAX_MS,
+  SERVICE_TIMEOUT_MIN_MS,
+  type PluginToHost,
+  type SavedFile,
+  type ServiceErrorCode,
+  type ServiceResult,
+} from "@etabli/sdk/protocol";
+import { permissionAppel } from "./permissions";
 
 export const LIMITES = {
   /** Taille JSON d'un document, de réglages, de données publiées ou envoyées. */
@@ -16,7 +25,23 @@ export const LIMITES = {
   pageFiche: 600_000,
   cssFiche: 100_000,
   lignesCartouche: 40,
+  /** Longueur d'un message d'erreur de service. */
+  messageErreur: 500,
 } as const;
+
+/** Identifiant d'un appel de service (choisi par l'appelant, rendu tel quel dans la réponse). */
+const ID_APPEL = /^[A-Za-z0-9_-]{1,64}$/;
+const NOM_SERVICE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+/** « ecritures.ajouter », « soldes.aLaDate » : segments en lettres et chiffres, jamais de « _ » (pas de `__proto__`). */
+export const NOM_FONCTION = /^[a-z][A-Za-z0-9]{0,31}(\.[a-z][A-Za-z0-9]{0,31}){0,3}$/;
+
+/** Types qu'un cadre de service a le droit d'envoyer (liste fermée). */
+const TYPES_CADRE_SERVICE: ReadonlySet<string> = new Set(["ready", "height", "pluginData", "provide", "serviceReady", "serviceResult"]);
+
+/** Identifiant d'un `serviceCall` brut, même refusé : permet de répondre à l'appelant plutôt que de le laisser attendre. */
+export function idAppel(brut: unknown): string | null {
+  return estObjet(brut) && brut.type === "serviceCall" && typeof brut.id === "string" && ID_APPEL.test(brut.id) ? brut.id : null;
+}
 
 /** Extensions qu'une mini-app peut proposer à « Enregistrer sous » : jamais un programme ni un script. */
 export const EXTENSIONS_FICHIER: ReadonlySet<string> = new Set(["csv", "tsv", "dxf", "json", "txt", "svg", "md", "xml"]);
@@ -28,11 +53,17 @@ export interface Contexte {
   strict: boolean;
   /** Noms de service que le manifeste déclare (`provides`). */
   provides: readonly string[];
+  /**
+   * Vrai pour le cadre invisible `serviceEntry` d'un fournisseur (docs/24, A.1.2) : il ne peut qu'enregistrer ses
+   * réglages, publier ses services et répondre aux appels. Ni notification, ni fichier, ni impression, ni appel.
+   */
+  service?: boolean;
 }
 
-export type Verdict = { ok: true; message: PluginToHost } | { ok: false; raison: string };
+/** `code` : pour un `serviceCall` refusé, l'erreur à renvoyer à l'appelant (sinon il attendrait en vain). */
+export type Verdict = { ok: true; message: PluginToHost } | { ok: false; raison: string; code?: ServiceErrorCode };
 
-const refus = (raison: string): Verdict => ({ ok: false, raison });
+const refus = (raison: string, code?: ServiceErrorCode): Verdict => ({ ok: false, raison, ...(code ? { code } : {}) });
 const bon = (message: PluginToHost): Verdict => ({ ok: true, message });
 
 const estObjet = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -101,6 +132,10 @@ const PERMISSION_REQUISE: Record<string, string | null> = {
   send: "envoi",
   openSettings: "reglages",
   addMachine: "reglages",
+  // La permission `appelle:<service>:<accès>` dépend du service : contrôlée plus bas, puis par le routage.
+  serviceCall: null,
+  serviceReady: null,
+  serviceResult: null,
 };
 
 /**
@@ -112,6 +147,12 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
     if (!estObjet(brut) || typeof brut.type !== "string") return refus("message mal formé");
     const type = brut.type;
     if (!Object.prototype.hasOwnProperty.call(PERMISSION_REQUISE, type)) return refus(`type inconnu : ${type.slice(0, 40)}`);
+
+    if (ctx.service) {
+      if (!TYPES_CADRE_SERVICE.has(type)) return refus(`message « ${type} » interdit dans un cadre de service`);
+    } else if (type === "serviceReady" || type === "serviceResult") {
+      return refus(`message « ${type} » réservé au cadre de service`);
+    }
 
     const requise = PERMISSION_REQUISE[type];
     if (requise && ctx.strict && !ctx.permissions.includes(requise)) return refus(`permission « ${requise} » non déclarée`);
@@ -164,6 +205,45 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
         return fichierValide(brut.file)
           ? bon({ type, file: { ...brut.file, name: nomFichierSur(brut.file.name)!, extension: brut.file.extension.toLowerCase() } })
           : refus("fichier refusé (nom, extension ou taille)");
+      case "serviceReady":
+        return bon({ type });
+      case "serviceCall": {
+        if (!estTexte(brut.id, 64) || !ID_APPEL.test(brut.id)) return refus("identifiant d'appel invalide");
+        if (!estTexte(brut.service, 64) || !NOM_SERVICE.test(brut.service)) return refus("nom de service invalide", "argument_invalide");
+        if (!estTexte(brut.fn, 140) || !NOM_FONCTION.test(brut.fn)) return refus("nom de fonction invalide", "argument_invalide");
+        // Seuls les plugins de contrat ^2 appellent, et seulement les services pour lesquels ils ont une permission.
+        if (!ctx.strict) return refus("appel de service réservé aux plugins de contrat ^2", "permission_refusee");
+        if (!ctx.permissions.some((p) => permissionAppel(p)?.service === brut.service)) {
+          return refus(`permission « appelle:${brut.service}:… » non déclarée`, "permission_refusee");
+        }
+        if (!donneesValides(brut.args)) return refus("arguments trop volumineux ou illisibles", "argument_invalide");
+        let timeoutMs: number | undefined;
+        if (brut.timeoutMs !== undefined) {
+          if (typeof brut.timeoutMs !== "number" || !Number.isFinite(brut.timeoutMs)) return refus("délai invalide", "argument_invalide");
+          timeoutMs = Math.round(Math.min(SERVICE_TIMEOUT_MAX_MS, Math.max(SERVICE_TIMEOUT_MIN_MS, brut.timeoutMs)));
+        }
+        return bon({
+          type,
+          id: brut.id,
+          service: brut.service,
+          fn: brut.fn,
+          args: brut.args ?? null,
+          ...(timeoutMs !== undefined ? { timeoutMs } : {}),
+        });
+      }
+      case "serviceResult": {
+        if (!estTexte(brut.id, 64) || !ID_APPEL.test(brut.id)) return refus("identifiant d'appel invalide");
+        const r = brut.result;
+        if (!estObjet(r)) return refus("réponse de service mal formée");
+        if (r.ok === true) {
+          if (!donneesValides(r.valeur)) return refus("réponse trop volumineuse ou illisible");
+          return bon({ type, id: brut.id, result: { ok: true, valeur: r.valeur ?? null } });
+        }
+        if (r.ok !== false) return refus("réponse de service mal formée");
+        if (typeof r.code !== "string" || !(SERVICE_PROVIDER_CODES as readonly string[]).includes(r.code)) return refus("code d'erreur de service interdit");
+        if (!estTexte(r.message, LIMITES.messageErreur)) return refus("message d'erreur de service invalide");
+        return bon({ type, id: brut.id, result: { ok: false, code: r.code as ServiceErrorCode, message: r.message } });
+      }
       default:
         return refus("type inconnu");
     }
@@ -171,3 +251,6 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
     return refus("message illisible");
   }
 }
+
+/** Erreur toute prête, pour répondre à un appelant. */
+export const erreurService = (code: ServiceErrorCode, message: string): ServiceResult => ({ ok: false, code, message });
