@@ -107,6 +107,10 @@ directement (seul `Pythagore` le fait encore, par ancienneté).
 | `esc`, `fmt`, `tint`, `mark`, `box`, `section`, `facts`, `table`, `signature`, `hatch`, `type Column` | écrire les pages HTML d'une fiche d'atelier |
 | `toDxf(drawing)` | texte DXF R12 d'un dessin en mm (polylignes, lignes, textes, calques `CONTOUR`, `PLI`, `TRACE`, `TEXTE`) |
 | `gabaritPages(shapes, labels, title)` | pages A4 d'un gabarit à l'échelle 1, à ajouter aux `pages` d'une fiche |
+| `money` (`import { money } from "@etabli/ui"` ou `@etabli/ui/money`) | argent en **centimes entiers** : somme, pourcentage en points de base avec règle d'arrondi explicite, répartition sans perte, `formatEuros`, `parseEuros` |
+| `civil` (`@etabli/ui` ou `@etabli/ui/civil`) | jours civils `AAAA-MM-JJ`, ajout de mois avec fin de mois, jours ouvrés et fériés français, instant UTC ↔ Europe/Paris (changements d'heure), durées en minutes |
+
+Détail de `money` et `civil` : [packages/ui/README.md](../packages/ui/README.md).
 
 **Composants**
 
