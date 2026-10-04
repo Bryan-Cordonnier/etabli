@@ -85,7 +85,7 @@ jobs:
           fi
           gh release upload catalogue \
             "paquets/${{ steps.tag.outputs.id }}-${{ steps.tag.outputs.version }}.etabli-plugin" \
-            paquets/catalogue.json --clobber
+            paquets/catalogue.json paquets/catalogue.json.minisig --clobber
           # Texte de la Release « catalogue » : la liste des plugins et leurs nouveautés.
           node scripts/notes-catalogue.mjs paquets/catalogue.json --markdown > "$RUNNER_TEMP/notes-catalogue.md"
           gh release edit catalogue --notes-file "$RUNNER_TEMP/notes-catalogue.md"
