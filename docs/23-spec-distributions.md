@@ -198,7 +198,7 @@ Bryan a écarté l'idée d'une seule application à **profils** (regrouper des p
 
 Raisons retenues : le nom, le logo, les plugins livrés et la licence d'un produit vendu doivent être ceux de ce produit seul, sans sélecteur de profils ; deux distributions installées côte à côte (identifiants et dossiers de données distincts) s'ouvrent en même temps sans développement supplémentaire. Les mises à jour des plugins restent indépendantes dans tous les cas.
 
-Les profils restent une **extension possible** pour Établi (application tout-en-un) : un profil aurait la même structure qu'une distribution. Rien n'est à coder pour cela maintenant.
+Les profils sont mis de côté pour l'instant. Modèle retenu, à la manière d'une distribution Linux : le moteur est le noyau, les plugins sont les paquets, les catalogues sont les dépôts, et une distribution est une sélection de paquets avec un nom, un logo et des dépôts par défaut.
 
 ## 7. Ce qu'il faut pour intégrer l'ERP
 
