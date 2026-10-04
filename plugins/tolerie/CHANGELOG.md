@@ -5,6 +5,12 @@ Le journal de l'application est à la [racine du dépôt](../../CHANGELOG.md).
 
 ## [Non publié]
 
+## [1.1.0] — 2026-10-04
+
+### Modifié
+
+- Contrat « ^2 » : le moteur contrôle désormais ce que fait ce plugin ; permissions déclarées : presse-papiers, envoi. Aucun calcul ne change.
+
 ## [1.0.1] — 2026-09-29
 
 ### Modifié

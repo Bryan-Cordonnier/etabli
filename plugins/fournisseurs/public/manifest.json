@@ -1,8 +1,8 @@
 {
   "id": "fournisseurs",
   "name": "Fournisseurs",
-  "version": "1.0.0",
-  "apiVersion": "^1",
+  "version": "1.1.0",
+  "apiVersion": "^2",
   "author": "Établi",
   "description": "Vos fournisseurs de matière : longueurs de barres, formats de tôles, tolérances et prix. Les autres plugins s'en servent pour préremplir leurs calculs.",
   "color": "#0d9488",

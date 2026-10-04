@@ -9,6 +9,8 @@ use std::{
 };
 
 const DOSSIER: &str = "donnees";
+/// Taille maximale d'un fichier de données (réglages d'un plugin, bibliothèques) : un plugin ne remplit pas le disque.
+const TAILLE_MAX: usize = 5 * 1024 * 1024;
 
 /// Nom de fichier sûr : minuscules, chiffres, tirets et points, sans chemin ni fichier caché.
 fn chemin(config: &Path, nom: &str) -> Result<PathBuf, String> {
@@ -36,6 +38,9 @@ pub fn lire(config: &Path, nom: &str) -> Result<Value, String> {
 pub fn ecrire(config: &Path, nom: &str, valeur: &Value) -> Result<(), String> {
     let fichier = chemin(config, nom)?;
     let bytes = serde_json::to_vec_pretty(valeur).map_err(|e| e.to_string())?;
+    if bytes.len() > TAILLE_MAX {
+        return Err("Données trop volumineuses".into());
+    }
     write_atomic(&fichier, &bytes).map_err(|e| format!("Enregistrement impossible : {e}"))
 }
 
@@ -77,6 +82,14 @@ mod tests {
             assert!(chemin(&dir, nom).is_err(), "{nom} devrait être refusé");
         }
         assert!(chemin(&dir, "plugin.economie").is_ok());
+    }
+
+    #[test]
+    fn refuse_des_donnees_enormes() {
+        let dir = scratch("donnees-taille");
+        let gros = json!({ "x": "a".repeat(TAILLE_MAX) });
+        assert!(ecrire(&dir, "plugin.essai", &gros).is_err());
+        assert_eq!(lire(&dir, "plugin.essai").unwrap(), Value::Null);
     }
 
     #[test]
