@@ -83,6 +83,8 @@ if (id) {
     color: manifest.color ?? "#6b7280",
     icon: manifest.icon ?? "puzzle",
     apiVersion: manifest.apiVersion ?? "^1",
+    // Ce que le plugin demande à pouvoir faire (docs/19) : l'application l'affiche avant l'installation.
+    permissions: manifest.permissions ?? [],
     // Dépendances entre plugins : le catalogue s'en sert pour installer ce qui manque (docs/13).
     dependencies: manifest.dependencies ?? {},
     optionalDependencies: manifest.optionalDependencies ?? {},

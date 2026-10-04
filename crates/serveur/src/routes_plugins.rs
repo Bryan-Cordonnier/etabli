@@ -4,6 +4,7 @@
 //! mini-app est affichée dans un cadre isolé et ne peut pas envoyer de jeton. Chaque réponse
 //! porte une politique de sécurité sans accès au réseau.
 
+use crate::hote_plugins::ModelePlugins;
 use crate::{
     auth::Session,
     erreur::{Erreur, Resultat},
@@ -12,7 +13,7 @@ use crate::{
 use axum::{
     body::Body,
     extract::{Path, State},
-    http::{header, HeaderValue, Response, StatusCode},
+    http::{header, HeaderMap, HeaderValue, Response, StatusCode},
     Json,
 };
 use etabli_noyau::{identifiants::plugin_valide, paquet::type_mime};
@@ -46,20 +47,20 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('message', (event) => {
   const donnees = event.data;
   if (!donnees || donnees.type !== 'etabli:garder' || !Array.isArray(donnees.chemins)) return;
-  const chemins = donnees.chemins.filter((c) => typeof c === 'string' && c.startsWith('/plugins/'));
+  const chemins = donnees.chemins.filter((c) => typeof c === 'string' && c.startsWith('/') && !c.startsWith('//'));
   Promise.allSettled(chemins.map((c) => fetch(c))).then((r) => {
     event.source && event.source.postMessage({ type: 'etabli:gardes', total: chemins.length, reussis: r.filter((x) => x.status === 'fulfilled' && x.value.ok).length }, '*');
   });
 });
 "#;
 const SERVICE_WORKER: &str = r#"// Service worker de l'origine des plugins d'Établi : les plugins restent utilisables hors ligne.
-const CACHE = 'etabli-plugins-v1';
+const CACHE = 'etabli-plugin-v2';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', (event) => {
   const requete = event.request;
   const adresse = new URL(requete.url);
-  if (requete.method !== 'GET' || adresse.origin !== self.location.origin || !adresse.pathname.startsWith('/plugins/')) return;
+  if (requete.method !== 'GET' || adresse.origin !== self.location.origin || adresse.pathname === '/sw-plugins.js') return;
   event.respondWith((async () => {
     const arret = new AbortController();
     const delai = setTimeout(() => arret.abort(), 5000);
@@ -169,11 +170,29 @@ pub async fn fichier(
     servir(&etat, &id, &chemin, CSP_PLUGIN).await
 }
 
-/// Fichier d'un plugin sur l'origine dédiée aux plugins.
-pub async fn fichier_origine(
+/// Identifiant du plugin désigné par l'en-tête `Host` (origine propre à chaque plugin), ou « introuvable » : hôte inconnu,
+/// modèle absent ou plugin non valide.
+fn plugin_de_l_hote(etat: &Etat, en_tetes: &HeaderMap) -> Result<String, Erreur> {
+    let modele = etat
+        .config
+        .url_plugins
+        .as_deref()
+        .and_then(|u| ModelePlugins::analyser(u).ok())
+        .ok_or(Erreur::Introuvable)?;
+    en_tetes
+        .get(header::HOST)
+        .and_then(|h| h.to_str().ok())
+        .and_then(|h| modele.id_depuis_hote(h))
+        .ok_or(Erreur::Introuvable)
+}
+
+/// Fichier d'un plugin sur son origine propre : seul le plugin désigné par le nom d'hôte est servi.
+pub async fn fichier_hote(
     State(etat): State<Etat>,
-    Path((id, chemin)): Path<(String, String)>,
+    en_tetes: HeaderMap,
+    Path(chemin): Path<String>,
 ) -> Result<Response<Body>, Erreur> {
+    let id = plugin_de_l_hote(&etat, &en_tetes)?;
     servir(&etat, &id, &chemin, CSP_PLUGIN_ORIGINE).await
 }
 
@@ -198,14 +217,38 @@ fn statique(
     reponse
 }
 
-pub async fn page_enregistrer() -> Response<Body> {
-    statique(PAGE_ENREGISTRER, "text/html; charset=utf-8", false)
+pub async fn page_enregistrer(
+    State(etat): State<Etat>,
+    en_tetes: HeaderMap,
+) -> Result<Response<Body>, Erreur> {
+    plugin_de_l_hote(&etat, &en_tetes)?;
+    Ok(statique(
+        PAGE_ENREGISTRER,
+        "text/html; charset=utf-8",
+        false,
+    ))
 }
-pub async fn script_enregistrer() -> Response<Body> {
-    statique(SCRIPT_ENREGISTRER, "text/javascript; charset=utf-8", false)
+pub async fn script_enregistrer(
+    State(etat): State<Etat>,
+    en_tetes: HeaderMap,
+) -> Result<Response<Body>, Erreur> {
+    plugin_de_l_hote(&etat, &en_tetes)?;
+    Ok(statique(
+        SCRIPT_ENREGISTRER,
+        "text/javascript; charset=utf-8",
+        false,
+    ))
 }
-pub async fn service_worker() -> Response<Body> {
-    statique(SERVICE_WORKER, "text/javascript; charset=utf-8", true)
+pub async fn service_worker(
+    State(etat): State<Etat>,
+    en_tetes: HeaderMap,
+) -> Result<Response<Body>, Erreur> {
+    plugin_de_l_hote(&etat, &en_tetes)?;
+    Ok(statique(
+        SERVICE_WORKER,
+        "text/javascript; charset=utf-8",
+        true,
+    ))
 }
 
 async fn servir(

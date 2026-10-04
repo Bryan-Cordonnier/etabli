@@ -6,6 +6,7 @@ pub mod auth;
 pub mod base;
 pub mod erreur;
 pub mod etat;
+mod hote_plugins;
 mod routes_admin;
 mod routes_documents;
 mod routes_donnees;
@@ -28,6 +29,7 @@ use tower_http::{
 };
 
 pub use etat::{Config, Interne};
+pub use hote_plugins::ModelePlugins;
 
 /// Clé publique des mises à jour d'Établi : elle signe aussi les plugins du catalogue officiel.
 pub fn cle_publique_officielle() -> String {
@@ -64,8 +66,13 @@ async fn en_tetes(State(etat): State<Etat>, requete: Request, suite: Next) -> Re
     } else if !chemin.starts_with("/plugins/") {
         // Pages de l'application : aucune ressource extérieure, pas d'intégration dans un autre site. Les cadres
         // des mini-apps peuvent venir de l'origine dédiée aux plugins, si elle est configurée.
-        let cadres = match etat.config.url_plugins.as_deref() {
-            Some(url) if !url.contains([';', ' ', '\n', '\r']) => format!("'self' {url}"),
+        let cadres = match etat
+            .config
+            .url_plugins
+            .as_deref()
+            .map(ModelePlugins::analyser)
+        {
+            Some(Ok(modele)) => format!("'self' {}", modele.source_csp()),
             _ => "'self'".to_string(),
         };
         let politique = format!(
@@ -84,14 +91,12 @@ async fn en_tetes(State(etat): State<Etat>, requete: Request, suite: Next) -> Re
     reponse
 }
 
-/// Routeur de l'origine dédiée aux plugins (second port) : fichiers des plugins et service worker, rien d'autre —
-/// ni API, ni application, ni donnée d'utilisateur.
+/// Routeur des origines de plugins (second port) : chaque plugin a son propre nom d'hôte (`<id>.<domaine>`), et ce
+/// routeur ne sert, selon l'en-tête `Host`, que les fichiers de CE plugin et son service worker — ni API, ni application,
+/// ni donnée d'utilisateur, ni fichier d'un autre plugin.
 pub fn application_plugins(etat: Etat) -> Router {
     Router::new()
-        .route(
-            "/plugins/{id}/{*chemin}",
-            get(routes_plugins::fichier_origine),
-        )
+        .route("/{*chemin}", get(routes_plugins::fichier_hote))
         .route("/enregistrer.html", get(routes_plugins::page_enregistrer))
         .route("/enregistrer.js", get(routes_plugins::script_enregistrer))
         .route("/sw-plugins.js", get(routes_plugins::service_worker))

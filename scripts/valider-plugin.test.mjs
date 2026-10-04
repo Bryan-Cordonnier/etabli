@@ -57,7 +57,36 @@ test("manifeste : identifiant, version, couleur, icône, permissions", () => {
   assert.ok(contient(erreurs, /« version » doit avoir la forme/));
   assert.ok(contient(erreurs, /« color »/));
   assert.ok(contient(erreurs, /« icon »/));
-  assert.ok(contient(erreurs, /« permissions » doit être vide/));
+  assert.ok(contient(erreurs, /« permissions » : « disque » n'existe pas/));
+});
+
+test("permissions : doublon refusé, appel non déclaré refusé, déclaré accepté", () => {
+  const source = 'import { saveFile, printFiche } from "@etabli/ui"; saveFile({}); printFiche({});\n';
+  const sans = valider(({ dossier, ecrire }) => {
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.permissions = ["fichiers", "fichiers"];
+    });
+    ecrire("src/export.ts", source);
+  });
+  assert.ok(contient(sans.erreurs, /« fichiers » est écrite deux fois/));
+  assert.ok(contient(sans.erreurs, /exige la permission « impression »/));
+  const avec = valider(({ dossier, ecrire }) => {
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.permissions = ["fichiers", "impression", "presse-papiers"];
+    });
+    ecrire("src/export.ts", source);
+  });
+  assert.deepEqual(avec.erreurs, []);
+});
+
+test("un plugin de contrat ^1 reçoit un avertissement, pas une erreur", () => {
+  const { erreurs, avertissements } = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.apiVersion = "^1";
+    }),
+  );
+  assert.deepEqual(erreurs, []);
+  assert.ok(contient(avertissements, /permissions ne sont pas contrôlées/));
 });
 
 test("dépendances : plages, auto-dépendance, doublon, services", () => {

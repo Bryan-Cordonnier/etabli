@@ -14,6 +14,8 @@ use std::{
 const FORMAT: u32 = 1;
 const EXTENSION: &str = "etabli";
 const TRASH: &str = ".corbeille";
+/// Taille maximale d'un document enregistré (la même que celle du serveur) : un plugin ne remplit pas le disque.
+const TAILLE_MAX_DOCUMENT: usize = 5 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -145,6 +147,9 @@ impl Library {
             .join(&doc.plugin_id)
             .join(file_name(&doc.title, &doc.id));
         let json = serde_json::to_vec_pretty(&doc).map_err(|e| e.to_string())?;
+        if json.len() > TAILLE_MAX_DOCUMENT {
+            return Err("Document trop volumineux".into());
+        }
         write_atomic(&target, &json).map_err(|e| format!("Écriture impossible : {e}"))?;
 
         // Le titre a changé : le nom du fichier suit, l'ancien fichier disparaît.
@@ -311,6 +316,15 @@ mod tests {
             summary: "c = 372,95 mm".into(),
             data: json!({ "a": "350", "b": "120" }),
         }
+    }
+
+    #[test]
+    fn refuses_a_huge_document() {
+        let lib = Library::new(scratch("documents-taille"));
+        let mut gros = input(None, "Énorme");
+        gros.data = json!({ "x": "a".repeat(TAILLE_MAX_DOCUMENT) });
+        assert!(lib.save(gros, "0.1.0").is_err());
+        assert!(lib.list(None, None, None).is_empty());
     }
 
     #[test]

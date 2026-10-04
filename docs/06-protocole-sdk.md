@@ -117,3 +117,12 @@ Excel), `COLORS` / `colorOf(i)` (couleurs des repères de pièces).
 
 Les champs gardent le **texte** saisi (les données enregistrées sont des chaînes) ; convertir avec
 `evaluate` ou une fonction `num()` au moment du calcul.
+
+## Ce que le moteur vérifie avant d'écouter une mini-app
+
+Tout message reçu par le port est contrôlé par `apps/desktop/src/lib/plugins/garde.ts` avant d'être traité : le type doit être
+connu, les champs bien formés, les tailles bornées (4 Mo de données par message, textes de 2 000 caractères, hauteur de 160 à
+20 000 px), et — pour un plugin `"apiVersion": "^2"` — la **permission** correspondante déclarée dans le manifeste
+(`fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages`). Un message refusé est ignoré (une ligne dans la console).
+`saveFile` n'accepte que des formats de données (`csv tsv dxf json txt svg md xml`) et un nom sans chemin. Détail, menaces et
+limites : [19](19-modele-de-menace-plugins.md).

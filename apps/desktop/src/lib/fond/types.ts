@@ -53,6 +53,8 @@ export interface CatalogueEntry {
   color: string;
   icon: string;
   apiVersion: string;
+  /** Permissions demandées (docs/19) ; vide pour un catalogue publié avant le contrat 2. */
+  permissions: string[];
   /** Plugins obligatoires (identifiant → plage de versions) ; vide pour un catalogue publié avant la 0.3. */
   dependencies: Record<string, string>;
   /** Plugins dont celui-ci profite s'ils sont là. */
@@ -108,10 +110,11 @@ export interface Fond {
   /** Dossier d'où sont servis les fichiers des plugins, quand ce n'est pas le protocole de l'application. */
   readonly urlPlugins?: string;
   /**
-   * Origine dédiée aux plugins d'un serveur (autre port ou autre nom d'hôte) : les mini-apps y gardent un service worker
-   * qui les rend utilisables hors ligne, sans jamais partager l'origine de l'application.
+   * Origine propre à un plugin (un nom d'hôte chacun) quand le serveur en fournit : la mini-app y garde son origine et un
+   * service worker la rend utilisable hors ligne, sans jamais partager de stockage avec l'application ni avec un autre
+   * plugin. `undefined` : cadre à origine opaque, en ligne seulement.
    */
-  readonly originePlugins?: string;
+  readonly originePlugin?: (pluginId: string) => string | undefined;
 
   /** Tout ce que ce fond contient, pour l'importer dans un serveur (fonds locaux seulement). */
   exporterTout?(): Promise<ExportComplet>;

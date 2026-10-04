@@ -11,6 +11,26 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Ajouté
+
+- **Permissions des plugins** : un plugin déclare ce qu'il a besoin de faire (enregistrer des fichiers, imprimer, copier, envoyer
+  à une autre mini-app, ouvrir des réglages). Le catalogue vous les montre avant l'installation, et à chaque mise à jour qui en
+  demande de nouvelles. Les sept plugins officiels passent au nouveau contrat.
+- **Contrôle de ce que font les mini-apps** : chaque message d'une mini-app est vérifié (forme, taille) avant d'être pris en
+  compte ; une mini-app ne peut plus enregistrer qu'un fichier de données (CSV, DXF, JSON, texte, SVG…), jamais un programme.
+  Les documents et réglages ont une taille maximale.
+
+### Modifié
+
+- **Serveur : une origine par plugin.** L'option `--url-plugins` prend désormais un modèle avec `{id}`
+  (`https://{id}.plugins.maison.fr`) : chaque plugin a son propre nom d'hôte et ne peut ni lire l'application ni un autre
+  plugin. Les mini-apps restent utilisables hors ligne. Voir [docs/17](docs/17-serveur.md).
+
+### Pour les contributeurs
+
+- `npm run valider` : permissions connues, doublons, fonction du SDK utilisée sans permission ; avertissement pour un plugin « ^1 ».
+  `npm run nouveau-plugin` crée un plugin « ^2 ». Modèle de menace : [docs/19](docs/19-modele-de-menace-plugins.md).
+
 ## [0.5.0] — 2026-10-03
 
 ### Ajouté

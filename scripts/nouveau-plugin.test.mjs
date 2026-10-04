@@ -26,7 +26,7 @@ test("crée un plugin que le validateur accepte (sans dist)", () => {
     const manifeste = JSON.parse(readFileSync(join(dossier, "public", "manifest.json"), "utf8"));
     assert.equal(manifeste.id, "soudage");
     assert.equal(manifeste.version, "0.1.0");
-    assert.deepEqual(manifeste.permissions, []);
+    assert.deepEqual(manifeste.permissions, ["presse-papiers"]);
     assert.deepEqual(validerPlugin(dossier, { dist: false }), { erreurs: [], avertissements: [] });
   });
 });

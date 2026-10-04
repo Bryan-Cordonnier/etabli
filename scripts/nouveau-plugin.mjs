@@ -108,12 +108,12 @@ export default defineConfig({
     id,
     name: nom,
     version: "0.1.0",
-    apiVersion: "^1",
+    apiVersion: "^2",
     author: "Votre nom",
     description: "Une phrase qui dit ce que fait le plugin (elle s'affiche dans le catalogue).",
     color: couleur,
     icon: icone,
-    permissions: [],
+    permissions: ["presse-papiers"],
     ...(reglages ? { settings: [{ id: "reglages", title: nom, entry: "reglages/index.html" }] } : {}),
     miniApps: [
       {

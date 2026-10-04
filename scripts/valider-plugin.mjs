@@ -44,6 +44,25 @@ const INTERDITS = [
   [/\b(parent|top)\.postMessage\b/, "message direct au moteur : le SDK sert à cela"],
 ];
 
+/**
+ * Appels du SDK qui exigent une permission (docs/19). Sert à vérifier qu'un plugin de contrat ^2 déclare ce qu'il utilise ;
+ * le moteur refuse de toute façon le message à l'exécution.
+ */
+const APPELS_PERMISSION = [
+  [/\bclipboard\s*\??\.\s*copy\b|\boncopy\b|\bdoc\??\.copy\b/, "presse-papiers"],
+  [/\bsaveFile\b/, "fichiers"],
+  [/\bprintFiche\b|\betabli\??\.print\s*\(/, "impression"],
+  [/\bsendTo\b|\betabli\??\.send\s*\(/, "envoi"],
+  [/\baddMachine\b|\bopenSettings\b/, "reglages"],
+];
+
+/** Permissions connues : celles de apps/desktop/src/lib/plugins/permissions.ts (une seule source). */
+export function permissionsConnues(racine = RACINE) {
+  const source = readFileSync(join(racine, "apps", "desktop", "src", "lib", "plugins", "permissions.ts"), "utf8");
+  const bloc = /export const PERMISSIONS[^=]*=\s*\[([\s\S]*?)\n\];/.exec(source)?.[1] ?? "";
+  return new Set([...bloc.matchAll(/\{\s*id:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]));
+}
+
 /** Adresses qui apparaissent légitimement (espaces de noms XML, documentation de Svelte, licences). */
 const ADRESSES_TOLEREES = [
   /^https?:\/\/(www\.)?w3\.org\//,
@@ -128,8 +147,19 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
     erreur(`« icon » (${JSON.stringify(m.icon)}) n'est pas dans la liste de apps/desktop/src/lib/icons.ts.`);
   }
   if (m.emoji !== undefined) avertir("« emoji » n'existe plus : une icône et une couleur suffisent, retirez ce champ.");
+  const connues = permissionsConnues(racine);
+  const strict = typeof m.apiVersion === "string" && /\d+/.test(m.apiVersion) && Number(/\d+/.exec(m.apiVersion)[0]) >= 2;
+  const declarees = new Set();
   if (!Array.isArray(m.permissions)) erreur("« permissions » doit être une liste (vide : `[]`).");
-  else if (m.permissions.length > 0) erreur("« permissions » doit être vide : aucune permission n'existe encore, une valeur ici ne peut que tromper l'utilisateur.");
+  else {
+    for (const permission of m.permissions) {
+      if (typeof permission !== "string" || !connues.has(permission)) {
+        erreur(`« permissions » : « ${String(permission)} » n'existe pas (permissions connues : ${[...connues].join(", ")}).`);
+      } else if (declarees.has(permission)) erreur(`« permissions » : « ${permission} » est écrite deux fois.`);
+      else declarees.add(permission);
+    }
+  }
+  if (!strict) avertir("« apiVersion » vaut ^1 : les permissions ne sont pas contrôlées. Passez à « ^2 » et déclarez ce que le plugin utilise.");
 
   // Mini-apps
   const miniApps = Array.isArray(m.miniApps) ? m.miniApps : null;
@@ -226,6 +256,13 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
       const chemin = relative(dossier, f).split("\\").join("/");
       for (const [motif, raison] of INTERDITS) {
         if (motif.test(texte)) erreur(`${chemin} : ${raison} (interdit : un plugin n'a pas accès au réseau ni au moteur autrement que par le SDK).`);
+      }
+      if (strict) {
+        for (const [motif, permission] of APPELS_PERMISSION) {
+          if (motif.test(texte) && !declarees.has(permission)) {
+            erreur(`${chemin} : utilise une fonction qui exige la permission « ${permission} », absente de « permissions » du manifeste.`);
+          }
+        }
       }
       for (const adresse of texte.match(/https?:\/\/[^\s"'`)<>]+/g) ?? []) {
         if (!ADRESSES_TOLEREES.some((ok) => ok.test(adresse))) avertir(`${chemin} : adresse externe ${adresse} (elle ne sera pas chargée : pas de réseau).`);

@@ -42,12 +42,12 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
   "id": "tolerie",
   "name": "Tôlerie",
   "version": "1.0.0",
-  "apiVersion": "^1",
+  "apiVersion": "^2",
   "author": "Établi",
   "description": "Pliage : développés, vé et effort de presse",
   "color": "#ea7a1a",
   "icon": "hammer",
-  "permissions": [],
+  "permissions": ["presse-papiers", "envoi"],
   "miniApps": [
     {
       "id": "developpe",
@@ -68,6 +68,11 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
 - `icon` : un nom de `apps/desktop/src/lib/icons.ts` ; sinon ajoutez l'icône Lucide dans ce fichier
   (import + entrée dans `ICONS`). Une icône inconnue devient « puzzle ». Il n'y a pas d'émoji : un
   plugin n'a qu'un nom d'icône et une couleur à fournir, l'application dessine le reste.
+- `apiVersion` : `"^2"` pour un plugin neuf. Le moteur contrôle alors **strictement** ce que fait le plugin ; un plugin `"^1"`
+  garde ses anciens droits mais est signalé à l'installation, et `npm run valider` le signale.
+- `permissions` : ce que le plugin a besoin de faire (`fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages`).
+  L'utilisateur les voit avant d'installer. Déclarez le strict nécessaire ; `npm run valider` refuse l'usage d'une
+  fonction sans sa permission. Détail et justification : [19](19-modele-de-menace-plugins.md).
 - `entry` absent : la mini-app s'affiche « à venir » (placeholder).
 - `dataVersion` : à incrémenter quand le format des données change (et prévoir `migrate`).
 - `accepts` : types de données que la mini-app sait recevoir (voir

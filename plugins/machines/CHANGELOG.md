@@ -5,6 +5,12 @@ Le journal de l'application est à la [racine du dépôt](../../CHANGELOG.md).
 
 ## [Non publié]
 
+## [1.1.0] — 2026-10-04
+
+### Modifié
+
+- Contrat « ^2 » : le moteur contrôle désormais ce que fait ce plugin ; aucune permission (ce plugin n'enregistre, n'imprime ni n'envoie rien). Aucun calcul ne change.
+
 ## [1.0.0] — 2026-09-30
 
 Première publication. Ce plugin n'a pas de mini-app : il ajoute une page de réglages (Paramètres → Machines) et publie ses
