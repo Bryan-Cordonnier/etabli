@@ -122,6 +122,8 @@ Détail de `money` et `civil` : [packages/ui/README.md](../packages/ui/README.md
 | `Segmented` | `options: {value,label}[]`, `bind:value`, `label`, `onchange` |
 | `SelectField` | liste de choix dessinée par Établi (lisible en thème sombre, clavier complet, s'ouvre vers le haut si besoin) : `label`, `options`, `bind:value`, `compact`, `onchange` |
 | `Check` | case à cocher : `label`, `bind:checked`, `hint` |
+| `LineChart` | courbe SVG : `points: {label, value}[]`, `format`, `title` ; survol et flèches du clavier, tableau des valeurs pour les lecteurs d'écran |
+| `DonutChart` | anneau + légende : `parts: {label, value}[]` (8 au plus, le reste en « Autres »), `format`, `title`, `centre` |
 
 **Outils** : `evaluate(texte)` (calcul saisi, NaN si invalide, fonctions trigonométriques en degrés),
 `format(n, décimales)` (nombre à la française), `isExpression`, `parsePasted` (lignes collées depuis

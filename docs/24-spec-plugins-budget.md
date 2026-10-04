@@ -224,7 +224,7 @@ Fondations d'abord (`finances` et `agenda`). Chaque étape est utilisable seule 
 | 0 | Validation de cette spec ; réponses aux questions ; montants de solde et de cotisations confirmés (agence, lundi 5 octobre) | spec figée | — |
 | 1 | **Outils communs** (moteur) : `money.ts`, `civil.ts` dans `@etabli/ui` + vecteurs d'or — **fait** (4 octobre 2026) | modules testés | Vitest |
 | 2 | **Appels entre plugins** (moteur) : « appeler la fonction X du plugin Y », permission montrée à l'installation (annexe A.3, M1 à M5, M13) | mécanisme prouvé par un plugin d'essai | Vitest + essai |
-| 3 | Plugin **`finances`** (comptes, catégories, registre, soldes, courbes ; fonctions offertes `finances@1`) | plugin publiable | vecteurs d'or, tests de contrat |
+| 3 | Plugin **`finances`** (comptes, catégories, registre, soldes, courbes ; fonctions offertes `finances@1`) — **v1 faite (4 octobre 2026, `plugins/finances`, hors catalogue)** : tableau de bord, service à dix fonctions, limite de taille gérée ; restent les mini-apps Écritures, Comptes et catégories, Courbes, l'export et la clôture d'année | plugin publiable | vecteurs d'or, tests de contrat |
 | 4 | Plugin **`agenda`** sans rappels (calendrier, événements, chronologie, repos, `.ics` ; fonctions `agenda@1`) | plugin | idem |
 | 5 | **Rappels** (moteur, M6) : `notifications`, Android puis Windows ; `rappels@1` dans `agenda` | rappels réels | essai sur le téléphone de Bryan |
 | 6 | Plugin **`paie`**, intérim et réserve d'abord (urgence réelle), puis CDI et CDD ; appels vers `budget`, `finances` et `agenda` | plugin | vecteurs d'or + essai sur un vrai bulletin |
@@ -478,10 +478,11 @@ dépendances facultatives et leur installation, `send` (geste utilisateur), `sav
 | M3 écriture sous permission | **fait** : `appelle:<service>:<accès>`, `functions.*.acces`, validateur, phrase à l'installation ; `ecriture` ne donne pas `lecture` (choix de sécurité) |
 | M4 versionnage sur le contrat | **fait pour les appels** (plage `services` jugée sur la version du contrat) et pour les instantanés d'un consommateur qui la déclare. **Pas fait** : `planInstall` et `problemsOf` jugent toujours les `dependencies` sur la version du plugin ; pas de plusieurs versions de contrat servies à la fois |
 | M5 identité et espace propre | **identité faite** (`caller` écrit par le moteur) ; le **contrôle de propriété** (`source.plugin = appelant`) reste à écrire dans chaque fournisseur |
+| M9 graphiques | **fait en partie** : `LineChart` et `DonutChart` (SVG, jetons du thème, tableau pour lecteurs d'écran) dans `@etabli/ui`, utilisés par Finances ; pas encore `BarChart` ni `Sparkline` |
 | M12 schémas vérifiés par le moteur | pas fait (le fournisseur valide) |
 | M13 `mockService` | pas fait ; les fixtures `fixtures/appels-entre-plugins/` et `appels.integration.test.ts` montrent un appel complet |
 | M10 argent et dates partagés | **fait** (`money.ts`, `civil.ts` dans `@etabli/ui`, 179 tests ; voir `packages/ui/README.md`). Choix : arrondi `demi-haut` par défaut (le `arr()` du Rust), `parseEuros` refuse plus de deux décimales, fériés français fournis en option (jamais supposés) |
-| M6 à M9, M11, M14 à M16 | pas faits |
+| M6 à M8, M11, M14 à M16 | pas faits |
 
 **Choix de conception retenus** (à valider) : (1) `ecriture` ne donne pas `lecture` ; (2) `services` (plage de contrat) est
 obligatoire pour appeler, la dépendance sur le plugin aussi ; (3) le délai (5 s par défaut, 10 s au plus) couvre l'attente en file ;

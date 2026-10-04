@@ -42,6 +42,7 @@ import {
   Square,
   Star,
   Store,
+  Wallet,
   Trash2,
   Triangle,
   TriangleRight,
@@ -99,6 +100,7 @@ export const ICONS = {
   refresh: RefreshCw,
   keyboard: Keyboard,
   store: Store,
+  wallet: Wallet,
   package: Package,
   shield: ShieldCheck,
 };

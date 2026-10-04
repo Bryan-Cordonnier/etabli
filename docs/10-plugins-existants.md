@@ -7,8 +7,9 @@
 | `tolerie` Tôlerie | 1.0.0 | 2 | 11 |
 | `tracage` Traçage (ex-« Chaudronnerie ») | 1.1.0 | 5 | 32 |
 | `materiaux` Matériaux et fixation | 1.0.0 | 4 | 21 |
+| `finances` Finances (hors catalogue officiel) | 0.1.0 | 1 + service `finances@1` | 46 |
 
-Le kit `@etabli/ui` a 12 tests (calculs saisis, format, collage Excel, DXF).
+Le kit `@etabli/ui` a 201 tests (calculs saisis, format, collage Excel, DXF, `money`, `civil`, géométrie des graphiques).
 
 ---
 
@@ -159,3 +160,37 @@ Tables (`src/data/`, chacune avec sa source) : `matieres.json` (copie de celle d
 Cas de test : tube 40 × 40 × 2 → 304 mm², 2,386 kg/m, 14,32 kg sur 6 m ; tôle 2000 × 1000 × 3 →
 47,1 kg ; rond Ø 30 → 5,549 kg/m ; M8 → 6,8, M8 × 1 → 7,0, passages M10 → 10,5 / 11 / 12 ; Vc 25,
 Ø 10 → 796 tr/min ; M10 8.8, µ 0,12 → 49,7 N·m et 29,6 kN (les tables usuelles sont retrouvées à 5 %).
+
+---
+
+## Finances (`plugins/finances`)
+
+Version préliminaire (0.1.0), écrite d'après [docs/24](24-spec-plugins-budget.md). L'argent **réel** seulement : le prévu sera dans `budget`.
+**Hors catalogue officiel** : le plugin est construit avec les autres (`npm run build:plugins`, version web) mais n'est pas publié ; c'est une décision
+de Bryan (plugins privés par défaut, docs/24 §11).
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/types.ts` | modèle (`Compte`, `Categorie`, `Ecriture`, `Registre`), `ErreurFinances` (codes permis à un fournisseur) |
+| `src/validation.ts` | validation stricte des arguments : objet sans champ inconnu, centimes entiers, jours qui existent, clé d'idempotence |
+| `src/registre.ts` | lecture prudente (des données illisibles donnent une **erreur**, jamais un registre vide qui écraserait tout), limite de taille |
+| `src/operations.ts` | `creerCompte`, `creerCategorie`, `ajouterEcriture`, `annulerEcriture` : fonctions pures, registre en entrée, registre neuf en sortie |
+| `src/calculs.ts` | `soldeCompte`, `soldesALaDate`, `serieParJour`, `totauxParCategorie` |
+| `src/service.ts` | `executer(enregistre, fonction, args, appelant, maintenant)` : les dix fonctions de `finances@1` |
+| `service/main.ts` | page `serviceEntry` (aucune interface) : lit et écrit `etabli.settings`, traduit `ErreurFinances` en `ServiceError` |
+| `src/tableau.ts`, `apps/tableau/` | vue du tableau de bord (pure, testée) et écran mince ; l'écran passe par `executer` comme un plugin, avec la source `@utilisateur` |
+
+**Règles** : montants en centimes entiers ; `quand` en millisecondes UTC, `jour` civil calculé une fois dans le fuseau figé de l'écriture (Europe/Paris) ;
+aucune écriture ne se modifie ni ne se supprime ; `ecritures.annuler` ajoute l'inverse (même compte, **même instant**, montant opposé) pour que les soldes
+de toutes les dates redeviennent ceux d'avant l'erreur ; la source est celle du moteur (un champ `source` dans les arguments est refusé) ; un plugin n'annule
+que ses écritures ; pas d'écriture dans le futur (au-delà de 24 h), avant l'ouverture du compte ni avant l'an 2000 ; une catégorie « dépense » refuse une
+entrée d'argent (et inversement) ; une clé d'idempotence rejouée rend le même identifiant (`rejoue: true`), avec d'autres données elle est refusée. Avec un `sens`,
+`totaux.parCategorie` ignore ensemble une écriture annulée et son annulation.
+
+**Stockage et limite** : tout le registre est dans les réglages du plugin (un appel = un cadre neuf). Plafond 3,5 Mo (le moteur refuse 4 Mo par message,
+5 Mo par réglage) : au-delà, `limite_atteinte` avec « rien n'a été enregistré », sans perte silencieuse ; avertissement dès 2,8 Mo dans le tableau de bord.
+Environ 9 000 écritures. **Non fait** : export, clôture d'année, import. **Piège connu du moteur** : si la lecture des réglages échoue, le moteur donne `null` comme
+pour « rien d'enregistré » ; une écriture arrivant ensuite créerait un registre neuf et écraserait l'ancien (à corriger côté moteur : distinguer l'erreur d'une absence).
+
+**Tests** : `src/service.test.ts` (36 : manifeste = service, validation, idempotence, annulation, soldes, série, totaux, pages de 1 000, limite de taille, registre
+illisible), `src/tableau.test.ts` (10 : vue, formulaire) ; essai réel dans Chromium : `node scripts/essai-appels.mjs` (appel complet du vrai plugin et ouverture du tableau).
