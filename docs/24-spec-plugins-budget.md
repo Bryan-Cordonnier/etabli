@@ -258,7 +258,7 @@ Les risques techniques (doublons, désynchronisation, détournement, fuseau…) 
 3. **Montants de paie** : tous **programmables** (réglages, jamais en dur). **Pas de « gain net »** dans `paie` : elle dit combien on sera payé. C'est `budget` qui estime ce qui reste après les charges du quotidien. À confirmer avec un contrat ou un bulletin : taux, heures supplémentaires (majorations légales).
 4. **Rappels** : **notifications seulement, pas d'alarmes**, et **sur téléphone seulement**, pas sur PC.
 5. **Périmètre exclu** : non discuté, reste comme proposé (connexion bancaire, courses avec prix réels, conseil d'investissement, optimisation par IA, comptabilité légale).
-6. **Produit** : **PC d'abord**, puis le téléphone. Nom retenu par Bryan : « Kotidien » — **à revoir : le nom est déjà utilisé** par un logiciel libre de gestion de finances personnelles (voir le cahier de bord).
+6. **Produit** : **PC d'abord**, puis le téléphone. Nom : **« Quotidien »**, application à usage **personnel** de Bryan, non commerciale (le conflit de nom trouvé pour « Kotidien » ne se pose donc pas).
 7. **Plugins publics ou privés** : non tranché ; recommandation : privé par défaut, montants personnels en réglages.
 8. **Foyer à deux** : non tranché ; recommandation : version 2.
 
