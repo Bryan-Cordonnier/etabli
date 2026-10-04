@@ -49,13 +49,35 @@ Hors périmètre : un moteur compromis, une clé de signature volée (voir §5),
   au démarrage, `pluginsList()` envoie une sonde (`fond/sondeCors.ts`) ; si l'hébergement envoie `Access-Control-Allow-Origin`
   sous `plugins/`, les mini-apps passent en **origine opaque** (`sandbox="allow-scripts"`), comme avec le serveur. Les pages
   de plugins reçoivent aussi une CSP sans réseau par `<meta>` (`scripts/construire-web.mjs`).
-  **Reste ouvert** : (a) **WebView Android de Capacitor** n'envoie pas l'en-tête (le serveur local n'est pas configurable
-  sans modifier le code Java) ; (b) un hébergement statique **sans** CORS ; (c) **hors ligne** (la sonde échoue, et les
-  sous-ressources d'un cadre opaque ne passent pas par le service worker) : dans ces trois cas l'application retombe sur la
+  **Android, limite levée** (branche `android-origine-par-plugin`) : la WebView de Capacitor n'envoie pas l'en-tête CORS, mais
+  elle laisse l'application **intercepter les requêtes** (`shouldInterceptRequest`). `OriginesPlugins.java` sert chaque plugin sur
+  sa propre origine `https://<id>.plugins.localhost`, depuis les ressources embarquées (`public/plugins/<id>/`), sans aucun accès
+  réseau : mêmes règles d'identifiant et de chemin que le serveur (`CheminsPlugins.java`, testé par JUnit et par
+  `scripts/android-origines.test.mjs`), mêmes types de fichiers, même CSP sans réseau (+ `frame-ancestors` limité à l'application),
+  `nosniff`, `Referrer-Policy: no-referrer`, `Origin-Agent-Cluster` (pas de `document.domain`). Tout ce qui vise le domaine des
+  plugins sans être une demande valide reçoit un 404 local (hôte étranger, sous-domaine, port, identifiants, `..`, `%2e`, `%2f`,
+  double encodage, fichier caché, dossier). Côté interface, `fond/web.ts` interroge le plugin Capacitor local `EtabliOrigines`
+  (`mobile/origines.ts`) ; s'il confirme, `MiniAppFrame` utilise cette origine avec `sandbox="allow-scripts allow-same-origin"`
+  (comme en mode serveur), sans sonde CORS. S'il ne répond pas (ancienne application, pont natif retiré), le repli ci-dessous
+  s'applique.
+  **Pont natif (alarmes, notifications)**, lu dans `@capacitor/android` 7.6.9 : le pont `androidBridge` est enregistré par
+  `addWebMessageListener` avec des règles d'origine (`https://localhost` seulement) et refuse les sous-cadres (`isMainFrame`) :
+  un cadre de mini-app ne l'atteint pas. **Mais** (1) si la WebView n'a pas cette fonction, ou si l'enregistrement échoue,
+  Capacitor se rabat sur `addJavascriptInterface("androidBridge")`, visible de **tous** les cadres ; (2) `CapacitorHttp` et
+  `CapacitorCookies` ajoutent toujours `CapacitorHttpAndroidInterface` et `CapacitorCookiesAndroidInterface` de la même façon
+  (`CapacitorCookies.setCookie` écrit un cookie pour une adresse quelconque). Correctif : `MainActivity` retire ces trois
+  interfaces JavaScript juste après la création du pont. Le pont à règles d'origine n'en est pas affecté ; dans le cas de repli,
+  les fonctions natives cessent de répondre (échec fermé) au lieu d'être offertes aux mini-apps. **Non vérifié sur un appareil** :
+  la sonde `tools/sonde-pont-android` (APK de sonde, procédure dans son README) le fait en deux minutes.
+  **Reste ouvert** : (a) un hébergement statique **sans** CORS ; (b) **hors ligne** sur le web (la sonde échoue, et les
+  sous-ressources d'un cadre opaque ne passent pas par le service worker) : dans ces cas la version web retombe sur la
   même origine, sans isolation. Acceptable tant que seuls les plugins officiels, construits avec l'application, y vivent
-  (aucune installation possible) ; **inacceptable** si un tiers y apparaît. Piste pour (a)(c) : charger les modules du plugin
+  (aucune installation possible) ; **inacceptable** si un tiers y apparaît. Piste : charger les modules du plugin
   depuis l'hôte (`fetch` + import map de `data:`), ou un serveur local qui envoie l'en-tête. La CSP en `<meta>` ne protège que
   les pages construites par nous : elle n'arrête pas un plugin hostile qui livrerait sa propre page.
+  Limites propres à Android : la version web de l'application n'a **pas** de CSP (`frame-src` n'y limite donc rien : un cadre peut
+  naviguer vers un site extérieur, où il reste confiné par son `sandbox`) ; les cookies `Domain=plugins.localhost` seraient
+  partagés entre plugins (comme avec un serveur dont les plugins partagent un domaine) ; les requêtes `Range` ne sont pas gérées.
 - **Contrat ^1** (anciens plugins) : permissions non contrôlées, mais les plafonds et la forme des messages le sont. Le moteur
   signale ces plugins à l'installation. Prévoir une date après laquelle le catalogue refuse les plugins ^1.
 - **Origine par plugin** : exige un enregistrement DNS générique (`*.plugins.exemple.fr`) et, en HTTPS, un certificat générique.
@@ -103,4 +125,4 @@ hébergement avec CORS (cadre opaque : ni `parent`, ni cookies, ni IndexedDB de 
 requête vers un site extérieur, un vrai plugin s'affiche) et hébergement sans CORS (repli sur la même origine, les failles
 sont **listées** comme limites, non bloquantes). Les décisions pures sont testées par Vitest (`sondeCors.test.ts`,
 `web.test.ts`) et `scripts/construire-web.test.mjs`. Non automatisé en CI (Playwright n'est pas une dépendance du dépôt).
-Non vérifié : Android réel, Safari/Firefox, mode hors ligne.
+Non vérifié : Android réel (Java compilé par la CI seulement ; sonde `tools/sonde-pont-android`), Safari/Firefox, mode hors ligne.

@@ -1,6 +1,8 @@
 // Fond local d'un navigateur (aperçu de développement, version web et mobile) : les calculs, les
 // réglages et les données de plugin sont gardés dans IndexedDB, avec les mêmes règles que
 // documents.rs, donnees.rs et store.rs. Pas de limite de 5 Mo comme localStorage.
+import { modeleOrigines, pluginOrigines, type PluginOrigines } from "../mobile/origines";
+import { originePlugin } from "../serveur/fond";
 import { pluginsAccessiblesEnOpaque } from "./sondeCors";
 import type { Capacites, DocumentFile, DocumentFilter, DocumentInput, DocumentMeta, Fond, PluginInfo } from "./types";
 
@@ -58,6 +60,8 @@ export interface OptionsFondWeb {
   plugins?: () => Promise<PluginInfo[]>;
   /** Les plugins sont-ils servis avec CORS (cadre opaque possible) ? Par défaut : sonde dans le navigateur. */
   sonde?: () => Promise<boolean>;
+  /** Partie native d'Android (origine par plugin) ; par défaut le plugin Capacitor local, absent hors de l'application Android. */
+  natif?: () => Promise<PluginOrigines | undefined>;
   /** Où reprendre les anciennes données de l'aperçu ; null pour ne rien reprendre. */
   ancien?: AncienStockage | null;
 }
@@ -75,6 +79,9 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
   const nom = options.nom ?? BASE;
   const plugins = options.plugins ?? (() => pluginsDepuisIndex(pluginsBase()));
   const sonde = options.sonde ?? (() => pluginsAccessiblesEnOpaque(pluginsBase()));
+  const natif = options.natif ?? pluginOrigines;
+  /** Modèle d'adresse des plugins quand la partie native d'Android sert une origine par plugin (voir pluginsList). */
+  let modeleNatif: string | undefined;
   const ancien = options.ancien === undefined ? localStorageOuNull() : options.ancien;
 
   /** Ouverture unique, avec la reprise des anciennes données au tout premier accès. */
@@ -102,10 +109,12 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
 
   return {
     id: "web",
-    // Isolation complète (origine opaque) seulement si l'hébergement envoie le CORS sous plugins/ ; le choix est fait par
-    // pluginsList(), appelée avant tout cadre. Sinon les mini-apps gardent l'origine de l'application (docs/19, §4).
+    // Isolation complète si la partie native d'Android sert une origine par plugin, ou (origine opaque) si l'hébergement
+    // envoie le CORS sous plugins/ ; le choix est fait par pluginsList(), appelée avant tout cadre. Sinon les mini-apps
+    // gardent l'origine de l'application (docs/19, §4).
     capacites,
     urlPlugins: pluginsBase(),
+    originePlugin: (id: string) => (modeleNatif ? originePlugin(modeleNatif, id) : undefined),
 
     async exporterTout() {
       const db = await base;
@@ -120,7 +129,11 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
     },
 
     async pluginsList() {
-      const [liste, opaque] = await Promise.all([plugins(), sonde().catch(() => false)]);
+      // Android : une origine par plugin, servie par la partie native. Ailleurs (ou si elle ne répond pas) : sonde du CORS.
+      modeleNatif = await natif()
+        .then((p) => modeleOrigines(p))
+        .catch(() => undefined);
+      const [liste, opaque] = await Promise.all([plugins(), modeleNatif ? Promise.resolve(true) : sonde().catch(() => false)]);
       capacites.isolationComplete = opaque;
       return liste;
     },

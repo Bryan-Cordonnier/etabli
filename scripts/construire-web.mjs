@@ -36,8 +36,8 @@ export function avecCsp(html) {
 
 /**
  * Fichier _headers (Netlify, Cloudflare Pages) : les cadres de mini-apps ont une origine opaque, leurs scripts, styles et polices
- * sont des requêtes CORS. GitHub Pages envoie déjà l'en-tête ; la WebView Android de Capacitor ne peut pas l'envoyer
- * (l'application retombe alors sur la même origine, voir docs/19).
+ * sont des requêtes CORS. GitHub Pages envoie déjà l'en-tête ; la WebView Android de Capacitor ne peut pas l'envoyer, mais
+ * elle sert une origine par plugin depuis les ressources embarquées (apps/mobile, voir docs/19).
  */
 export const ENTETES_WEB = "/plugins/*\n  Access-Control-Allow-Origin: *\n";
 
