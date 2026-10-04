@@ -3,7 +3,7 @@
 use clap::Parser;
 use etabli_serveur::{
     application, application_plugins, base::Base, cle_publique_officielle, preparer_installation,
-    Config, Interne,
+    Config, Interne, ModelePlugins,
 };
 use std::{net::SocketAddr, path::PathBuf};
 
@@ -45,8 +45,9 @@ struct Arguments {
     #[arg(long, env = "ETABLI_ECOUTE_PLUGINS", requires = "url_plugins")]
     ecoute_plugins: Option<SocketAddr>,
 
-    /// Adresse publique de ce second port (exemple : http://192.168.1.20:4301, ou https://plugins.exemple.fr
-    /// derrière un proxy). Doit être une autre origine que celle de l'application.
+    /// Modèle d'adresse publique de ce second port : un nom d'hôte PAR plugin, ce qui isole les plugins les uns des
+    /// autres (exemples : http://{id}.localhost:4301 pour essayer sur une machine ; https://{id}.plugins.exemple.fr
+    /// derrière un proxy, avec un enregistrement DNS « *.plugins.exemple.fr » et un certificat générique).
     #[arg(long, env = "ETABLI_URL_PLUGINS")]
     url_plugins: Option<String>,
 
@@ -80,11 +81,7 @@ async fn lancer(args: Arguments) -> Result<(), String> {
             .map(|u| u.trim_end_matches('/').to_string()),
     };
     if let Some(url) = &config.url_plugins {
-        if !(url.starts_with("http://") || url.starts_with("https://"))
-            || url.contains([' ', ';', '\n', '\r'])
-        {
-            return Err("--url-plugins doit être une adresse http:// ou https:// sans espace ni point-virgule.".into());
-        }
+        ModelePlugins::analyser(url)?;
     }
     let etat = Interne::nouveau(config, base);
 

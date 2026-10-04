@@ -26,7 +26,6 @@
   // Dans l'application : origine opaque, isolation totale. Dans l'aperçu navigateur de développement
   // (plugins officiels uniquement), certains navigateurs refusent les cadres opaques : on les autorise
   // alors à garder leur origine.
-  const sandbox = api.capacites.isolationComplete ? "allow-scripts" : "allow-scripts allow-same-origin";
 
   interface Props {
     src: string;
@@ -48,6 +47,12 @@
   }
 
   let { src, title, pluginId, appId, initial, docTitle = "", incoming = null, forward = true, onmessage }: Props = $props();
+
+  // Avec une origine propre au plugin (serveur), le cadre peut garder son origine : elle ne contient rien d'autre que
+  // ce plugin. C'est ce qui permet à son service worker de le servir hors ligne.
+  const sandbox = $derived(
+    api.originePlugin?.(pluginId) || !api.capacites.isolationComplete ? "allow-scripts allow-same-origin" : "allow-scripts",
+  );
   let incomingSent = false;
 
   /** Ce que le manifeste du plugin autorise (docs/19) ; relu à chaque message, le manifeste pouvant changer. */

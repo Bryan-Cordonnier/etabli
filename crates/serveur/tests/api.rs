@@ -92,9 +92,19 @@ impl Banc {
         self.terminer(requete.body(corps).unwrap()).await
     }
 
-    /// Requête sur l'origine dédiée aux plugins (second port).
+    /// Requête sur l'origine propre au plugin « essai » (second port, nom d'hôte `essai.plugins.test`).
     async fn get_plugins(&self, chemin: &str) -> Reponse {
-        let requete = Request::builder().uri(chemin).body(Body::empty()).unwrap();
+        self.get_plugins_hote("essai.plugins.test:4301", chemin)
+            .await
+    }
+
+    /// Requête sur le second port avec un en-tête `Host` choisi.
+    async fn get_plugins_hote(&self, hote: &str, chemin: &str) -> Reponse {
+        let requete = Request::builder()
+            .uri(chemin)
+            .header(header::HOST, hote)
+            .body(Body::empty())
+            .unwrap();
         let reponse = self.plugins.clone().oneshot(requete).await.unwrap();
         let (parts, corps) = reponse.into_parts();
         Reponse {
@@ -1496,7 +1506,7 @@ async fn plugins_livres_avec_l_application_web_servis_en_repli() {
 }
 
 #[tokio::test]
-async fn origine_dediee_aux_plugins() {
+async fn origine_propre_a_chaque_plugin() {
     let dossier_app =
         std::env::temp_dir().join(format!("etabli-app-{}", uuid::Uuid::new_v4().simple()));
     std::fs::create_dir_all(&dossier_app).unwrap();
@@ -1504,16 +1514,16 @@ async fn origine_dediee_aux_plugins() {
     let chemin = dossier_app.clone();
     let b = Banc::avec(move |c| {
         c.application = Some(chemin);
-        c.url_plugins = Some("http://192.168.1.20:4301".into());
+        c.url_plugins = Some("http://{id}.plugins.test:4301".into());
     })
     .await;
     let admin = b.installer().await;
     assert_eq!(b.installer_plugin(&admin).await.statut, StatusCode::CREATED);
 
-    // L'état public et la liste des plugins disent où sont les plugins et quels fichiers garder hors ligne.
+    // L'état public donne le modèle ; la liste des plugins dit quels fichiers garder hors ligne.
     assert_eq!(
         b.get("/api/etat", None).await.json()["urlPlugins"],
-        "http://192.168.1.20:4301"
+        "http://{id}.plugins.test:4301"
     );
     let plugins = b.get("/api/plugins", Some(&admin)).await.json();
     let fichiers: Vec<&str> = plugins[0]["fichiers"]
@@ -1527,10 +1537,8 @@ async fn origine_dediee_aux_plugins() {
         "{fichiers:?}"
     );
 
-    // Sur l'origine des plugins : les fichiers, sans la directive « sandbox » (le cadre l'ajoute), et rien d'autre.
-    let page = b
-        .get_plugins("/plugins/essai/apps/bonjour/index.html")
-        .await;
+    // Sur l'origine du plugin : ses fichiers, sans la directive « sandbox » (le cadre l'ajoute), et rien d'autre.
+    let page = b.get_plugins("/apps/bonjour/index.html").await;
     assert_eq!(page.statut, StatusCode::OK);
     let csp = page.en_tetes[header::CONTENT_SECURITY_POLICY]
         .to_str()
@@ -1546,6 +1554,7 @@ async fn origine_dediee_aux_plugins() {
         "/",
         "/index.html",
         "/api/documents",
+        "/plugins/essai/manifest.json",
     ] {
         assert_eq!(
             b.get_plugins(interdit).await.statut,
@@ -1553,12 +1562,47 @@ async fn origine_dediee_aux_plugins() {
             "{interdit}"
         );
     }
+
+    // Un plugin ne lit jamais les fichiers d'un autre : le nom d'hôte désigne le seul plugin servi.
+    assert_eq!(
+        b.get_plugins_hote("autre.plugins.test:4301", "/apps/bonjour/index.html")
+            .await
+            .statut,
+        StatusCode::NOT_FOUND
+    );
+    // Hôtes étrangers ou mal formés : rien n'est servi (protection contre le « DNS rebinding »).
+    for hote in [
+        "127.0.0.1:4301",
+        "plugins.test",
+        "essai.evil.com",
+        "essai.plugins.test.evil.com",
+        "a.essai.plugins.test",
+        "essai.plugins.test:abc",
+        "",
+    ] {
+        assert_eq!(
+            b.get_plugins_hote(hote, "/apps/bonjour/index.html")
+                .await
+                .statut,
+            StatusCode::NOT_FOUND,
+            "hôte {hote:?}"
+        );
+    }
+    // Sans en-tête Host du tout.
+    let sans_hote = Request::builder()
+        .uri("/manifest.json")
+        .body(Body::empty())
+        .unwrap();
+    let r = b.plugins.clone().oneshot(sans_hote).await.unwrap();
+    assert_eq!(r.status(), StatusCode::NOT_FOUND);
+
     // Les mêmes garde-fous de chemin.
     std::fs::write(b.dossier.join("secret.txt"), "secret").unwrap();
     for chemin in [
-        "/plugins/essai/..%2F..%2Fsecret.txt",
-        "/plugins/essai/%2e%2e/%2e%2e/secret.txt",
-        "/plugins/..%2Fetabli.sqlite/x",
+        "/..%2F..%2Fsecret.txt",
+        "/%2e%2e/%2e%2e/secret.txt",
+        "/apps/../../../secret.txt",
+        "/..%2Fetabli.sqlite",
     ] {
         let r = b.get_plugins(chemin).await;
         assert_ne!(r.statut, StatusCode::OK, "{chemin}");
@@ -1568,23 +1612,23 @@ async fn origine_dediee_aux_plugins() {
         );
     }
 
-    // Service worker et page d'enregistrement.
+    // Service worker et page d'enregistrement, aussi réservés à l'hôte d'un plugin.
     let sw = b.get_plugins("/sw-plugins.js").await;
     assert_eq!(sw.statut, StatusCode::OK);
     assert_eq!(sw.en_tetes["service-worker-allowed"], "/");
     let code = String::from_utf8_lossy(&sw.octets);
     assert!(
-        code.contains("startsWith('/plugins/')") && !code.contains("/api/"),
-        "le service worker ne touche qu'aux plugins"
+        !code.contains("/api/"),
+        "le service worker ne touche pas à l'API"
     );
-    assert_eq!(
-        b.get_plugins("/enregistrer.html").await.statut,
-        StatusCode::OK
-    );
-    assert_eq!(
-        b.get_plugins("/enregistrer.js").await.statut,
-        StatusCode::OK
-    );
+    for page in ["/enregistrer.html", "/enregistrer.js", "/sw-plugins.js"] {
+        assert_eq!(b.get_plugins(page).await.statut, StatusCode::OK, "{page}");
+        assert_eq!(
+            b.get_plugins_hote("evil.com", page).await.statut,
+            StatusCode::NOT_FOUND,
+            "{page} sur un hôte étranger"
+        );
+    }
 
     // La page de l'application autorise ces cadres, et eux seulement.
     let accueil = b.get("/", None).await;
@@ -1592,7 +1636,7 @@ async fn origine_dediee_aux_plugins() {
         .to_str()
         .unwrap();
     assert!(
-        csp_app.contains("frame-src 'self' http://192.168.1.20:4301;"),
+        csp_app.contains("frame-src 'self' http://*.plugins.test:4301;"),
         "{csp_app}"
     );
     let _ = std::fs::remove_dir_all(dossier_app);
