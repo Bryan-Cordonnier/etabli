@@ -31,6 +31,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   plugin. Les mini-apps restent utilisables hors ligne. Voir [docs/17](docs/17-serveur.md).
 
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
   « Catalogue (renouvellement) » ; les entrées portent l'empreinte `sha256` du paquet. Voir [docs/14](docs/14-publier-une-version.md).
@@ -58,6 +59,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   s'ajoute à l'écran d'accueil (plein écran, icône).
 
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - Espace de travail Cargo à la racine : `crates/noyau` (règles communes) et `crates/serveur`. L'application Tauri
   (`apps/desktop/src-tauri`) reste à part, avec son propre `Cargo.lock`. La CI vérifie aussi le serveur (format, analyse, 51 tests).
@@ -90,6 +92,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - Chaque plugin a un `CHANGELOG.md` ; sa section pour la version publiée devient les nouveautés du catalogue.
 
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - **Couche de stockage unifiée** (`lib/fond/`) : les calculs, réglages et plugins passent par une interface unique (« fond »), avec
   une version « fichiers » (application, inchangée pour l'utilisateur : ses calculs sont conservés) et une version « navigateur »
