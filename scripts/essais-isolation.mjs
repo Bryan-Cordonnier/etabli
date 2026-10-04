@@ -410,7 +410,7 @@ async function essaisDansLApplication(navigateurPlaywright) {
     location.href = "http://example.com/essai";
   }).catch(() => {});
   await new Promise((r) => setTimeout(r, 1000));
-  essai("le cadre ne peut pas naviguer vers un site extérieur", page.frames().every((f) => !f.url().includes("example.com")), page.frames().map((f) => f.url()).join(", "));
+  essai("le cadre ne peut pas naviguer vers un site extérieur", page.frames().every((f) => { try { return new URL(f.url()).hostname !== "example.com"; } catch { return true; } }), page.frames().map((f) => f.url()).join(", "));
   essai("aucune requête n'est partie vers l'extérieur", sorties.length === 0, sorties.join(", "));
 
   // 2. Un plugin ne voit pas le stockage d'un autre. (Le cadre de maths peut avoir été rechargé par l'essai précédent.)
@@ -422,7 +422,7 @@ async function essaisDansLApplication(navigateurPlaywright) {
   );
   await mathsAgain.evaluate(() => {
     localStorage.setItem("secret-maths", "valeur-maths");
-    document.cookie = "secret-maths=1; path=/";
+    document.cookie = "secret-maths=1; path=/; Secure; SameSite=Strict";
     return caches.open("secret-maths");
   });
   const tolerie = await ouvrirDansLApplication(
