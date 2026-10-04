@@ -41,6 +41,10 @@ export interface PluginInfo {
   manifest: unknown;
   official: boolean;
   source?: PluginSource;
+  /** Raison pour laquelle la version installée est révoquée (docs/20) : le plugin est alors désactivé. */
+  revoque?: string;
+  /** Version précédente gardée pour un retour en arrière (plugins du catalogue). */
+  precedente?: string;
 }
 
 /** Plugin du catalogue publié sur GitHub (voir scripts/paquet-plugin.mjs). */
@@ -127,6 +131,8 @@ export interface Fond {
   /** Installe un fichier .etabli-plugin choisi par l'utilisateur ; null s'il annule. */
   pluginInstallFile(): Promise<string | null>;
   pluginUninstall(id: string): Promise<void>;
+  /** Revient à la version précédente du plugin (un second appel revient en avant) ; renvoie la version en place. */
+  pluginRevert(id: string): Promise<string>;
   /** Liste des plugins changée (installation, désinstallation), dans n'importe quelle fenêtre. */
   onPluginsChanged(handler: () => void): Promise<() => void>;
   onInstallProgress(handler: (progress: { id: string; pourcent: number }) => void): Promise<() => void>;

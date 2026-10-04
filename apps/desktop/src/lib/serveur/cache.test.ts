@@ -39,6 +39,7 @@ class FauxServeur {
       pluginInstall: () => Promise.reject(new Error("non")),
       pluginInstallFile: () => Promise.reject(new Error("non")),
       pluginUninstall: () => Promise.reject(new Error("non")),
+      pluginRevert: () => Promise.reject(new Error("non")),
       onPluginsChanged: () => Promise.resolve(() => {}),
       onInstallProgress: () => Promise.resolve(() => {}),
       async documentsList(f = {}) {

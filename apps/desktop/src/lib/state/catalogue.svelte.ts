@@ -82,6 +82,8 @@ class Catalogue {
     this.progress[entry.id] = 0;
     try {
       await api.pluginInstall(entry.id, entry.url);
+      // Une installation voulue (pas la mise à jour automatique) lève la suspension qui suit un retour en arrière.
+      if (!silent) settings.setPinned(entry.id, false);
       await loadPlugins();
       await services.load();
       if (!silent) ui.notify(`${entry.name} ${update ? "mis à jour" : "installé"} · signature vérifiée`);
@@ -103,6 +105,22 @@ class Catalogue {
       return true;
     } catch (err) {
       ui.notify(message(err));
+      return false;
+    }
+  }
+
+  /** Revient à la version précédente d'un plugin ; les mises à jour automatiques sont alors suspendues pour lui. */
+  async revert(id: string): Promise<boolean> {
+    const name = getPlugin(id)?.name ?? id;
+    try {
+      const version = await api.pluginRevert(id);
+      settings.setPinned(id, true);
+      await loadPlugins();
+      await services.load();
+      ui.notify(`${name} : retour à la version ${version} · les mises à jour automatiques sont suspendues pour ce plugin`);
+      return true;
+    } catch (err) {
+      ui.notify(`${name} : ${message(err)}`);
       return false;
     }
   }
@@ -178,7 +196,7 @@ class Catalogue {
 
     const updated: string[] = [];
     for (const entry of this.entries) {
-      if (!this.hasUpdate(entry)) continue;
+      if (!this.hasUpdate(entry) || settings.isPinned(entry.id)) continue;
       const plan = planInstall(entry, this.entries, installedNodes());
       if (plan.missing.length) continue;
       let ok = true;
