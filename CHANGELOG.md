@@ -28,6 +28,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Pour les contributeurs
 
+- `etabli-noyau` : vérification d'un catalogue signé (séquence, expiration, révocation, refus des retours en arrière), pas encore
+  utilisée par l'application. Spécification : [docs/20](docs/20-spec-mises-a-jour-registre.md).
 - `npm run valider` : permissions connues, doublons, fonction du SDK utilisée sans permission ; avertissement pour un plugin « ^1 ».
   `npm run nouveau-plugin` crée un plugin « ^2 ». Modèle de menace : [docs/19](docs/19-modele-de-menace-plugins.md).
 
