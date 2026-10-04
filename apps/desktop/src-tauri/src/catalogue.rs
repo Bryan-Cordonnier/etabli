@@ -7,120 +7,178 @@
 //! `tauri.conf.json`. Seul le moteur accède au réseau, jamais une mini-app.
 
 use crate::{plugins, AppState};
-use base64::Engine;
-use minisign_verify::{PublicKey, Signature};
+use etabli_noyau::{
+    catalogue::{comparer_versions, peut_installer, verifier_catalogue, Catalogue, Revocation},
+    paquet::{fichiers_du_plugin, lire_manifeste, ouvrir_paquet, TAILLE_MAX_PAQUET},
+};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
+    cmp::Ordering,
     fs,
-    io::{Cursor, Read},
     path::Path,
+    time::{SystemTime, UNIX_EPOCH},
 };
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_dialog::DialogExt;
-use zip::ZipArchive;
 
 /// Catalogue des plugins officiels : Release « catalogue » du dépôt (voir publier-plugin.yml).
 const CATALOGUE_URL: &str =
     "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/catalogue.json";
+/// Signature du catalogue (format 2, docs/20) ; absente tant que la publication n'est pas passée au format signé.
+const SIGNATURE_URL: &str =
+    "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/catalogue.json.minisig";
 /// Seules adresses de téléchargement acceptées pour un paquet.
 const PREFIXE: &str = "https://github.com/Bryan-Cordonnier/etabli/releases/download/";
-
-const TAILLE_MAX_PAQUET: u64 = 64 * 1024 * 1024;
-const TAILLE_MAX_PLUGIN: u64 = 256 * 1024 * 1024;
-const FICHIERS_MAX: usize = 5000;
 
 /// Événement envoyé à toutes les fenêtres quand la liste des plugins a changé.
 const PLUGINS_CHANGES: &str = "etabli:plugins";
 /// Progression d'un téléchargement : `{ id, pourcent }`.
 const PROGRESSION: &str = "etabli:installation";
+/// Fichier (dans le dossier de configuration) qui garde la dernière séquence de catalogue vue et ses révocations.
+const FICHIER_ETAT: &str = "catalogue-etat.json";
+
+// ——— État du catalogue signé ———
+
+/// Ce que l'application retient du dernier catalogue signé accepté : sa séquence (pour refuser un retour en arrière)
+/// et ses révocations (pour refuser d'installer une version révoquée, même hors ligne).
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
+pub struct EtatCatalogue {
+    #[serde(default)]
+    pub sequence: u64,
+    #[serde(default)]
+    pub revocations: Vec<Revocation>,
+}
+
+pub fn lire_etat(config: &Path) -> EtatCatalogue {
+    fs::read(config.join(FICHIER_ETAT))
+        .ok()
+        .and_then(|octets| serde_json::from_slice(&octets).ok())
+        .unwrap_or_default()
+}
+
+fn ecrire_etat(config: &Path, etat: &EtatCatalogue) -> Result<(), String> {
+    let octets = serde_json::to_vec_pretty(etat).map_err(|e| e.to_string())?;
+    crate::files::write_atomic(&config.join(FICHIER_ETAT), &octets)
+        .map_err(|e| format!("Enregistrement impossible : {e}"))
+}
+
+fn maintenant() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs())
+}
+
+/// Lit une réponse du catalogue. Avec une signature : catalogue signé (format 2), vérifié puis retenu. Sans signature :
+/// ancien format, accepté seulement tant qu'aucun catalogue signé n'a jamais été vu (sinon on pourrait faire croire à
+/// un client à jour que le catalogue n'est plus signé).
+pub fn analyser_catalogue(
+    octets: &[u8],
+    signature: Option<&str>,
+    cle_publique: &str,
+    maintenant: u64,
+    config: &Path,
+) -> Result<Value, String> {
+    let etat = lire_etat(config);
+    match signature {
+        Some(signature) => {
+            let catalogue =
+                verifier_catalogue(octets, signature, cle_publique, maintenant, etat.sequence)
+                    .map_err(|e| {
+                        if e.contains("expiré") {
+                            format!("{e} Vérifiez aussi la date de l'ordinateur.")
+                        } else {
+                            e
+                        }
+                    })?;
+            ecrire_etat(
+                config,
+                &EtatCatalogue {
+                    sequence: catalogue.sequence,
+                    revocations: catalogue.revocations.clone(),
+                },
+            )?;
+            Ok(json!({
+                "format": catalogue.format,
+                "signe": true,
+                "sequence": catalogue.sequence,
+                "plugins": catalogue.plugins,
+                "revocations": catalogue.revocations,
+            }))
+        }
+        None => {
+            if etat.sequence > 0 {
+                return Err(
+                    "Catalogue refusé : il n'est plus signé alors qu'un catalogue signé a déjà été vu.".into(),
+                );
+            }
+            let mut valeur: Value =
+                serde_json::from_slice(octets).map_err(|_| "Catalogue illisible.".to_string())?;
+            let objet = valeur
+                .as_object_mut()
+                .ok_or_else(|| "Catalogue illisible.".to_string())?;
+            objet.insert("signe".into(), Value::Bool(false));
+            Ok(valeur)
+        }
+    }
+}
 
 // ——— Paquets ———
 
-fn texte_base64(texte: &str) -> Result<String, String> {
-    let octets = base64::engine::general_purpose::STANDARD
-        .decode(texte.trim())
-        .map_err(|_| "signature ou clé mal encodée".to_string())?;
-    String::from_utf8(octets).map_err(|_| "signature ou clé mal encodée".to_string())
+/// Version installée d'un plugin du catalogue, si elle est lisible.
+fn version_installee(racine: &Path, id: &str) -> Option<String> {
+    let (_, manifeste) = plugins::read_manifest(&racine.join(id)).ok()?;
+    manifeste
+        .get("version")
+        .and_then(Value::as_str)
+        .map(String::from)
 }
 
-/// Vérifie une signature minisign (format de `tauri signer sign`, encodée en base64).
-fn verifier(donnees: &[u8], signature: &str, cle_publique: &str) -> Result<(), String> {
-    let cle = PublicKey::decode(&texte_base64(cle_publique)?)
-        .map_err(|_| "Clé publique invalide dans tauri.conf.json.".to_string())?;
-    let signature = Signature::decode(&texte_base64(signature)?)
-        .map_err(|_| "Signature du plugin illisible.".to_string())?;
-    cle.verify(donnees, &signature, true).map_err(|_| {
-        "Signature invalide : ce plugin n'a pas été publié par Établi, il n'est pas installé."
-            .to_string()
-    })
-}
-
-fn lire_entree(
-    archive: &mut ZipArchive<Cursor<&[u8]>>,
-    nom: &str,
-    max: u64,
-) -> Result<Vec<u8>, String> {
-    let fichier = archive
-        .by_name(nom)
-        .map_err(|_| format!("Paquet incomplet : « {nom} » manque."))?;
-    let mut octets = Vec::new();
-    fichier
-        .take(max + 1)
-        .read_to_end(&mut octets)
-        .map_err(|e| format!("Paquet illisible : {e}"))?;
-    if octets.len() as u64 > max {
-        return Err("Paquet trop volumineux.".into());
+/// Décide si le plugin contenu dans `zip` peut être installé : jamais une version révoquée, et jamais une version
+/// qui n'est pas plus récente que celle installée (retour en arrière). `reinstaller` : réinstaller la même version
+/// reste permis (réparer une installation depuis un fichier).
+pub fn controler_installation(
+    zip: &[u8],
+    racine: &Path,
+    etat: &EtatCatalogue,
+    reinstaller: bool,
+) -> Result<(), String> {
+    let fichiers = fichiers_du_plugin(zip)?;
+    let (id, manifeste) = lire_manifeste(&fichiers)?;
+    let candidate = manifeste
+        .get("version")
+        .and_then(Value::as_str)
+        .ok_or("Plugin refusé : « version » absente du manifeste.")?;
+    let installee = version_installee(racine, &id);
+    let regles = Catalogue {
+        format: etabli_noyau::catalogue::FORMAT,
+        sequence: etat.sequence,
+        expire: u64::MAX,
+        plugins: Vec::new(),
+        revocations: etat.revocations.clone(),
+    };
+    let meme_version = installee
+        .as_deref()
+        .is_some_and(|v| comparer_versions(candidate, v) == Some(Ordering::Equal));
+    if reinstaller && meme_version {
+        // Même version : seule la révocation peut la refuser.
+        return peut_installer(&regles, &id, None, candidate, false);
     }
-    Ok(octets)
+    peut_installer(&regles, &id, installee.as_deref(), candidate, false)
 }
 
-/// Contrôle un paquet `.etabli-plugin` et renvoie le zip du plugin, une fois la signature vérifiée.
-pub fn ouvrir_paquet(paquet: &[u8], cle_publique: &str) -> Result<Vec<u8>, String> {
-    let mut archive = ZipArchive::new(Cursor::new(paquet))
-        .map_err(|_| "Ce fichier n'est pas un plugin Établi (.etabli-plugin).".to_string())?;
-    let plugin = lire_entree(&mut archive, "plugin.zip", TAILLE_MAX_PAQUET)?;
-    let signature = lire_entree(&mut archive, "plugin.zip.minisig", 64 * 1024)?;
-    let signature =
-        String::from_utf8(signature).map_err(|_| "Signature du plugin illisible.".to_string())?;
-    verifier(&plugin, &signature, cle_publique)?;
-    Ok(plugin)
-}
-
-/// Décompresse le zip d'un plugin dans `dossier`, en refusant tout chemin qui en sortirait.
-fn extraire(zip: &[u8], dossier: &Path) -> Result<(), String> {
-    let mut archive = ZipArchive::new(Cursor::new(zip))
-        .map_err(|_| "Plugin illisible dans le paquet.".to_string())?;
-    if archive.len() > FICHIERS_MAX {
-        return Err("Plugin refusé : trop de fichiers.".into());
-    }
-    let mut total = 0u64;
-    for i in 0..archive.len() {
-        let mut fichier = archive
-            .by_index(i)
-            .map_err(|e| format!("Plugin illisible : {e}"))?;
-        let Some(relatif) = fichier.enclosed_name() else {
-            return Err(format!(
-                "Plugin refusé : chemin interdit « {} ».",
-                fichier.name()
-            ));
-        };
-        let cible = dossier.join(relatif);
-        if fichier.is_dir() {
-            fs::create_dir_all(&cible).map_err(|e| e.to_string())?;
-            continue;
-        }
+/// Écrit les fichiers d'un plugin sous `dossier`. Les chemins viennent de `fichiers_du_plugin`, qui a déjà refusé
+/// tout ce qui sortirait du dossier.
+fn ecrire_fichiers(
+    fichiers: &[etabli_noyau::paquet::FichierPlugin],
+    dossier: &Path,
+) -> Result<(), String> {
+    for fichier in fichiers {
+        let cible = dossier.join(&fichier.chemin);
         if let Some(parent) = cible.parent() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
-        let mut sortie = fs::File::create(&cible).map_err(|e| e.to_string())?;
-        // La taille annoncée dans le zip peut mentir : on compte ce qui est vraiment écrit.
-        let reste = TAILLE_MAX_PLUGIN - total;
-        let ecrit = std::io::copy(&mut (&mut fichier).take(reste + 1), &mut sortie)
-            .map_err(|e| format!("Plugin illisible : {e}"))?;
-        total += ecrit;
-        if total > TAILLE_MAX_PLUGIN {
-            return Err("Plugin refusé : trop volumineux une fois décompressé.".into());
-        }
+        fs::write(&cible, &fichier.octets).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -133,18 +191,22 @@ fn jeton() -> String {
 /// version précédente (gardée si quoi que ce soit échoue). Renvoie l'identifiant du plugin.
 pub fn installer(zip: &[u8], racine: &Path, attendu: Option<&str>) -> Result<String, String> {
     fs::create_dir_all(racine).map_err(|e| format!("Installation impossible : {e}"))?;
+    let fichiers = fichiers_du_plugin(zip)?;
+    let (id, _) = lire_manifeste(&fichiers)?;
+    if let Some(attendu) = attendu.filter(|a| *a != id) {
+        return Err(format!(
+            "Le paquet contient le plugin « {id} » au lieu de « {attendu} »."
+        ));
+    }
     let jeton = jeton();
     let temporaire = racine.join(format!(".installation-{jeton}"));
     let resultat = (|| {
-        extraire(zip, &temporaire)?;
-        let (id, _) =
+        ecrire_fichiers(&fichiers, &temporaire)?;
+        // Contrôle final sur ce qui est vraiment écrit sur le disque.
+        let (id_ecrit, _) =
             plugins::read_manifest(&temporaire).map_err(|e| format!("Plugin invalide : {e}"))?;
-        if let Some(attendu) = attendu {
-            if attendu != id {
-                return Err(format!(
-                    "Le paquet contient le plugin « {id} » au lieu de « {attendu} »."
-                ));
-            }
+        if id_ecrit != id {
+            return Err("Plugin invalide : identifiant incohérent.".to_string());
         }
         let cible = racine.join(&id);
         let ancien = racine.join(format!(".ancien-{jeton}"));
@@ -158,7 +220,7 @@ pub fn installer(zip: &[u8], racine: &Path, attendu: Option<&str>) -> Result<Str
             return Err(format!("Installation impossible : {e}"));
         }
         let _ = fs::remove_dir_all(&ancien);
-        Ok(id)
+        Ok(id.clone())
     })();
     if resultat.is_err() {
         let _ = fs::remove_dir_all(&temporaire);
@@ -215,6 +277,10 @@ fn injoignable(erreur: reqwest::Error) -> String {
     }
 }
 
+fn injoignable_sans_detail() -> String {
+    "Catalogue injoignable : vérifiez la connexion à Internet.".into()
+}
+
 fn cle_publique(app: &AppHandle) -> Result<String, String> {
     app.config()
         .plugins
@@ -234,19 +300,34 @@ fn plugins_changes(app: &AppHandle) {
 
 // ——— Commandes ———
 
-/// Lit le catalogue publié (liste des plugins officiels, avec leur version et leur adresse).
+/// Lit le catalogue publié (liste des plugins officiels, avec leur version et leur adresse). S'il est signé
+/// (docs/20), la signature, l'expiration et la séquence sont vérifiées, et ses révocations retenues.
 #[tauri::command]
-pub async fn catalogue_lire() -> Result<Value, String> {
-    let texte = client()?
+pub async fn catalogue_lire(app: AppHandle) -> Result<Value, String> {
+    let client = client()?;
+    let octets = client
         .get(CATALOGUE_URL)
         .send()
         .await
         .and_then(reqwest::Response::error_for_status)
         .map_err(injoignable)?
-        .text()
+        .bytes()
         .await
         .map_err(injoignable)?;
-    serde_json::from_str(&texte).map_err(|_| "Catalogue illisible.".to_string())
+    if octets.len() > etabli_noyau::catalogue::TAILLE_MAX_CATALOGUE {
+        return Err("Catalogue trop volumineux.".into());
+    }
+    // La signature est facultative pendant la migration : son absence (404) donne l'ancien format.
+    let signature = match client.get(SIGNATURE_URL).send().await {
+        Ok(reponse) if reponse.status().is_success() => {
+            Some(reponse.text().await.map_err(injoignable)?)
+        }
+        Ok(reponse) if reponse.status().as_u16() == 404 => None,
+        Ok(_) | Err(_) => return Err(injoignable_sans_detail()),
+    };
+    let config = app.state::<AppState>().paths.config.clone();
+    let cle = cle_publique(&app)?;
+    analyser_catalogue(&octets, signature.as_deref(), &cle, maintenant(), &config)
 }
 
 /// Télécharge, vérifie et installe (ou met à jour) un plugin du catalogue.
@@ -282,9 +363,13 @@ pub async fn plugin_installer(app: AppHandle, id: String, url: String) -> Result
     }
     let zip = ouvrir_paquet(&paquet, &cle_publique(&app)?)?;
     let racine = app.state::<AppState>().paths.catalogue.clone();
-    let id = tauri::async_runtime::spawn_blocking(move || installer(&zip, &racine, Some(&id)))
-        .await
-        .map_err(|e| e.to_string())??;
+    let etat = lire_etat(&app.state::<AppState>().paths.config);
+    let id = tauri::async_runtime::spawn_blocking(move || {
+        controler_installation(&zip, &racine, &etat, false)?;
+        installer(&zip, &racine, Some(&id))
+    })
+    .await
+    .map_err(|e| e.to_string())??;
     plugins_changes(&app);
     Ok(id)
 }
@@ -309,9 +394,13 @@ pub async fn plugin_installer_fichier(app: AppHandle) -> Result<Option<String>, 
     let paquet = fs::read(&chemin).map_err(|e| format!("Lecture impossible : {e}"))?;
     let zip = ouvrir_paquet(&paquet, &cle_publique(&app)?)?;
     let racine = app.state::<AppState>().paths.catalogue.clone();
-    let id = tauri::async_runtime::spawn_blocking(move || installer(&zip, &racine, None))
-        .await
-        .map_err(|e| e.to_string())??;
+    let etat = lire_etat(&app.state::<AppState>().paths.config);
+    let id = tauri::async_runtime::spawn_blocking(move || {
+        controler_installation(&zip, &racine, &etat, true)?;
+        installer(&zip, &racine, None)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
     plugins_changes(&app);
     Ok(Some(id))
 }
@@ -329,12 +418,20 @@ pub fn plugin_desinstaller(app: AppHandle, id: String) -> Result<(), String> {
 mod tests {
     use super::*;
     use crate::files::tests::scratch;
-    use std::io::Write;
+    use std::io::{Cursor, Write};
     use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
     /// Paquet d'essai signé avec une clé d'essai (scripts/paquet-plugin.mjs --dossier …).
     const PAQUET: &[u8] = include_bytes!("../fixtures/essai-1.0.0.etabli-plugin");
     const CLE_ESSAI: &str = include_str!("../fixtures/cle-essai.pub");
+    /// Catalogue signé d'essai (sequence 7, expire en 2100, révoque tracage < 1.2.0 et machines 1.0.0).
+    const CATALOGUE: &[u8] =
+        include_bytes!("../../../../crates/noyau/fixtures/catalogue-essai.json");
+    const SIGNATURE: &str =
+        include_str!("../../../../crates/noyau/fixtures/catalogue-essai.json.sig");
+    const CLE_CATALOGUE: &str =
+        include_str!("../../../../crates/noyau/fixtures/cle-catalogue-essai.pub");
+    const MAINTENANT: u64 = 1_790_000_000;
 
     fn zip_de(fichiers: &[(&str, &[u8])]) -> Vec<u8> {
         let mut ecrivain = ZipWriter::new(Cursor::new(Vec::new()));
@@ -346,9 +443,9 @@ mod tests {
         ecrivain.finish().unwrap().into_inner()
     }
 
-    fn entree(paquet: &[u8], nom: &str) -> Vec<u8> {
-        let mut archive = ZipArchive::new(Cursor::new(paquet)).unwrap();
-        lire_entree(&mut archive, nom, TAILLE_MAX_PAQUET).unwrap()
+    fn plugin(id: &str, version: &str) -> Vec<u8> {
+        let manifeste = format!(r#"{{"id":"{id}","version":"{version}"}}"#);
+        zip_de(&[("manifest.json", manifeste.as_bytes()), ("a.js", b"1")])
     }
 
     #[test]
@@ -364,32 +461,11 @@ mod tests {
     }
 
     #[test]
-    fn paquet_modifie_refuse() {
-        let mut plugin = entree(PAQUET, "plugin.zip");
-        let signature = entree(PAQUET, "plugin.zip.minisig");
-        let milieu = plugin.len() / 2;
-        plugin[milieu] ^= 0xff;
-        let falsifie = zip_de(&[("plugin.zip", &plugin), ("plugin.zip.minisig", &signature)]);
-        assert!(ouvrir_paquet(&falsifie, CLE_ESSAI)
-            .unwrap_err()
-            .contains("Signature invalide"));
-    }
-
-    #[test]
-    fn autre_cle_refusee() {
+    fn paquet_non_signe_par_notre_cle_refuse() {
         // Clé publique de l'application : le paquet d'essai n'est pas signé avec.
         let conf: Value = serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
         let cle = conf["plugins"]["updater"]["pubkey"].as_str().unwrap();
         assert!(ouvrir_paquet(PAQUET, cle).is_err());
-    }
-
-    #[test]
-    fn fichier_quelconque_refuse() {
-        assert!(ouvrir_paquet(b"pas un zip", CLE_ESSAI).is_err());
-        let sans_signature = zip_de(&[("plugin.zip", b"x")]);
-        assert!(ouvrir_paquet(&sans_signature, CLE_ESSAI)
-            .unwrap_err()
-            .contains("manque"));
     }
 
     #[test]
@@ -439,5 +515,151 @@ mod tests {
         nettoyer(&racine);
         assert!(!racine.join(".installation-abc").exists());
         assert!(racine.join("maths").exists());
+    }
+
+    #[test]
+    fn catalogue_signe_lu_et_retenu() {
+        let config = scratch("catalogue-etat-signe");
+        let lu = analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config,
+        )
+        .unwrap();
+        assert_eq!(lu["signe"], true);
+        assert_eq!(lu["sequence"], 7);
+        assert_eq!(lu["plugins"].as_array().unwrap().len(), 2);
+        // La séquence et les révocations sont gardées pour la suite (même hors ligne).
+        let etat = lire_etat(&config);
+        assert_eq!(etat.sequence, 7);
+        assert_eq!(etat.revocations.len(), 2);
+    }
+
+    #[test]
+    fn catalogue_signe_falsifie_ou_etranger_refuse() {
+        let config = scratch("catalogue-etat-refus");
+        let mut modifie = CATALOGUE.to_vec();
+        modifie.extend_from_slice(b" ");
+        assert!(analyser_catalogue(
+            &modifie,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config
+        )
+        .is_err());
+        assert!(
+            analyser_catalogue(CATALOGUE, Some(SIGNATURE), CLE_ESSAI, MAINTENANT, &config).is_err()
+        );
+        // Rien n'a été retenu.
+        assert_eq!(lire_etat(&config), EtatCatalogue::default());
+    }
+
+    #[test]
+    fn catalogue_expire_refuse_avec_un_conseil() {
+        let config = scratch("catalogue-etat-expire");
+        let e = analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            4_102_444_800,
+            &config,
+        )
+        .unwrap_err();
+        assert!(
+            e.contains("expiré") && e.contains("date de l'ordinateur"),
+            "{e}"
+        );
+    }
+
+    #[test]
+    fn retour_en_arriere_de_la_sequence_refuse() {
+        let config = scratch("catalogue-etat-sequence");
+        ecrire_etat(
+            &config,
+            &EtatCatalogue {
+                sequence: 8,
+                revocations: Vec::new(),
+            },
+        )
+        .unwrap();
+        let e = analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config,
+        )
+        .unwrap_err();
+        assert!(e.contains("retour en arrière"), "{e}");
+        // L'état n'a pas été écrasé par un catalogue plus ancien.
+        assert_eq!(lire_etat(&config).sequence, 8);
+    }
+
+    #[test]
+    fn ancien_format_accepte_tant_qu_aucun_catalogue_signe_na_ete_vu() {
+        let config = scratch("catalogue-etat-ancien");
+        let ancien = br#"{"format":1,"plugins":[{"id":"maths","version":"1.0.0","url":"x"}]}"#;
+        let lu = analyser_catalogue(ancien, None, CLE_CATALOGUE, MAINTENANT, &config).unwrap();
+        assert_eq!(lu["signe"], false);
+        assert_eq!(lu["plugins"].as_array().unwrap().len(), 1);
+
+        // Après un catalogue signé, un catalogue non signé est refusé (on ne peut pas « désigner » un client à jour).
+        analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config,
+        )
+        .unwrap();
+        let e = analyser_catalogue(ancien, None, CLE_CATALOGUE, MAINTENANT, &config).unwrap_err();
+        assert!(e.contains("plus signé"), "{e}");
+        assert!(analyser_catalogue(
+            b"pas du json",
+            None,
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &scratch("catalogue-etat-vide")
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn controle_des_versions_a_l_installation() {
+        let racine = scratch("catalogue-controle");
+        let config = scratch("catalogue-controle-config");
+        analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config,
+        )
+        .unwrap();
+        let etat = lire_etat(&config);
+
+        // Première installation et mise à jour : permises.
+        controler_installation(&plugin("maths", "1.0.1"), &racine, &etat, false).unwrap();
+        installer(&plugin("maths", "1.0.1"), &racine, None).unwrap();
+        controler_installation(&plugin("maths", "1.1.0"), &racine, &etat, false).unwrap();
+        // Retour en arrière et même version : refusés ; la même version est permise depuis un fichier (réparation).
+        assert!(controler_installation(&plugin("maths", "1.0.0"), &racine, &etat, false).is_err());
+        assert!(controler_installation(&plugin("maths", "1.0.1"), &racine, &etat, false).is_err());
+        assert!(controler_installation(&plugin("maths", "1.0.0"), &racine, &etat, true).is_err());
+        controler_installation(&plugin("maths", "1.0.1"), &racine, &etat, true).unwrap();
+        // Une version révoquée n'est jamais installée, même depuis un fichier, même en première installation.
+        let e =
+            controler_installation(&plugin("tracage", "1.1.1"), &racine, &etat, true).unwrap_err();
+        assert!(e.contains("révoquée"), "{e}");
+        assert!(
+            controler_installation(&plugin("machines", "1.0.0"), &racine, &etat, true).is_err()
+        );
+        controler_installation(&plugin("tracage", "1.2.0"), &racine, &etat, false).unwrap();
+        // Manifeste sans version : refusé.
+        let sans_version = zip_de(&[("manifest.json", br#"{"id":"maths"}"#)]);
+        assert!(controler_installation(&sans_version, &racine, &etat, false).is_err());
     }
 }

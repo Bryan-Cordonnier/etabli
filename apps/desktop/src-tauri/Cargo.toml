@@ -29,11 +29,14 @@ tauri-plugin-dialog = "2.7.3"
 tauri-plugin-updater = "2.13.0"
 tauri-plugin-process = "2.4.0"
 # Catalogue de plugins (catalogue.rs) : téléchargement avec les mêmes réglages que le module de mise
-# à jour (rien n'est compilé deux fois), vérification des signatures, lecture des paquets zip.
+# à jour (rien n'est compilé deux fois). Signatures, paquets et catalogue signé : règles communes avec le
+# serveur, dans etabli-noyau (docs/20).
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "system-proxy", "stream"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
-minisign-verify = "0.3"
-base64 = "0.23"
+etabli-noyau = { path = "../../../crates/noyau" }
+
+[dev-dependencies]
+# Fabrication de paquets d'essai dans les tests.
 zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
 flate2 = "1"
 

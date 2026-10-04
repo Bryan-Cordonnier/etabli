@@ -1033,10 +1033,9 @@ dependencies = [
 name = "etabli"
 version = "0.5.0"
 dependencies = [
- "base64 0.23.1",
+ "etabli-noyau",
  "flate2",
  "log",
- "minisign-verify 0.3.0",
  "reqwest",
  "rustls",
  "serde",
@@ -1052,6 +1051,18 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
  "uuid",
+ "zip 8.6.0",
+]
+
+[[package]]
+name = "etabli-noyau"
+version = "0.4.0"
+dependencies = [
+ "base64 0.23.1",
+ "flate2",
+ "minisign-verify 0.3.0",
+ "serde",
+ "serde_json",
  "zip 8.6.0",
 ]
 
