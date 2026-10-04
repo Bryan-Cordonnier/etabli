@@ -32,6 +32,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Pour les contributeurs
 
+- Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
+  « Catalogue (renouvellement) » ; les entrées portent l'empreinte `sha256` du paquet. Voir [docs/14](docs/14-publier-une-version.md).
 - `etabli-noyau` : vérification d'un catalogue signé (séquence, expiration, révocation, refus des retours en arrière), pas encore
   utilisée par l'application. Spécification : [docs/20](docs/20-spec-mises-a-jour-registre.md).
 - `npm run valider` : permissions connues, doublons, fonction du SDK utilisée sans permission ; avertissement pour un plugin « ^1 ».

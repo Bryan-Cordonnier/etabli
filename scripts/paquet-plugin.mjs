@@ -14,6 +14,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, wri
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
+import { createHash } from "node:crypto";
+import { ecrireEtSigner, preparerCatalogue } from "./catalogue-signe.mjs";
 import { notesDuPlugin } from "./notes-catalogue.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -102,10 +104,13 @@ if (id) {
       return { notes, notesDate: date };
     })(),
     size: paquet.length,
+    // Empreinte du paquet : défense en profondeur, vérifiable avant même la signature (docs/20).
+    sha256: createHash("sha256").update(paquet).digest("hex"),
     url: `${RELEASE}/${encodeURIComponent(fichier)}`,
     published: new Date().toISOString(),
   };
   catalogue.plugins = [...catalogue.plugins.filter((p) => p.id !== entry.id), entry].sort((a, b) => a.id.localeCompare(b.id));
-  writeFileSync(catalogueFile, `${JSON.stringify(catalogue, null, 2)}\n`);
-  console.log(`Catalogue : ${catalogueFile} (${catalogue.plugins.length} plugin(s))`);
+  // Format 2 signé (docs/20) : séquence augmentée, date de fin, révocations gardées ; catalogue.json.minisig à côté.
+  ecrireEtSigner(catalogueFile, preparerCatalogue(catalogue, Date.now() / 1000));
+  console.log(`Catalogue signé : ${catalogueFile} (${catalogue.plugins.length} plugin(s))`);
 }

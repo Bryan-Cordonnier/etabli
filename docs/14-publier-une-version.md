@@ -43,6 +43,13 @@ l'application : corriger un calcul de Traçage ne demande pas de republier Étab
 - **Release « catalogue »** (préversion, jamais « dernière version » : les mises à jour de
   l'application n'y touchent pas) : les paquets et `catalogue.json`, lu par Établi à
   `…/releases/download/catalogue/catalogue.json`.
+- **Catalogue signé** (format 2, [docs/20](20-spec-mises-a-jour-registre.md)) : `catalogue.json` porte un `sequence` qui ne fait
+  qu'augmenter, une date de fin (`expire`, 30 jours) et la liste des `revocations` ; `catalogue.json.minisig` en est la signature,
+  faite avec la même clé que les mises à jour (`scripts/catalogue-signe.mjs`). **Toute modification du catalogue le resigne** :
+  publication d'un plugin, nouveautés remises à jour (« Notes de version »), et le workflow mensuel « Catalogue
+  (renouvellement) », qui évite l'expiration (à lancer à la main une première fois pour passer du format non signé au format
+  signé ; ensuite il tourne seul le 1er de chaque mois). Pour **révoquer** une version : ajouter
+  `{ "id": "…", "avant": "1.2.0", "raison": "…" }` (ou `"versions": ["1.0.0"]`) à `revocations`, puis lancer le renouvellement.
 - **Installation** (Rust, `catalogue.rs`) : téléchargement seulement depuis les Releases du dépôt,
   signature vérifiée avant toute écriture, extraction dans `<config>/catalogue/<id>` (refus des
   chemins qui sortent du dossier, taille bornée), remplacement d'un bloc, liste rechargée sans

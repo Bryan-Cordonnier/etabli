@@ -35,6 +35,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: npm
+
+      # Nécessaire pour signer le catalogue quand ses nouveautés changent (npx tauri signer).
+      - name: Dépendances npm
+        run: npm ci
 
       - name: Releases de l'application
         run: |
@@ -49,14 +54,19 @@ jobs:
           done
 
       - name: Nouveautés des plugins dans le catalogue
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           mkdir -p paquets
           if gh release download catalogue --pattern catalogue.json --dir paquets; then
             cp paquets/catalogue.json "$RUNNER_TEMP/avant.json"
             node scripts/notes-catalogue.mjs paquets/catalogue.json --ecrire
             if ! cmp -s paquets/catalogue.json "$RUNNER_TEMP/avant.json"; then
-              gh release upload catalogue paquets/catalogue.json --clobber
-              echo "catalogue.json mis à jour"
+              # Toute modification du catalogue exige une nouvelle signature (et une nouvelle séquence, docs/20).
+              node scripts/catalogue-signe.mjs paquets/catalogue.json
+              gh release upload catalogue paquets/catalogue.json paquets/catalogue.json.minisig --clobber
+              echo "catalogue.json mis à jour et signé"
             fi
             node scripts/notes-catalogue.mjs paquets/catalogue.json --markdown > "$RUNNER_TEMP/notes-catalogue.md"
             gh release edit catalogue --notes-file "$RUNNER_TEMP/notes-catalogue.md"
