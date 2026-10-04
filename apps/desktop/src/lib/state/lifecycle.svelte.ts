@@ -4,6 +4,7 @@
 // (`PluginDialog`) affiche `lifecycle.dialog`.
 import { dependentsOf, optionalDependentsOf, planInstall, type Problem } from "@etabli/sdk/deps";
 import type { CatalogueEntry } from "$lib/api";
+import { connues, estStrict } from "$lib/plugins/permissions";
 import { getPlugin, installedNodes } from "$lib/plugins/registry.svelte";
 import type { PluginManifest } from "$lib/types";
 import { catalogue } from "./catalogue.svelte";
@@ -23,6 +24,8 @@ export type Dialog =
       missing: Problem[];
       /** Case « Installer aussi les extensions facultatives », cochée par défaut. */
       withOptional: boolean;
+      /** Ce que le plugin demande à pouvoir faire ; `nouvelles` : permissions que la version installée n'avait pas. */
+      permissions: { demandees: string[]; nouvelles: string[]; ancienContrat: boolean };
     }
   | {
       kind: "remove";
@@ -48,7 +51,17 @@ class Lifecycle {
   askInstall(entry: CatalogueEntry): void {
     const plan = planInstall(entry, catalogue.entries, installedNodes());
     const required = plan.order.filter((e) => e.id !== entry.id);
-    if (!required.length && !plan.optional.length && !plan.missing.length) {
+    const installe = getPlugin(entry.id);
+    const demandees = connues(entry.permissions);
+    const deja = new Set(installe?.permissions ?? []);
+    const permissions = {
+      demandees,
+      nouvelles: installe ? demandees.filter((p) => !deja.has(p)) : demandees,
+      ancienContrat: !estStrict(entry.apiVersion),
+    };
+    // Une confirmation est demandée dès que le plugin réclame une permission qu'il n'avait pas (ou n'a jamais eue).
+    const aConfirmer = permissions.nouvelles.length > 0 || (!installe && permissions.ancienContrat);
+    if (!required.length && !plan.optional.length && !plan.missing.length && !aConfirmer) {
       void catalogue.install(entry);
       return;
     }
@@ -60,6 +73,7 @@ class Lifecycle {
       optional: plan.optional,
       missing: plan.missing,
       withOptional: true,
+      permissions,
     };
   }
 

@@ -53,6 +53,8 @@ export interface CatalogueEntry {
   color: string;
   icon: string;
   apiVersion: string;
+  /** Permissions demandées (docs/19) ; vide pour un catalogue publié avant le contrat 2. */
+  permissions: string[];
   /** Plugins obligatoires (identifiant → plage de versions) ; vide pour un catalogue publié avant la 0.3. */
   dependencies: Record<string, string>;
   /** Plugins dont celui-ci profite s'ils sont là. */

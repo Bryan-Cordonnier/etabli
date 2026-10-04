@@ -2,6 +2,7 @@
   // Fenêtre de confirmation du cycle de vie des plugins (voir state/lifecycle.svelte.ts) :
   // installation avec dépendances, désinstallation ou désactivation en cascade.
   import type { Problem } from "@etabli/sdk/deps";
+  import { libelles } from "$lib/plugins/permissions";
   import { getPlugin } from "$lib/plugins/registry.svelte";
   import { catalogue } from "$lib/state/catalogue.svelte";
   import { lifecycle } from "$lib/state/lifecycle.svelte";
@@ -47,6 +48,20 @@
               <li><b>{entry.name}</b> <span class="version">v{entry.version}</span></li>
             {/each}
           </ul>
+        {/if}
+
+        {#if dialog.permissions.demandees.length}
+          <p>{dialog.update && dialog.permissions.nouvelles.length ? "Cette version demande de nouvelles autorisations. Le plugin pourra :" : "Ce plugin pourra :"}</p>
+          <ul>
+            {#each libelles(dialog.permissions.demandees) as texte (texte)}
+              <li>{texte}</li>
+            {/each}
+          </ul>
+        {:else if !dialog.permissions.ancienContrat}
+          <p class="muted">Ce plugin ne demande aucune autorisation : il calcule et affiche, rien d'autre.</p>
+        {/if}
+        {#if dialog.permissions.ancienContrat}
+          <p class="problem">Ce plugin suit un ancien contrat : le moteur ne contrôle pas ce qu'il demande de faire. Installez-le seulement si vous lui faites confiance.</p>
         {/if}
 
         {#if dialog.entry.notes}
@@ -144,6 +159,10 @@
   }
   ul b {
     color: var(--text);
+  }
+  .muted {
+    color: var(--muted);
+    font-size: 12.5px;
   }
   .notes {
     font-size: 12.5px;

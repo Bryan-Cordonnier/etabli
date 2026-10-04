@@ -29,6 +29,7 @@ function entries(raw: unknown): CatalogueEntry[] {
       dependencies: stringMap(e.dependencies),
       optionalDependencies: stringMap(e.optionalDependencies),
       provides: stringMap(e.provides),
+      permissions: Array.isArray(e.permissions) ? e.permissions.filter((p): p is string => typeof p === "string") : [],
       settings: Array.isArray(e.settings) ? e.settings : [],
       notes: typeof e.notes === "string" ? e.notes : "",
       notesDate: typeof e.notesDate === "string" ? e.notesDate : null,
