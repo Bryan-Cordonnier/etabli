@@ -20,6 +20,12 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   compte ; une mini-app ne peut plus enregistrer qu'un fichier de données (CSV, DXF, JSON, texte, SVG…), jamais un programme.
   Les documents et réglages ont une taille maximale.
 
+- **Appels entre plugins** (fondations) : un plugin peut appeler une fonction d'un autre plugin et recevoir la réponse (par exemple
+  « ajouter un rappel » dans un futur Agenda). L'autorisation est montrée avant l'installation, une ligne par service (« Lire des
+  données dans le service « agenda » du plugin Agenda », « Ajouter ou modifier des données… »). Si l'autre plugin n'est pas là,
+  est désactivé ou n'est pas à la bonne version, l'appelant reçoit une réponse claire et continue en mode réduit. Aucun plugin
+  officiel n'est changé ; rien ne se voit encore à l'écran.
+
 ### Modifié
 
 - **Catalogue de plugins plus sûr** : l'application sait lire un catalogue signé (signature, date de fin, numéro de séquence qui ne
@@ -32,6 +38,13 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Pour les contributeurs
 
+- **Appels entre plugins** (docs/24, A.1.2) : manifeste `functions` / `serviceEntry` (fournisseur) et `services` / permission
+  `appelle:<service>:<lecture|ecriture>` (appelant) ; SDK `etabli.services.call(...)` et `etabli.services.handle(...)`, `ServiceError` ;
+  messages `serviceCall`, `serviceReply`, `serviceInvoke`, `serviceReady`, `serviceResult` ; routeur pur `lib/plugins/appels.ts`
+  (file par fournisseur, délais, plafonds, profondeur 1) ; cadre invisible `ServiceFrame` ; garde étendu (cadre de service restreint) ;
+  `npm run valider` contrôle les nouveaux champs. Le versionnage d'un appel porte sur la **version du contrat** (`provides`), non
+  sur celle du plugin. Deux plugins de test dans `fixtures/appels-entre-plugins/` (non distribués) et un test d'appel complet.
+  Voir [docs/06](docs/06-protocole-sdk.md) et [docs/19](docs/19-modele-de-menace-plugins.md).
 - Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
   « Catalogue (renouvellement) » ; les entrées portent l'empreinte `sha256` du paquet. Voir [docs/14](docs/14-publier-une-version.md).
 - `etabli-noyau` : vérification d'un catalogue signé (séquence, expiration, révocation, refus des retours en arrière), pas encore

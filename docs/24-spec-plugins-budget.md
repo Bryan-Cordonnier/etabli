@@ -298,6 +298,12 @@ sur le contrat.
 
 ### A.1.2 Mécanisme proposé : « fonctions de service »
 
+> **Fait (branche `appels-entre-plugins`, 4 octobre 2026)** : manifeste (`functions`, `serviceEntry`, `services`, permission
+> `appelle:<service>:<accès>`), SDK (`services.call`, `services.handle`, `ServiceError`), garde, routeur (file par fournisseur, délais,
+> plafonds, profondeur 1), cadre invisible, validation (`npm run valider`), affichage à l'installation, versionnage sur le contrat pour
+> les appels et les instantanés. Mode d'emploi : [06](06-protocole-sdk.md#appeler-la-fonction-dun-autre-plugin-docs24-a12) ; menaces :
+> [19](19-modele-de-menace-plugins.md) (n° 17 à 23). **Pas fait** : voir « État d'avancement » en fin de A.3.
+
 Le manifeste du fournisseur décrit des **fonctions** ; le moteur route les appels, vérifie, et fait répondre le fournisseur.
 
 ```jsonc
@@ -463,6 +469,26 @@ Ce que le contrat actuel **permet déjà** et que ces plugins utilisent : régla
 dépendances facultatives et leur installation, `send` (geste utilisateur), `saveFile` (CSV, JSON), `print`, `openSettings`, thèmes.
 
 
+### État d'avancement des manques (4 octobre 2026)
+
+| Manque | État |
+| --- | --- |
+| M1 appels avec arguments et réponse | **fait** : `serviceCall`/`serviceReply`, `services.call`, routeur `lib/plugins/appels.ts` |
+| M2 fournisseur joignable sans page ouverte | **fait pour les appels** (cadre invisible `serviceEntry`, fermé après la réponse). **Pas fait** : point d'entrée au démarrage (renouveler les rappels), cadre persistant ; **non essayé dans WebView2 ni sur Android** |
+| M3 écriture sous permission | **fait** : `appelle:<service>:<accès>`, `functions.*.acces`, validateur, phrase à l'installation ; `ecriture` ne donne pas `lecture` (choix de sécurité) |
+| M4 versionnage sur le contrat | **fait pour les appels** (plage `services` jugée sur la version du contrat) et pour les instantanés d'un consommateur qui la déclare. **Pas fait** : `planInstall` et `problemsOf` jugent toujours les `dependencies` sur la version du plugin ; pas de plusieurs versions de contrat servies à la fois |
+| M5 identité et espace propre | **identité faite** (`caller` écrit par le moteur) ; le **contrôle de propriété** (`source.plugin = appelant`) reste à écrire dans chaque fournisseur |
+| M12 schémas vérifiés par le moteur | pas fait (le fournisseur valide) |
+| M13 `mockService` | pas fait ; les fixtures `fixtures/appels-entre-plugins/` et `appels.integration.test.ts` montrent un appel complet |
+| M6 à M11, M14 à M16 | pas faits |
+
+**Choix de conception retenus** (à valider) : (1) `ecriture` ne donne pas `lecture` ; (2) `services` (plage de contrat) est
+obligatoire pour appeler, la dépendance sur le plugin aussi ; (3) le délai (5 s par défaut, 10 s au plus) couvre l'attente en file ;
+(4) profondeur 1 : un fournisseur qui répond à un appel ne peut en émettre aucun ; (5) plafonds fixes 20 / 8 ; (6) un appel =
+un cadre neuf (aucun état gardé en mémoire d'un appel à l'autre : le registre vit dans les réglages du plugin) ; (7) réservé aux
+plugins de contrat ^2.
+
+
 ## A.4 Réemploi du cœur Rust : WebAssembly ou TypeScript ?
 
 (Les modules partagés `money`/`civil` (M10) servent aussi `finances` et l'ERP.)
@@ -552,7 +578,7 @@ Bryan n'a pas à trancher : sans objection, la recommandation s'applique.
 
 | # | Question | Recommandation par défaut |
 | --- | --- | --- |
-| T1 | Mécanisme d'appel : cadre invisible (A.1.2) ou boîte de demandes (écriture différée) | **cadre invisible** ; la boîte de demandes est trop approximative pour un registre d'argent |
+| T1 | Mécanisme d'appel : cadre invisible (A.1.2) ou boîte de demandes (écriture différée) | **cadre invisible** (fait, 4 octobre 2026) ; la boîte de demandes est trop approximative pour un registre d'argent |
 | T2 | Rappels sans ouvrir l'agenda | horizon de 60 jours renouvelé à chaque ouverture ; point d'entrée `background` du moteur plus tard |
 | T3 | Graphiques | composant partagé dans `@etabli/ui`, construit avant `finances` |
 | T4 | Flux `.ics` par utilisateur pour l'iPhone d'un colocataire | non en v1 ; export manuel |

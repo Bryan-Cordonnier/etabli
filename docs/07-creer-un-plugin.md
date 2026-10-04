@@ -81,6 +81,9 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
   profite s'ils sont là, avec la plage de versions acceptée (`"fournisseurs": "^1"`). Voir
   « Dépendances et services » plus bas.
 - `provides` (facultatif) : données que le plugin publie pour les autres (`"fournisseurs": "1"`).
+- `functions` + `serviceEntry` (facultatifs) : fonctions que le plugin offre aux autres, et la page sans interface qui y répond.
+  `services` + `permissions: ["appelle:<service>:<accès>"]` : côté appelant. Voir « Appeler la fonction d'un autre plugin »
+  plus bas.
 - `settings` (facultatif) : pages de réglages que le plugin ajoute à Paramètres → Plugins
   (`[{ "id": "fournisseurs", "title": "Fournisseurs", "entry": "reglages/index.html" }]`).
 - Un plugin sans mini-app (`"miniApps": []`) n'apparaît pas dans la colonne : il n'apporte que des
@@ -192,6 +195,15 @@ Contrats officiels : `fournisseurs@1`, `machines@1` (docs/09).
   `>=1.2 <2`, `*`. Une version 2.0 d'un fournisseur n'active pas les plugins qui exigent `^1`.
 - Désinstaller ou désactiver un plugin dont d'autres ont besoin demande confirmation et les entraîne.
   Les données sont **gardées**. Pas de cycle entre plugins.
+**Appeler la fonction d'un autre plugin.** Quand lire un instantané ne suffit pas (ajouter une écriture chez `finances`, un rappel
+dans `agenda`), le plugin appelle une **fonction de service** : `await etabli.services.call("finances", "ecritures.ajouter", args)`
+rend `{ ok: true, valeur }` ou `{ ok: false, code, message }`, jamais d'exception. Il faut, côté appelant, la permission
+`appelle:<service>:<lecture|ecriture>`, la plage de contrat `services` et la dépendance ; côté fournisseur, `functions`, `serviceEntry`
+et `etabli.services.handle(...)`. **Écrivez toujours le mode dégradé** : fournisseur absent (`service_absent`), trop ancien
+(`contrat_incompatible`), lent (`delai_depasse`) ; rejouez les écritures avec la même `cle`. Détail, codes d'erreur, garanties :
+[06](06-protocole-sdk.md#appeler-la-fonction-dun-autre-plugin-docs24-a12) ; menaces : [19](19-modele-de-menace-plugins.md).
+Exemple complet : `fixtures/appels-entre-plugins/` (deux plugins de test, non distribués).
+
 ## Plugins tiers
 
 Un utilisateur peut déposer un plugin compilé (manifeste + fichiers) dans `<config>/plugins/<id>/`.

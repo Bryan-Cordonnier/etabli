@@ -19,6 +19,8 @@ de réglages** dans Paramètres → Plugins et **publient** leurs données (docs
   message `services` à chaque changement (`etabli.services.get(nom)`, `.onChange`). Le fournisseur doit
   être installé, activé et dans une version acceptée par la plage (`^1`). Sinon : rien, comme si le
   plugin n'était pas là.
+- **Appeler une fonction** : au-delà de la lecture, un plugin peut appeler une fonction d'un service (avec arguments et réponse) :
+  [06](06-protocole-sdk.md#appeler-la-fonction-dun-autre-plugin-docs24-a12). Fournisseurs et Machines n'en offrent pas (lecture seule).
 - **Contrats** (`packages/sdk/src/protocol.ts`) : `fournisseurs@1` = `FournisseursData { suppliers }`,
   `machines@1` = `MachinesData { machines }`. Un contrat ne change pas de forme sans changer de version
   majeure : les plugins qui exigent `^1` ne suivent pas une version 2.
