@@ -22,3 +22,10 @@ Onglet Actions de GitHub › « Android (essai d'alarme natif) » › Run workfl
 
 Si une alarme ne sonne pas, noter le modèle du téléphone et la marque (certains constructeurs tuent les applications en
 arrière-plan) et si le journal contient une ligne « REFUSÉE ».
+
+## Résultat de l'essai (Bryan, 2026-10-04)
+- **Alarmes** (réveil) : sonnent à l'heure.
+- **Notifications ordinaires**, immédiates et programmées : arrivent **à la seconde près**.
+- Conclusion : la couche native (alarme exacte et notification programmée) est fiable sur le téléphone de Bryan ; l'hôte mobile
+  peut s'appuyer dessus (docs/18, étape 5). Non couvert : redémarrage du téléphone, économiseur de batterie agressif, autres
+  marques de téléphone.
