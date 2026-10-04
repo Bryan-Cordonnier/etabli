@@ -39,7 +39,7 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 - [ ] Android : lancer « Android (APK de test) » avec « APK de sonde du pont », installer `etabli-sonde-pont.apk`, m'envoyer une capture (procédure : `tools/sonde-pont-android/README.md`). Puis l'APK normal : mini-apps et essai d'alarme.
 
 ### 1.4 Décisions à prendre
-- [ ] **Les 14 questions de [docs/23](23-spec-distributions.md) §12** (distributions : noms, identifiants, clé racine commune ou par produit, hébergement des paquets privés…).
+- [ ] **Les 14 questions de `docs/23` §12** (distributions : noms, identifiants, clé racine commune ou par produit, hébergement des paquets privés…).
 - [ ] **Les questions de [docs/20](20-spec-mises-a-jour-registre.md)** : clé d'origine dans la première liste de clés, durée de vie d'une clé, repli vers GitHub si la source personnalisée est injoignable, révocations d'une source personnalisée, dates d'arrêt du contrat ^1 (proposition : avertir tout de suite, refuser dans six mois), canal bêta.
 - [ ] **Questions de [docs/21](21-spec-licences-baux.md)** et validation de la spec [docs/18](18-spec-plateforme-comptes-licences.md) : le service de licences n'est pas codé sans cela.
 - [ ] **Profondeur des appels entre plugins** : aujourd'hui un plugin qui répond à un appel ne peut pas en émettre un autre. Ton exemple « `finances` ajoute un rappel dans l'`agenda` pendant qu'`paie` l'appelle » demande une profondeur de 2. À trancher : accepter 2, ou faire appeler l'agenda par `paie` elle-même.
@@ -105,7 +105,7 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 - **`contrat-v1-arret`** : dates d'avertissement/refus du contrat ^1 portées par le catalogue signé (`scripts/arret-contrat.mjs`) ; aucune date fixée.
 - **`web-origines-locales`** : **faille trouvée et corrigée** dans la version web sans serveur (un plugin pouvait lire l'application et l'IndexedDB). Sonde CORS + sandbox sans origine ; essai automatisé 14/14.
 - **`android-origine-par-plugin`** : origine `https://<id>.plugins.localhost` par plugin sur Android, et retrait de trois interfaces natives de Capacitor visibles de tous les cadres. Sonde `tools/sonde-pont-android/`. **Java jamais compilé avec le vrai SDK.**
-- **`spec-distributions`** ([docs/23](23-spec-distributions.md)) et **`spec-budget`** ([docs/24](24-spec-plugins-budget.md)) : spécifications seulement.
+- **`spec-distributions`** (`docs/23`) et **`spec-budget`** (`docs/24`) : spécifications seulement.
 - **`appels-entre-plugins`** : un plugin appelle la fonction d'un autre (manifeste `functions`/`serviceEntry`, permission `appelle:<service>:<accès>`, SDK `services.call`, routeur dans le moteur, cadre invisible, identité de l'appelant imposée, file par fournisseur, délais et plafonds). 186 tests Vitest ; les 7 plugins officiels restent compatibles. **Cadre invisible jamais essayé dans un vrai moteur.**
 - **`essai-appels-navigateur`**, **`outils-money-civil`**, **`plugin-finances`** : voir §6 (en cours au moment de l'écriture).
 
@@ -118,8 +118,8 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 
 ## 5. Reste à faire côté code (agent)
 - Service de licences ([docs/21](21-spec-licences-baux.md)) — **après** ta validation.
-- Distributions ([docs/23](23-spec-distributions.md)) — après tes réponses (étape 1 de la migration : config générée identique à l'actuelle).
-- Plugins `agenda` (avec permission `notifications`, rappels téléphone), `paie`, `budget` ; import de fichier, extension `.ics` à l'export, point d'entrée au démarrage, schémas de fonctions vérifiés par le moteur, simulateur de service pour les tests ([docs/24](24-spec-plugins-budget.md) annexe, manques M5 à M16).
+- Distributions (`docs/23`) — après tes réponses (étape 1 de la migration : config générée identique à l'actuelle).
+- Plugins `agenda` (avec permission `notifications`, rappels téléphone), `paie`, `budget` ; import de fichier, extension `.ics` à l'export, point d'entrée au démarrage, schémas de fonctions vérifiés par le moteur, simulateur de service pour les tests (`docs/24` annexe, manques M5 à M16).
 - Application mobile complète (en dernier).
 - Plugin hostile dans l'essai d'isolation (voir §1.4).
 
