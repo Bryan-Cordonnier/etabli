@@ -1,101 +1,134 @@
 # Cahier de bord
 
-Journal du projet pour Bryan : ce qui est fait, ce qui a été décidé, ce qui reste à faire **à la main** (ce qu'un agent ne peut pas faire à ta place), et ce qui reste à faire côté code.
-À tenir à jour à chaque étape : les cases cochées sont faites, les autres attendent.
+Journal du projet pour Bryan : où on en est, ce qui est décidé, ce qui reste à faire **à la main** (ce qu'un agent ne peut pas faire à ta place), et ce qui reste à faire côté code.
+À tenir à jour à chaque étape. Les cases cochées sont faites.
 
 Dernière mise à jour : 4 octobre 2026.
 
+**Règle de lecture :** « poussé » = sur GitHub dans une branche, sans demande de fusion (PR). « Non vérifié » = jamais essayé sur un vrai appareil ou dans l'application ; seule la CI ou tes essais le diront.
+
 ## 1. À faire à la main (Bryan)
 
-### Dépôt GitHub
-- [ ] Fusionner la PR #23 (retour arrière d'un plugin, plugins révoqués) — CI verte.
-- [ ] Fusionner la PR #24 (documentation d'état) — CI verte.
-- [ ] Fusionner la PR #25 (essai d'isolation en CI) — CI verte.
-- [ ] Fusionner la PR du présent cahier.
-- [ ] Fermer la PR #13 (Capacitor 8, Dependabot) : à reprendre plus tard avec le mobile.
-- [ ] Regarder l'alerte Dependabot « modérée » sur `main` (Sécurité → Dependabot, alerte n° 1).
+### 1.1 Fusions sur GitHub — ordre conseillé
+Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : demande-moi de les ouvrir (je résous les conflits sur `CHANGELOG.md` et les docs).
 
-### Publication
-- [ ] Lancer **une fois** le workflow « Catalogue (renouvellement) » (Actions) pour passer au catalogue signé. Tant que ce n'est pas fait, le catalogue reste non signé (accepté seulement jusqu'au premier catalogue signé vu).
+| Ordre | Branche | État |
+| --- | --- | --- |
+| 1 | `retour-arriere-revocation` — [PR #23](https://github.com/Bryan-Cordonnier/etabli/pull/23) | CI verte |
+| 2 | `docs-etat` — [PR #24](https://github.com/Bryan-Cordonnier/etabli/pull/24) | CI verte |
+| 3 | `essai-isolation` — [PR #25](https://github.com/Bryan-Cordonnier/etabli/pull/25) | CI verte (62 essais) |
+| 4 | `cahier` (ce document) | sans PR |
+| 5 | `sdk-source` | sans PR, testé en local |
+| 6 | `cle-rotation` → `sources-configurables` → `contrat-v1-arret` (empilées, dans cet ordre) | sans PR ; **Rust Tauri jamais compilé** |
+| 7 | `web-origines-locales` puis `android-origine-par-plugin` | sans PR ; Java jamais compilé |
+| 8 | `spec-distributions`, `spec-budget` | documentation seulement |
+| 9 | `appels-entre-plugins` → `essai-appels-navigateur` → `outils-money-civil` → `plugin-finances` (empilées, dépendent de `spec-budget`) | sans PR ; voir §4 |
+
+- [ ] Fusionner dans cet ordre (squash uniquement, c'est le réglage du dépôt).
+- [ ] Fermer la PR #13 (Capacitor 8, Dependabot) : à reprendre avec le mobile.
+- [ ] Regarder l'alerte Dependabot « modérée » sur `main` (Sécurité › Dependabot, alerte n° 1).
+
+### 1.2 Publication
+- [ ] Lancer **une fois** le workflow « Catalogue (renouvellement) » (Actions) pour passer au catalogue signé.
 - [ ] Publier les nouvelles versions des plugins (manifestes `apiVersion` ^2 + permissions) et de l'application (tag de version) : seul toi peux pousser un tag.
+- [ ] Rotation des clés : créer la clé racine **toi-même** (procédure dans [docs/14](14-publier-une-version.md)), puis faire une répétition à blanc. Tant que ce n'est pas fait, le comportement actuel est inchangé.
 
-### Essais à l'écran (jamais vus par un agent)
-- [ ] Fenêtre des permissions à l'installation d'un plugin.
-- [ ] Bouton « Revenir à la version précédente » dans le catalogue.
-- [ ] Plugin révoqué : pastille « Révoqué », désactivation, message.
-- [ ] Mini-apps sous WebView2 (Windows) : l'essai d'isolation automatique ne couvre que Chromium sous Linux.
+### 1.3 Essais à faire toi-même (jamais vus par un agent)
+- [ ] Application PC : fenêtre des permissions à l'installation, retour arrière d'un plugin, plugin révoqué, boîte « Source du catalogue » (Paramètres › Mises à jour).
+- [ ] Application PC sous WebView2 : les mini-apps, le cadre invisible des appels entre plugins.
+- [ ] Android : lancer « Android (APK de test) » avec « APK de sonde du pont », installer `etabli-sonde-pont.apk`, m'envoyer une capture (procédure : `tools/sonde-pont-android/README.md`). Puis l'APK normal : mini-apps et essai d'alarme.
 
-### Décisions à prendre
-- [ ] **Nom commercial** (voir §3). Vérifier toi-même INPI, TMview et les domaines (mes outils n'accèdent pas aux registres).
-- [ ] Offre **gratuite** : existe-t-elle, avec quelles limites ? (reporté « à demain »)
-- [ ] Répondre aux questions ouvertes de [docs/20](20-spec-mises-a-jour-registre.md) et [docs/21](21-spec-licences-baux.md) ; sans cela le service de licences n'est pas codé.
-- [ ] Valider les spécifications [docs/18](18-spec-plateforme-comptes-licences.md) avant tout gros développement (règle d'or du projet).
+### 1.4 Décisions à prendre
+- [ ] **Les 14 questions de [docs/23](23-spec-distributions.md) §12** (distributions : noms, identifiants, clé racine commune ou par produit, hébergement des paquets privés…).
+- [ ] **Les questions de [docs/20](20-spec-mises-a-jour-registre.md)** : clé d'origine dans la première liste de clés, durée de vie d'une clé, repli vers GitHub si la source personnalisée est injoignable, révocations d'une source personnalisée, dates d'arrêt du contrat ^1 (proposition : avertir tout de suite, refuser dans six mois), canal bêta.
+- [ ] **Questions de [docs/21](21-spec-licences-baux.md)** et validation de la spec [docs/18](18-spec-plateforme-comptes-licences.md) : le service de licences n'est pas codé sans cela.
+- [ ] **Profondeur des appels entre plugins** : aujourd'hui un plugin qui répond à un appel ne peut pas en émettre un autre. Ton exemple « `finances` ajoute un rappel dans l'`agenda` pendant qu'`paie` l'appelle » demande une profondeur de 2. À trancher : accepter 2, ou faire appeler l'agenda par `paie` elle-même.
+- [ ] **Taux de paie** à confirmer avec un contrat ou un bulletin (heures supplémentaires : majorations légales, pas « au taux de la mission »).
+- [ ] **Isolation sur Android** : l'origine par plugin est faite (branche `android-origine-par-plugin`), à valider par les essais du §1.3.
+- [ ] **Offre gratuite** : existe-t-elle, avec quelles limites ?
+- [ ] **Nom commercial** du moteur (voir §3). Vérifier INPI, TMview et les domaines toi-même.
+- [ ] Plugin volontairement hostile dans l'essai d'isolation : un contrôle de sécurité a interrompu l'agent qui l'écrivait. À écrire toi-même ou à abandonner (les 62 essais actuels utilisent les vrais plugins).
 
-### Plus tard
-- [ ] Domaine, hébergement (VPS) et courriels transactionnels : pas avant d'avoir le nom ; homelab pour les essais.
-- [ ] Marque : dépôt INPI et protection du nom, indépendamment de la licence du code.
+### 1.5 Plus tard
+- [ ] Domaine, hébergement (VPS), courriels : après le nom ; homelab pour les essais.
+- [ ] Dépôt de marque (INPI) du nom choisi.
 - [ ] Comptes développeur Apple (iPhone) quand le mobile arrivera.
+- [ ] Dépôt `orga/` de l'ERP : non lu (pas dans la session). Il contient les règles métier (centimes, calculs figés, livre de police, numérotation légale, URSSAF) à reprendre dans l'ERP-moteur.
 
 ## 2. Décisions prises
 
 | Sujet | Décision |
 | --- | --- |
-| Moteur | Open source, licence **Apache-2.0** ; la marque est protégée à part |
+| Moteur | Open source, licence **Apache-2.0** ; marque protégée à part |
 | Plugins | Dépôts privés (un par plugin) ; la logique s'exécute toujours **en local**, jamais sur le serveur |
 | Serveur | Comptes, droits et données seulement |
 | Licences | **Bail de 48 h** (réglable par offre) ; **sièges nominatifs d'abord**, flottants ensuite ; licence personnelle gratuite pour Bryan |
 | Données | Jamais supprimées : export et lecture restent possibles après expiration |
 | Horloge | L'horloge locale n'est jamais crue |
-| Vente | France uniquement pour l'instant (contrôle du pays de facturation) ; fichiers de traduction dès le départ, français seul |
-| Commissions | Commissions sur les plugins tiers acceptées (à construire plus tard) |
+| Vente | France uniquement pour l'instant ; traduction dès le départ, français seul |
+| Commissions | Acceptées sur les plugins tiers (à construire plus tard) |
 | IA | Pas de plugins d'IA pour l'instant |
-| Plateformes | Windows d'abord (moteur « nickel »), puis mobile ; iPhone prévu (application de compte, sans achat intégré) ; Linux repoussé |
+| Plateformes | **PC d'abord** ; mobile ensuite ; iPhone prévu (application de compte, sans achat intégré) ; Linux repoussé |
 | Hébergement du code | Reste sur GitHub ; adresses configurables plus tard |
-| Produits | Trois applications (Établi d'essai, ERP de ton entreprise, budget/agenda perso) issues du **même moteur**, différenciées par la configuration de build (pas de copies ni de forks) |
-| Ordre | Moteur PC solide (isolation, permissions, mises à jour irréprochables, code propre), puis licences, distributions, mobile |
+| **Produits** | **Distributions** à la manière d'une distribution Linux : moteur = noyau, plugins = paquets, catalogues = dépôts, distribution = sélection de paquets + nom + logo + dépôts par défaut. **Pas de profils**, pas de forks. Établi, ERP, budget sont des distributions du même moteur |
+| ERP | Une **distribution du moteur Établi** (pas l'application PHP `retux-panel`, dont la pile et les règles sont mises de côté) |
+| Mises à jour | Chaque plugin se met à jour **indépendamment**, même dans un pack ; une dépendance = besoin de la fonction d'un autre plugin |
+| Plugins budget | `agenda` (rappels pour les autres), `finances` (l'argent réel, appelable pour ajouter/retirer, aussi pour l'ERP), `paie` (particuliers : missions d'intérim, CDI, CDD, revenus récurrents programmables ; un seul plugin à modules internes), `budget` (prévisions, virements, courbes). `paie` ne calcule pas de gain net : `budget` estime ce qui reste |
+| Rappels | **Notifications seulement, pas d'alarmes, téléphone seulement** (pas de rappel sur PC) |
+| Application budget | S'appelle **Quotidien** (usage personnel, non commercial), **PC d'abord** |
+| Ordre de développement | Fondations d'abord (outils communs, appel de fonction entre plugins, `finances`, `agenda`), puis `paie`, puis `budget` |
+| Réemploi de l'ancien cœur Rust | Recommandation (à confirmer) : réécriture en TypeScript, les 18 tests Rust rejoués comme « vecteurs d'or » ; mutualiser `money` et `civil` dans `@etabli/ui` |
 
-## 3. Nom commercial (recherche)
+## 3. Nom commercial du moteur (recherche, non tranché)
 
-- Écartés ou risqués : Atelio, Brik/Briks, Haya, Fabriko, Gabari (pris), Tree, linked.app, Anticip, BeFast.
-- Gabario : rappelle l'image de Mario. Tablier : possible mais commun et proche de la classe 9.
-- **Maillon** : le meilleur jusqu'ici ; `maillon.fr` est pris (distributeur de pièces de cycles), Maillon.io (SaaS) est fermé.
+- Écartés ou risqués : Atelio, Brik/Briks, Haya, Fabriko, Gabari (pris), Tree, linked.app, Anticip, BeFast, **Kotidien** (un logiciel libre de finances personnelles porte déjà ce nom).
+- Gabario : rappelle l'image de Mario. Tablier : possible mais commun.
+- **Maillon** : le meilleur jusqu'ici ; `maillon.fr` est pris (pièces de cycles), Maillon.io (SaaS) est fermé.
 - Non testés : Citius, Celero, Rask, Anello, Ligilo, Vinco, Syndes, Primeur, Anticipo, Praesto, Adelanto, Burin, Tenon, Ouvra, Arca, Kelvo, Nodo, Forja.
-- Critères de Bryan : général, original, clair, simple, mémorisable ; un mot courant ne gêne pas (clients par publicité, direct, prospection).
+- Critères : général, original, clair, simple, mémorisable ; un mot courant ne gêne pas.
 
 ## 4. Journal des avancées
 
-### Moteur et plugins
-- Serveur facultatif `etabli-serveur` (axum, SQLite, Argon2id) et crate commune `etabli-noyau` (identifiants, calculs, paquets signés) : [docs/17](17-serveur.md).
-- Interface « Fond » (Tauri, web IndexedDB, serveur avec cache hors ligne et file d'écriture) ; version web et PWA ; emballage Android (Capacitor, APK de test par la CI).
-- Isolation : un domaine par plugin sur le serveur, service worker par plugin pour le hors ligne, garde des messages côté hôte, **permissions v1** (`apiVersion` ^2) ; les 7 plugins officiels migrés : [docs/19](19-modele-de-menace-plugins.md).
-- **Catalogue signé** (format 2) : séquence croissante, expiration à 30 jours, révocations, anti-retour-arrière, renouvellement mensuel automatique ; l'application utilise `etabli-noyau` pour les paquets : [docs/20](20-spec-mises-a-jour-registre.md).
-- Retour arrière d'un plugin (version précédente conservée), mises à jour suspendues après un retour arrière, plugins révoqués (PR #23).
-- **Essai d'isolation de bout en bout en CI** : vrai serveur + Chromium, 62 vérifications (hôtes étrangers, évasions de chemin, parent inaccessible, réseau bloqué, stockage séparé, messages hostiles) (PR #25).
-- Essai d'alarme Android natif : alarmes et notifications vérifiées sur ton téléphone.
+### 4.1 Fusionné dans `main`
+- Serveur facultatif `etabli-serveur` (axum, SQLite, Argon2id) et crate commune `etabli-noyau` : [docs/17](17-serveur.md).
+- Interface « Fond » (Tauri, web IndexedDB, serveur avec cache hors ligne) ; version web et PWA ; emballage Android (Capacitor, APK de test par la CI).
+- Isolation : un domaine par plugin sur le serveur, service worker par plugin, garde des messages, **permissions v1** (`apiVersion` ^2) ; 7 plugins officiels migrés : [docs/19](19-modele-de-menace-plugins.md).
+- **Catalogue signé** (séquence, expiration à 30 jours, révocations, anti-retour-arrière, renouvellement mensuel) : [docs/20](20-spec-mises-a-jour-registre.md).
+- Essai d'alarme Android natif (vérifié par Bryan).
+- Spécifications : docs 18 à 21.
 
-### Modifications de l'application de base
-- Fenêtre d'installation d'un plugin : affiche les permissions demandées.
+### 4.2 Poussé, en attente de fusion (voir §1.1)
+- **PR #23** retour arrière d'un plugin, plugins révoqués. **PR #25** essai d'isolation en CI (62 vérifications dans Chromium). **PR #24** documentation d'état.
+- **`sdk-source`** : le SDK n'accepte la liaison avec le moteur que depuis la fenêtre parente (une mini-app voisine ne peut plus s'interposer). Testé : essai d'isolation 62/62.
+- **`cle-rotation`** : liste de clés de publication signée par une clé racine, plusieurs racines possibles, clé retirée refusée ; script `scripts/cles-rotation.mjs` ; procédure dans docs/14. Comportement inchangé tant que la racine n'est pas créée.
+- **`sources-configurables`** : adresse du catalogue réglable (https, signature obligatoire pour une source personnalisée), canal bêta préparé mais refusé tant qu'aucun catalogue bêta n'existe.
+- **`contrat-v1-arret`** : dates d'avertissement/refus du contrat ^1 portées par le catalogue signé (`scripts/arret-contrat.mjs`) ; aucune date fixée.
+- **`web-origines-locales`** : **faille trouvée et corrigée** dans la version web sans serveur (un plugin pouvait lire l'application et l'IndexedDB). Sonde CORS + sandbox sans origine ; essai automatisé 14/14.
+- **`android-origine-par-plugin`** : origine `https://<id>.plugins.localhost` par plugin sur Android, et retrait de trois interfaces natives de Capacitor visibles de tous les cadres. Sonde `tools/sonde-pont-android/`. **Java jamais compilé avec le vrai SDK.**
+- **`spec-distributions`** ([docs/23](23-spec-distributions.md)) et **`spec-budget`** ([docs/24](24-spec-plugins-budget.md)) : spécifications seulement.
+- **`appels-entre-plugins`** : un plugin appelle la fonction d'un autre (manifeste `functions`/`serviceEntry`, permission `appelle:<service>:<accès>`, SDK `services.call`, routeur dans le moteur, cadre invisible, identité de l'appelant imposée, file par fournisseur, délais et plafonds). 186 tests Vitest ; les 7 plugins officiels restent compatibles. **Cadre invisible jamais essayé dans un vrai moteur.**
+- **`essai-appels-navigateur`**, **`outils-money-civil`**, **`plugin-finances`** : voir §6 (en cours au moment de l'écriture).
+
+### 4.3 Modifications de l'application de base
+- Fenêtre d'installation d'un plugin : permissions demandées (et, sur `appels-entre-plugins`, une phrase par permission d'appel).
 - Page Catalogue : pastille « Révoqué », bouton « Revenir à la … ».
-- Réglages : plugins épinglés (mise à jour automatique suspendue), plugin révoqué toujours désactivé.
+- Réglages : plugins épinglés, plugin révoqué toujours désactivé ; (en attente) boîte « Source du catalogue ».
 - Export de fichiers : 8 extensions autorisées, 20 Mo ; documents et données de plugin plafonnés à 5 Mio.
-- Scripts : `paquet-plugin.mjs` (empreinte sha256, catalogue signé), `valider-plugin.mjs` (contrôle des permissions), `nouveau-plugin.mjs` (modèle ^2).
-
-### Spécifications écrites
-- [docs/18](18-spec-plateforme-comptes-licences.md) plateforme, comptes, licences ; [docs/19](19-modele-de-menace-plugins.md) menaces ; [docs/20](20-spec-mises-a-jour-registre.md) mises à jour ; [docs/21](21-spec-licences-baux.md) baux.
+- Scripts : `paquet-plugin.mjs`, `valider-plugin.mjs`, `nouveau-plugin.mjs`, `catalogue-signe.mjs`.
 
 ## 5. Reste à faire côté code (agent)
+- Service de licences ([docs/21](21-spec-licences-baux.md)) — **après** ta validation.
+- Distributions ([docs/23](23-spec-distributions.md)) — après tes réponses (étape 1 de la migration : config générée identique à l'actuelle).
+- Plugins `agenda` (avec permission `notifications`, rappels téléphone), `paie`, `budget` ; import de fichier, extension `.ics` à l'export, point d'entrée au démarrage, schémas de fonctions vérifiés par le moteur, simulateur de service pour les tests ([docs/24](24-spec-plugins-budget.md) annexe, manques M5 à M16).
+- Application mobile complète (en dernier).
+- Plugin hostile dans l'essai d'isolation (voir §1.4).
 
-- Procédure de clé racine et de rotation de la clé de signature.
-- Sources de catalogue configurables, puis canal bêta.
-- Séparation des origines des plugins en mode web local.
-- Date d'arrêt du contrat ^1.
-- Plugin volontairement hostile dans l'essai d'isolation.
-- Service de licences (docs/21), **après** ta validation.
-- Distributions Établi / ERP / budget par configuration de build.
-- Application mobile, en dernier.
+## 6. En cours au moment de l'écriture
+Un agent construisait, en branches empilées sur `appels-entre-plugins` : `essai-appels-navigateur` (essai Chromium du cadre invisible), `outils-money-civil` (montants en centimes, dates civiles), `plugin-finances`. Vérifie sur GitHub qu'elles existent (liste des branches) ; ce qui n'y est pas n'a pas été fait.
 
-## 6. Ce qui n'a pas été vérifié
-
-- Rien sous WebView2 / dans l'application Tauri : les essais automatiques tournent sur Chromium (Linux).
-- L'interface des PR #23 (permissions, retour arrière, révocation) n'a pas été vue à l'écran.
-- Le Rust de l'application n'est compilé que par la CI Windows, pas dans le bac à sable de l'agent.
+## 7. Ce qui n'a pas été vérifié
+- Rien sous WebView2 ni dans l'application Tauri : les essais automatiques tournent sur Chromium (Linux).
+- Le Rust de l'application n'est compilé que par la CI Windows. Les branches `cle-rotation`, `sources-configurables`, `contrat-v1-arret` en ajoutent beaucoup : des corrections sont possibles à l'ouverture des PR.
+- Le Java d'Android (`android-origine-par-plugin`) : jamais compilé avec le vrai SDK ; la CI de l'APK fera foi.
+- Rien de l'interface n'a été vu à l'écran.
+- Le cadre invisible des appels entre plugins (voir §6).
