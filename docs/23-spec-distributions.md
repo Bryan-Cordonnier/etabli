@@ -192,6 +192,14 @@ où un correctif peut manquer. Un fork n'est justifié que si un produit a besoi
 devenir un drapeau, une extension ou un plugin ; dans ce cas, le plus sûr est un fork **mince** (quelques fichiers) rebasé à chaque version du
 moteur, avec une CI qui échoue si le fork a plus de N versions de retard. C'est la question Q1.
 
+## 6 bis. Décision : distributions, pas de profils (4 octobre 2026)
+
+Bryan a écarté l'idée d'une seule application à **profils** (regrouper des plugins par usage, un profil actif à la fois) et retient les **distributions** séparées : une application par produit (Établi, ERP, budget), même moteur, configuration propre.
+
+Raisons retenues : le nom, le logo, les plugins livrés et la licence d'un produit vendu doivent être ceux de ce produit seul, sans sélecteur de profils ; deux distributions installées côte à côte (identifiants et dossiers de données distincts) s'ouvrent en même temps sans développement supplémentaire. Les mises à jour des plugins restent indépendantes dans tous les cas.
+
+Les profils restent une **extension possible** pour Établi (application tout-en-un) : un profil aurait la même structure qu'une distribution. Rien n'est à coder pour cela maintenant.
+
 ## 7. Ce qu'il faut pour intégrer l'ERP
 
 L'ERP est traité ici comme **une distribution du même moteur**, pas comme une application externe : même architecture (serveur,
