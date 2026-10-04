@@ -3,11 +3,14 @@
   // installation avec dépendances, désinstallation ou désactivation en cascade.
   import type { Problem } from "@etabli/sdk/deps";
   import { libelles } from "$lib/plugins/permissions";
-  import { getPlugin } from "$lib/plugins/registry.svelte";
+  import { PLUGINS, getPlugin } from "$lib/plugins/registry.svelte";
   import { catalogue } from "$lib/state/catalogue.svelte";
   import { lifecycle } from "$lib/state/lifecycle.svelte";
 
   const dialog = $derived(lifecycle.dialog);
+  /** Nom du plugin qui offre un service, d'après les plugins installés puis le catalogue (pour la phrase d'une permission d'appel). */
+  const fournisseurDe = (service: string): string | undefined =>
+    PLUGINS.find((p) => Object.hasOwn(p.provides, service))?.name ?? catalogue.entries.find((e) => Object.hasOwn(e.provides, service))?.name;
   const nameOf = (id: string) => catalogue.entryOf(id)?.name ?? getPlugin(id)?.name ?? id;
 
   function why(problem: Problem): string {
@@ -53,7 +56,7 @@
         {#if dialog.permissions.demandees.length}
           <p>{dialog.update && dialog.permissions.nouvelles.length ? "Cette version demande de nouvelles autorisations. Le plugin pourra :" : "Ce plugin pourra :"}</p>
           <ul>
-            {#each libelles(dialog.permissions.demandees) as texte (texte)}
+            {#each libelles(dialog.permissions.demandees, fournisseurDe) as texte (texte)}
               <li>{texte}</li>
             {/each}
           </ul>
