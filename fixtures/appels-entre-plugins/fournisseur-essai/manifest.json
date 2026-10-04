@@ -1,0 +1,21 @@
+{
+  "id": "fournisseur-essai",
+  "name": "Fournisseur d'essai",
+  "version": "3.0.0",
+  "apiVersion": "^2",
+  "author": "Établi (essai, non distribué)",
+  "description": "Fixture de test des appels entre plugins : un petit registre qui répond à des fonctions de service.",
+  "color": "#6b7280",
+  "icon": "puzzle",
+  "permissions": [],
+  "provides": { "registre": "1" },
+  "serviceEntry": "service/index.html",
+  "functions": {
+    "registre": {
+      "ecritures.ajouter": { "acces": "ecriture" },
+      "soldes.total": { "acces": "lecture" },
+      "echo.appelant": { "acces": "lecture" }
+    }
+  },
+  "miniApps": []
+}
