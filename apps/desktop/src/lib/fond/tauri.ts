@@ -12,6 +12,7 @@ export const fondTauri: Fond = {
   pluginInstall: (id, url): Promise<string> => invoke("plugin_installer", { id, url }),
   pluginInstallFile: (): Promise<string | null> => invoke("plugin_installer_fichier"),
   pluginUninstall: (id): Promise<void> => invoke("plugin_desinstaller", { id }),
+  pluginRevert: (id): Promise<string> => invoke("plugin_revenir", { id }),
   onPluginsChanged: (handler) => listen("etabli:plugins", () => handler()),
   onInstallProgress: (handler) =>
     listen<{ id: string; pourcent: number }>("etabli:installation", (event) => handler(event.payload)),
