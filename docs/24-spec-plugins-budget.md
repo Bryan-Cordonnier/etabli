@@ -251,18 +251,16 @@ Urgence : l'intérim commence la semaine du 5 octobre. Option : **publier `paie`
 
 Les risques techniques (doublons, désynchronisation, détournement, fuseau…) sont dans l'annexe A.6.
 
-## 11. Questions pour Bryan
+## 11. Décisions de Bryan (4 octobre 2026)
 
-Seulement des décisions sans technique. Les questions techniques sont dans l'annexe A.7, avec une recommandation par défaut.
-
-1. **Noms et découpage** : `agenda`, `finances`, `budget`, `paie` vous conviennent-ils (ou « Comptes », « Revenus »…) ? Faut-il un plugin `budget` séparé de `finances`, comme proposé ?
-2. **Ordre** : fondations d'abord (`finances`, `agenda`), ou sortir tout de suite `paie` seule pour l'intérim d'octobre ?
-3. **Montants de paie** : solde de réserve (60 € imposable, 38 € hors base), cotisations (22 %), indemnité de fin de mission (10 %), congés payés (10 %), précarité de CDD (10 %) : confirmés par un contrat ou un bulletin ? Heures sup au-delà de 35 h au taux de la mission ? « Gain net après carburant » dès le début ?
-4. **Alarmes ou notifications** : réveil, coucher, départ = alarmes ; échéance, virement, palier = simples notifications ? Combien de jours d'avance (60 proposés) ? Rappels utiles sur PC ou seulement sur téléphone ?
-5. **Périmètre exclu** : confirmez-vous l'exclusion de la connexion bancaire, des courses avec prix réels, du conseil d'investissement, de l'optimisation de journée par IA et de la comptabilité légale (TVA, factures) ?
-6. **Produit** : nom définitif (« Budget personnel » est un nom de travail), Android d'abord ou Windows aussi, thème sombre par défaut ?
-7. **Plugins publics ou privés** : code ouvert (Apache-2.0) ou registre privé ? Vos hypothèses de paie seraient dans le code.
-8. **Foyer à deux** (colocation) : version 2 lointaine, d'accord ?
+1. **Noms et découpage** : `agenda`, `finances`, `budget`, `paie`. `paie` sert aux **particuliers** pour programmer des missions d'intérim et des revenus récurrents ; elle ne gère pas l'argent d'une vente (trop instable pour y mettre un prix).
+2. **Ordre** : fondations d'abord (outils communs, appel de fonction entre plugins, `finances`, `agenda`), puis `paie`, puis `budget`.
+3. **Montants de paie** : tous **programmables** (réglages, jamais en dur). **Pas de « gain net »** dans `paie` : elle dit combien on sera payé. C'est `budget` qui estime ce qui reste après les charges du quotidien. À confirmer avec un contrat ou un bulletin : taux, heures supplémentaires (majorations légales).
+4. **Rappels** : **notifications seulement, pas d'alarmes**, et **sur téléphone seulement**, pas sur PC.
+5. **Périmètre exclu** : non discuté, reste comme proposé (connexion bancaire, courses avec prix réels, conseil d'investissement, optimisation par IA, comptabilité légale).
+6. **Produit** : **PC d'abord**, puis le téléphone. Nom retenu par Bryan : « Kotidien » — **à revoir : le nom est déjà utilisé** par un logiciel libre de gestion de finances personnelles (voir le cahier de bord).
+7. **Plugins publics ou privés** : non tranché ; recommandation : privé par défaut, montants personnels en réglages.
+8. **Foyer à deux** : non tranché ; recommandation : version 2.
 
 ---
 
