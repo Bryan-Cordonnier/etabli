@@ -19,6 +19,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - **Contrôle de ce que font les mini-apps** : chaque message d'une mini-app est vérifié (forme, taille) avant d'être pris en
   compte ; une mini-app ne peut plus enregistrer qu'un fichier de données (CSV, DXF, JSON, texte, SVG…), jamais un programme.
   Les documents et réglages ont une taille maximale.
+- **Essai d'isolation automatique** (pour les mainteneurs) : à chaque demande de fusion qui touche au serveur, à l'interface, aux
+  plugins ou aux scripts, GitHub installe deux plugins signés sur un vrai serveur et vérifie dans un navigateur qu'une mini-app ne
+  peut ni lire l'application ni les données d'un autre plugin, ni sortir par le réseau, et que les messages hostiles sont refusés.
+  Le même essai se lance chez soi avec `node scripts/essais-isolation.mjs`.
 
 ### Modifié
 
