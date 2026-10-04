@@ -36,6 +36,8 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/17-serveur.md](docs/17-serveur.md) | Le serveur facultatif `etabli-serveur` : lancer, sécuriser, API, limites, code | vous touchez à `crates/` ou au mode serveur |
 | [docs/19-modele-de-menace-plugins.md](docs/19-modele-de-menace-plugins.md) | Isolation des plugins : modèle de menace, défenses, tests, permissions v1 | vous touchez à l'isolation, au garde des messages, aux permissions ou aux manifestes |
 | [docs/18-spec-plateforme-comptes-licences.md](docs/18-spec-plateforme-comptes-licences.md) | Spécification (brouillon) : plateforme, comptes, licences, baux, registre, mobile, étapes | vous touchez aux licences, comptes, droits, registre ou à la stratégie produit |
+| [docs/20-spec-mises-a-jour-registre.md](docs/20-spec-mises-a-jour-registre.md) | Spécification (brouillon) : catalogue signé, révocation, canaux, retour arrière, rotation de clés | vous touchez aux mises à jour, au catalogue ou aux clés de signature |
+| [docs/21-spec-licences-baux.md](docs/21-spec-licences-baux.md) | Spécification (brouillon) : service de comptes et de licences, baux signés, sièges, paquets chiffrés | vous touchez aux licences, aux baux ou aux sièges |
 | [docs/14-publier-une-version.md](docs/14-publier-une-version.md) | Releases GitHub, mises à jour automatiques signées, clé, publier une version, installer | vous publiez une version ou touchez aux mises à jour |
 
 Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](CONTRIBUTING.md) (règles pour les contributeurs),

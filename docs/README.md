@@ -38,6 +38,8 @@ Toute la documentation est **en français**. Choisissez selon ce que vous voulez
 | [08-documents-donnees.md](08-documents-donnees.md) | fichiers `.etabli`, réglages, emplacements, migrations |
 | [11-conventions.md](11-conventions.md) | règles de code et de collaboration, décisions d'interface |
 | [12-a-faire.md](12-a-faire.md) · [13-specs-a-venir.md](13-specs-a-venir.md) | ce qui reste à faire, spécifications |
+| [21-spec-licences-baux.md](21-spec-licences-baux.md) | service de licences : comptes, baux signés, sièges, paquets chiffrés (brouillon) |
+| [20-spec-mises-a-jour-registre.md](20-spec-mises-a-jour-registre.md) | mises à jour et registre « en béton » : catalogue signé, révocation, clés (brouillon) |
 | [19-modele-de-menace-plugins.md](19-modele-de-menace-plugins.md) | isolation des plugins : menaces, défenses, permissions v1 |
 | [18-spec-plateforme-comptes-licences.md](18-spec-plateforme-comptes-licences.md) | plateforme : comptes, licences, baux, registre, mobile, étapes (brouillon) |
 | [16-spec-serveur-utilisateurs-mobile.md](16-spec-serveur-utilisateurs-mobile.md) · [17-serveur.md](17-serveur.md) | mode serveur facultatif : conception, étapes · mode d'emploi, API, sécurité |
