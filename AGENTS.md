@@ -38,6 +38,7 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/18-spec-plateforme-comptes-licences.md](docs/18-spec-plateforme-comptes-licences.md) | Spécification (brouillon) : plateforme, comptes, licences, baux, registre, mobile, étapes | vous touchez aux licences, comptes, droits, registre ou à la stratégie produit |
 | [docs/20-spec-mises-a-jour-registre.md](docs/20-spec-mises-a-jour-registre.md) | Spécification (brouillon) : catalogue signé, révocation, canaux, retour arrière, rotation de clés | vous touchez aux mises à jour, au catalogue ou aux clés de signature |
 | [docs/21-spec-licences-baux.md](docs/21-spec-licences-baux.md) | Spécification (brouillon) : service de comptes et de licences, baux signés, sièges, paquets chiffrés | vous touchez aux licences, aux baux ou aux sièges |
+| [docs/23-spec-distributions.md](docs/23-spec-distributions.md) | Spécification (brouillon) : plusieurs applications (essai, ERP, budget) à partir du même moteur par configuration de build ; fork ou configuration ; questions ouvertes | vous touchez au nom, à l'identifiant, aux clés, au catalogue ou à la CI par produit |
 | [docs/14-publier-une-version.md](docs/14-publier-une-version.md) | Releases GitHub, mises à jour automatiques signées, clé, publier une version, installer | vous publiez une version ou touchez aux mises à jour |
 
 Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](CONTRIBUTING.md) (règles pour les contributeurs),
