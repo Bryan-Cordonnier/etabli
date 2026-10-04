@@ -14,7 +14,9 @@ export interface CadreService {
 
 /** Cadres invisibles en cours : un par appel en cours, jamais plus d'un par fournisseur (la file du routeur y veille). */
 class HoteCadres {
-  cadres = $state<CadreService[]>([]);
+  // `$state.raw` : les arguments d'un appel doivent rester des objets ordinaires. Dans un `$state` profond, Svelte en ferait des
+  // proxys, que `postMessage` refuse de copier (DataCloneError) : l'appel n'arrivait jamais au fournisseur (défaut vu en navigateur).
+  cadres = $state.raw<CadreService[]>([]);
   #attente = new Map<string, { resolve: (r: ServiceResult) => void; minuteur: ReturnType<typeof setTimeout> }>();
 
   /** Ouvre le cadre du fournisseur ; le ferme à la réponse, ou au plus tard après `delaiMs`. */
@@ -22,7 +24,7 @@ class HoteCadres {
     return new Promise((resolve) => {
       const minuteur = setTimeout(() => this.terminer(invocation.id, erreurService("delai_depasse", "Le fournisseur n'a pas répondu à temps.")), delaiMs);
       this.#attente.set(invocation.id, { resolve, minuteur });
-      this.cadres.push({ invocation, src: pluginUrl(invocation.fournisseur, invocation.entree) });
+      this.cadres = [...this.cadres, { invocation, src: pluginUrl(invocation.fournisseur, invocation.entree) }];
     });
   }
 

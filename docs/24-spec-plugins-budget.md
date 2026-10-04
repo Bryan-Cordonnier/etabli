@@ -474,7 +474,7 @@ dépendances facultatives et leur installation, `send` (geste utilisateur), `sav
 | Manque | État |
 | --- | --- |
 | M1 appels avec arguments et réponse | **fait** : `serviceCall`/`serviceReply`, `services.call`, routeur `lib/plugins/appels.ts` |
-| M2 fournisseur joignable sans page ouverte | **fait pour les appels** (cadre invisible `serviceEntry`, fermé après la réponse). **Pas fait** : point d'entrée au démarrage (renouveler les rappels), cadre persistant ; **non essayé dans WebView2 ni sur Android** |
+| M2 fournisseur joignable sans page ouverte | **fait pour les appels** (cadre invisible `serviceEntry`, fermé après la réponse). **Pas fait** : point d'entrée au démarrage (renouveler les rappels), cadre persistant ; **essayé dans Chromium (4 octobre 2026, `scripts/essai-appels.mjs`, 45 essais)**, **non essayé dans WebView2 ni sur Android** |
 | M3 écriture sous permission | **fait** : `appelle:<service>:<accès>`, `functions.*.acces`, validateur, phrase à l'installation ; `ecriture` ne donne pas `lecture` (choix de sécurité) |
 | M4 versionnage sur le contrat | **fait pour les appels** (plage `services` jugée sur la version du contrat) et pour les instantanés d'un consommateur qui la déclare. **Pas fait** : `planInstall` et `problemsOf` jugent toujours les `dependencies` sur la version du plugin ; pas de plusieurs versions de contrat servies à la fois |
 | M5 identité et espace propre | **identité faite** (`caller` écrit par le moteur) ; le **contrôle de propriété** (`source.plugin = appelant`) reste à écrire dans chaque fournisseur |

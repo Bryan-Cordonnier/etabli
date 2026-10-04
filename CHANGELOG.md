@@ -45,6 +45,11 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   `npm run valider` contrôle les nouveaux champs. Le versionnage d'un appel porte sur la **version du contrat** (`provides`), non
   sur celle du plugin. Deux plugins de test dans `fixtures/appels-entre-plugins/` (non distribués) et un test d'appel complet.
   Voir [docs/06](docs/06-protocole-sdk.md) et [docs/19](docs/19-modele-de-menace-plugins.md).
+- **Essai des appels entre plugins dans un vrai navigateur** : `node scripts/essai-appels.mjs` monte l'interface web et les plugins de test dans
+  Chromium (Playwright, non ajouté aux dépendances : voir l'en-tête du script) et joue 45 essais (succès, argument invalide, permission
+  manquante, fournisseur absent, contrat incompatible, file d'attente, plafond, délai, isolation du cadre de service). Il a trouvé un défaut,
+  corrigé : les arguments d'un appel (objets) n'arrivaient jamais au fournisseur (proxys Svelte non copiables par `postMessage`) ; seuls
+  les appels sans argument passaient. Non essayé dans WebView2 ni sur Android.
 - Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
   « Catalogue (renouvellement) » ; les entrées portent l'empreinte `sha256` du paquet. Voir [docs/14](docs/14-publier-une-version.md).
 - `etabli-noyau` : vérification d'un catalogue signé (séquence, expiration, révocation, refus des retours en arrière), pas encore

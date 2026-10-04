@@ -67,6 +67,14 @@ les fichiers : l'application démarre sans réseau). `npm run preview:web` la se
 - Les calculs restent dans le navigateur de l'appareil (IndexedDB). Le mode serveur (docs/16) les centralisera.
 - Pas de catalogue ni d'installation de plugins dans cette version : elle contient les plugins du dépôt.
 
+## Essai des appels entre plugins dans un navigateur
+
+`node scripts/essai-appels.mjs` (ajouter `--sans-build` pour réutiliser `apps/desktop/dist-web`) monte l'interface web et les plugins de
+`fixtures/appels-entre-plugins/` sur deux origines locales, avec la politique CSP des plugins, et joue dans Chromium un appel complet
+(appelant → moteur → cadre invisible → réponse) et ses cas d'échec, plus l'isolation du cadre de service. Playwright n'est pas une
+dépendance du dépôt : `PLAYWRIGHT_PATH=<dossier du module playwright ou @playwright/test>` et, si besoin, `ETABLI_CHROMIUM=<exécutable>`.
+Ce n'est pas WebView2 : l'essai dans l'application Windows et sur Android reste à faire.
+
 ## Pièges connus
 
 | Piège | Solution |
