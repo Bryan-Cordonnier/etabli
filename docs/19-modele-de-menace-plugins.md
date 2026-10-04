@@ -43,9 +43,19 @@ Hors périmètre : un moteur compromis, une clé de signature volée (voir §5),
 
 ## 4. Limites connues et ce qu'il reste à faire
 
-- **Version web « Établi seul » (hors serveur) et Android local** : les plugins livrés avec l'application ont l'origine de
-  l'application (`isolationComplete` faux). Acceptable tant que seuls des plugins officiels y sont (aucune installation n'y est
-  possible), **inacceptable** le jour où un tiers y apparaît. Correctif prévu : servir les plugins depuis des origines séparées.
+- **Version web « Établi seul » (hors serveur) et Android local** : constat fait dans Chromium (`npm run essais:web`, §7). Avant
+  correctif, le cadre gardait l'origine de l'application (`allow-same-origin`) : une sonde hostile lisait `parent.document`,
+  `parent.localStorage`, les cookies, l'IndexedDB `etabli` (tous les calculs) et le stockage d'une autre sonde. Correctif :
+  au démarrage, `pluginsList()` envoie une sonde (`fond/sondeCors.ts`) ; si l'hébergement envoie `Access-Control-Allow-Origin`
+  sous `plugins/`, les mini-apps passent en **origine opaque** (`sandbox="allow-scripts"`), comme avec le serveur. Les pages
+  de plugins reçoivent aussi une CSP sans réseau par `<meta>` (`scripts/construire-web.mjs`).
+  **Reste ouvert** : (a) **WebView Android de Capacitor** n'envoie pas l'en-tête (le serveur local n'est pas configurable
+  sans modifier le code Java) ; (b) un hébergement statique **sans** CORS ; (c) **hors ligne** (la sonde échoue, et les
+  sous-ressources d'un cadre opaque ne passent pas par le service worker) : dans ces trois cas l'application retombe sur la
+  même origine, sans isolation. Acceptable tant que seuls les plugins officiels, construits avec l'application, y vivent
+  (aucune installation possible) ; **inacceptable** si un tiers y apparaît. Piste pour (a)(c) : charger les modules du plugin
+  depuis l'hôte (`fetch` + import map de `data:`), ou un serveur local qui envoie l'en-tête. La CSP en `<meta>` ne protège que
+  les pages construites par nous : elle n'arrête pas un plugin hostile qui livrerait sa propre page.
 - **Contrat ^1** (anciens plugins) : permissions non contrôlées, mais les plafonds et la forme des messages le sont. Le moteur
   signale ces plugins à l'installation. Prévoir une date après laquelle le catalogue refuse les plugins ^1.
 - **Origine par plugin** : exige un enregistrement DNS générique (`*.plugins.exemple.fr`) et, en HTTPS, un certificat générique.
@@ -84,3 +94,13 @@ Sans permission : calculer, afficher, enregistrer ses propres calculs et réglag
 - `npm run valider` refuse un plugin ^2 qui utilise une fonction sans la déclarer, ou qui déclare une permission inconnue.
 - Une nouvelle permission est un changement d'API : elle se décide ici, avec sa phrase d'explication pour l'utilisateur.
 - Les permissions `notifications` et `reseau` prévues pour plus tard (docs/16) s'ajouteront par cette même liste.
+
+## 7. Essai de la version web (sans serveur)
+
+`npm run essais:web` (`scripts/essais-origines-web.mjs`, après `npm run build:web`) sert la version construite, y ajoute deux
+plugins « sondes » hostiles et joue 14 essais dans Chromium (Playwright, `ETABLI_CHROMIUM` ou `/opt/pw-browsers/chromium`) :
+hébergement avec CORS (cadre opaque : ni `parent`, ni cookies, ni IndexedDB de l'hôte, ni stockage de l'autre sonde, aucune
+requête vers un site extérieur, un vrai plugin s'affiche) et hébergement sans CORS (repli sur la même origine, les failles
+sont **listées** comme limites, non bloquantes). Les décisions pures sont testées par Vitest (`sondeCors.test.ts`,
+`web.test.ts`) et `scripts/construire-web.test.mjs`. Non automatisé en CI (Playwright n'est pas une dépendance du dépôt).
+Non vérifié : Android réel, Safari/Firefox, mode hors ligne.

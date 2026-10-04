@@ -1,7 +1,8 @@
 // Fond local d'un navigateur (aperçu de développement, version web et mobile) : les calculs, les
 // réglages et les données de plugin sont gardés dans IndexedDB, avec les mêmes règles que
 // documents.rs, donnees.rs et store.rs. Pas de limite de 5 Mo comme localStorage.
-import type { DocumentFile, DocumentFilter, DocumentInput, DocumentMeta, Fond, PluginInfo } from "./types";
+import { pluginsAccessiblesEnOpaque } from "./sondeCors";
+import type { Capacites, DocumentFile, DocumentFilter, DocumentInput, DocumentMeta, Fond, PluginInfo } from "./types";
 
 const BASE = "etabli";
 const VERSION = 1;
@@ -55,6 +56,8 @@ export interface OptionsFondWeb {
   nom?: string;
   /** Liste des plugins : par défaut `plugins/index.json` servi avec l'application. */
   plugins?: () => Promise<PluginInfo[]>;
+  /** Les plugins sont-ils servis avec CORS (cadre opaque possible) ? Par défaut : sonde dans le navigateur. */
+  sonde?: () => Promise<boolean>;
   /** Où reprendre les anciennes données de l'aperçu ; null pour ne rien reprendre. */
   ancien?: AncienStockage | null;
 }
@@ -71,6 +74,7 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
   const idb = options.idb ?? indexedDB;
   const nom = options.nom ?? BASE;
   const plugins = options.plugins ?? (() => pluginsDepuisIndex(pluginsBase()));
+  const sonde = options.sonde ?? (() => pluginsAccessiblesEnOpaque(pluginsBase()));
   const ancien = options.ancien === undefined ? localStorageOuNull() : options.ancien;
 
   /** Ouverture unique, avec la reprise des anciennes données au tout premier accès. */
@@ -94,12 +98,13 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
   const indisponible = (quoi: string) => (): Promise<never> =>
     Promise.reject(new Error(`${quoi} n'est disponible que dans l'application.`));
 
+  const capacites: Capacites = { catalogue: false, miseAJour: false, fenetresNatives: false, isolationComplete: false, journal: false };
+
   return {
     id: "web",
-    // L'isolation complète des mini-apps (origine opaque) demande que le serveur de plugins envoie des en-têtes
-    // CORS ; un hébergement statique quelconque ne le garantit pas. Les plugins de la version web sont ceux
-    // livrés avec elle (officiels). Le mode serveur (docs/16) rétablira l'isolation complète.
-    capacites: { catalogue: false, miseAJour: false, fenetresNatives: false, isolationComplete: false, journal: false },
+    // Isolation complète (origine opaque) seulement si l'hébergement envoie le CORS sous plugins/ ; le choix est fait par
+    // pluginsList(), appelée avant tout cadre. Sinon les mini-apps gardent l'origine de l'application (docs/19, §4).
+    capacites,
     urlPlugins: pluginsBase(),
 
     async exporterTout() {
@@ -114,7 +119,11 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
       };
     },
 
-    pluginsList: () => plugins(),
+    async pluginsList() {
+      const [liste, opaque] = await Promise.all([plugins(), sonde().catch(() => false)]);
+      capacites.isolationComplete = opaque;
+      return liste;
+    },
     catalogueRead: indisponible("Le catalogue"),
     pluginInstall: indisponible("L'installation de plugins"),
     pluginInstallFile: indisponible("L'installation de plugins"),
