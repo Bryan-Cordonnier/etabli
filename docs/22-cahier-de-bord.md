@@ -22,7 +22,7 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 | 6 | `cle-rotation` → `sources-configurables` → `contrat-v1-arret` (empilées, dans cet ordre) | sans PR ; **Rust Tauri jamais compilé** |
 | 7 | `web-origines-locales` puis `android-origine-par-plugin` | sans PR ; Java jamais compilé |
 | 8 | `spec-distributions`, `spec-budget` | documentation seulement |
-| 9 | `appels-entre-plugins` → `essai-appels-navigateur` → `outils-money-civil` → `plugin-finances` (empilées, dépendent de `spec-budget`) | sans PR ; voir §4 |
+| 9 | `appels-entre-plugins` → `essai-appels-navigateur` → `outils-money-civil` → `plugin-finances` (empilées, dépendent de `spec-budget`) | sans PR ; voir §6 |
 
 - [ ] Fusionner dans cet ordre (squash uniquement, c'est le réglage du dépôt).
 - [ ] Fermer la PR #13 (Capacitor 8, Dependabot) : à reprendre avec le mobile.
@@ -107,7 +107,7 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 - **`android-origine-par-plugin`** : origine `https://<id>.plugins.localhost` par plugin sur Android, et retrait de trois interfaces natives de Capacitor visibles de tous les cadres. Sonde `tools/sonde-pont-android/`. **Java jamais compilé avec le vrai SDK.**
 - **`spec-distributions`** (`docs/23`) et **`spec-budget`** (`docs/24`) : spécifications seulement.
 - **`appels-entre-plugins`** : un plugin appelle la fonction d'un autre (manifeste `functions`/`serviceEntry`, permission `appelle:<service>:<accès>`, SDK `services.call`, routeur dans le moteur, cadre invisible, identité de l'appelant imposée, file par fournisseur, délais et plafonds). 186 tests Vitest ; les 7 plugins officiels restent compatibles. **Cadre invisible jamais essayé dans un vrai moteur.**
-- **`essai-appels-navigateur`**, **`outils-money-civil`**, **`plugin-finances`** : voir §6 (en cours au moment de l'écriture).
+- **`essai-appels-navigateur`**, **`outils-money-civil`**, **`plugin-finances`** : voir §6.
 
 ### 4.3 Modifications de l'application de base
 - Fenêtre d'installation d'un plugin : permissions demandées (et, sur `appels-entre-plugins`, une phrase par permission d'appel).
@@ -123,12 +123,29 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 - Application mobile complète (en dernier).
 - Plugin hostile dans l'essai d'isolation (voir §1.4).
 
-## 6. En cours au moment de l'écriture
-Un agent construisait, en branches empilées sur `appels-entre-plugins` : `essai-appels-navigateur` (essai Chromium du cadre invisible), `outils-money-civil` (montants en centimes, dates civiles), `plugin-finances`. Vérifie sur GitHub qu'elles existent (liste des branches) ; ce qui n'y est pas n'a pas été fait.
+## 6. Fondations pour Quotidien (poussées, empilées sur `appels-entre-plugins`)
+
+- **`essai-appels-navigateur`** (`c1d84fe`) : `scripts/essai-appels.mjs` joue les appels entre plugins dans un vrai Chromium (succès, rejeu, argument invalide, permission manquante, fournisseur absent, contrat incompatible, appels simultanés en file, délai, plafond, isolation du cadre de service) : 59 essais sur 59. **Défaut trouvé et corrigé** : les arguments d'un appel arrivaient en proxys Svelte que `postMessage` refuse de copier (seuls les appels sans argument passaient) ; les tests unitaires ne pouvaient pas le voir. Playwright n'est pas une dépendance : `PLAYWRIGHT_PATH` et `ETABLI_CHROMIUM` (docs/02).
+- **`outils-money-civil`** (`24da3a7`) : `money` (centimes entiers, produits en BigInt, arrondi « demi-haut ») et `civil` (jours civils, fin de mois, UTC ↔ Europe/Paris, changements d'heure 2026-2027) dans `@etabli/ui` : 179 tests dont le vecteur d'or de paie (net 429,43 €).
+- **`plugin-finances`** (`455ccbe`) : plugin `finances` (argent réel, registre en ajout seulement, annulation par écriture inverse), service `finances@1` (10 fonctions, clé d'idempotence, erreurs typées), tableau de bord (solde, courbe, dépenses du mois, dernières écritures, saisie rapide), composants `LineChart`/`DonutChart` dans `@etabli/ui`, 46 tests. Limite : 3,5 Mo (~9 000 écritures), avertissement dès 2,8 Mo, erreur claire au-delà (aucune perte silencieuse). **Hors catalogue officiel** (privé par défaut). Pas d'appel à `agenda`.
+- Hors périmètre corrigé : `scripts/nouveau-plugin.mjs` générait des versions de dépendances qui faisaient échouer `npm install`.
+
+### À valider (choix de conception de `finances`)
+1. L'annulation reprend le même instant que l'écriture annulée (les soldes de toutes les dates redeviennent ceux d'avant l'erreur).
+2. Pas d'écriture à plus de 24 h dans le futur (le prévu va dans `budget`) ; pas d'écriture avant l'ouverture du compte ; une catégorie « dépense » refuse une entrée d'argent.
+3. Un plugin n'annule que ses propres écritures ; l'interface de Finances peut tout annuler.
+4. Arguments stricts : un champ inconnu est refusé (un appelant plus récent que le fournisseur est refusé, pas ignoré).
+5. Les réponses d'écriture ajoutent `rejoue: true/false` (contrat à figer).
+6. **Piège du moteur à corriger avant usage réel** : si la lecture des réglages échoue, `pluginData.load` renvoie `null`, comme pour « rien d'enregistré » ; un `comptes.creer` suivant écraserait le vrai registre. Il faut distinguer l'erreur de l'absence côté moteur (noté dans docs/10).
+
+### Pas fait
+Export, import, clôture d'année ; mini-apps Écritures, Comptes et catégories, Courbes ; plugins `agenda`, `paie`, `budget`.
 
 ## 7. Ce qui n'a pas été vérifié
 - Rien sous WebView2 ni dans l'application Tauri : les essais automatiques tournent sur Chromium (Linux).
 - Le Rust de l'application n'est compilé que par la CI Windows. Les branches `cle-rotation`, `sources-configurables`, `contrat-v1-arret` en ajoutent beaucoup : des corrections sont possibles à l'ouverture des PR.
 - Le Java d'Android (`android-origine-par-plugin`) : jamais compilé avec le vrai SDK ; la CI de l'APK fera foi.
 - Rien de l'interface n'a été vu à l'écran.
-- Le cadre invisible des appels entre plugins (voir §6).
+- Le cadre invisible des appels entre plugins n'a tourné que dans Chromium (59 essais) : jamais sous WebView2 ni Android.
+- Le tableau de bord de `finances` n'a été vu que sur une capture Chromium à 1280 px (pas le thème sombre, pas le mobile, pas la saisie à la souris) ; couleurs du donut non validées pour le contraste.
+- `npm ci` du lockfile avec `plugins/finances` non rejoué en CI (entrées ajoutées à la main).
