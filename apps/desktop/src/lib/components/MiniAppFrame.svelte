@@ -14,6 +14,9 @@
   import { api } from "$lib/api";
   import { printFiche } from "$lib/print/print";
   import { frameShortcuts } from "$lib/shortcuts";
+  import { controler, type Contexte } from "$lib/plugins/garde";
+  import { connues, estStrict } from "$lib/plugins/permissions";
+  import { getPlugin } from "$lib/plugins/registry.svelte";
   import { pluginData } from "$lib/state/pluginData.svelte";
   import { librariesFrom, services } from "$lib/state/services.svelte";
   import { settings } from "$lib/state/settings.svelte";
@@ -46,6 +49,16 @@
 
   let { src, title, pluginId, appId, initial, docTitle = "", incoming = null, forward = true, onmessage }: Props = $props();
   let incomingSent = false;
+
+  /** Ce que le manifeste du plugin autorise (docs/19) ; relu à chaque message, le manifeste pouvant changer. */
+  function contexte(): Contexte {
+    const manifeste = getPlugin(pluginId);
+    return {
+      permissions: connues(manifeste?.permissions ?? []),
+      strict: manifeste ? estStrict(manifeste.apiVersion) : true,
+      provides: Object.keys(manifeste?.provides ?? {}),
+    };
+  }
 
   let frame: HTMLIFrameElement;
   let port: MessagePort | undefined;
@@ -83,7 +96,13 @@
     const channel = new MessageChannel();
     port = channel.port1;
     port.onmessage = (event: MessageEvent<PluginToHost>) => {
-      const message = event.data;
+      // Tout ce qui vient du cadre est contrôlé avant d'être traité (forme, taille, permissions).
+      const verdict = controler(event.data, contexte());
+      if (!verdict.ok) {
+        console.warn(`[Établi] message refusé de ${pluginId} : ${verdict.raison}`);
+        return;
+      }
+      const message = verdict.message;
       switch (message.type) {
         case "ready":
           clearTimeout(readyTimer);
