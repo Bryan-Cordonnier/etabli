@@ -22,6 +22,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Modifié
 
+- **Catalogue de plugins plus sûr** : l'application sait lire un catalogue signé (signature, date de fin, numéro de séquence qui ne
+  recule jamais) et garde ses révocations ; elle refuse d'installer une version révoquée ou plus ancienne que celle installée
+  (réinstaller la même version depuis un fichier reste permis). Le catalogue actuel, non signé, est encore accepté jusqu'à la
+  publication du format signé. Détail : [docs/20](docs/20-spec-mises-a-jour-registre.md).
 - **Serveur : une origine par plugin.** L'option `--url-plugins` prend désormais un modèle avec `{id}`
   (`https://{id}.plugins.maison.fr`) : chaque plugin a son propre nom d'hôte et ne peut ni lire l'application ni un autre
   plugin. Les mini-apps restent utilisables hors ligne. Voir [docs/17](docs/17-serveur.md).

@@ -8,7 +8,7 @@
 //! Fonctions pures : l'heure et la dernière séquence vue sont passées en paramètres.
 
 use crate::paquet::verifier_signature;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::cmp::Ordering;
 
@@ -18,7 +18,7 @@ pub const TAILLE_MAX_CATALOGUE: usize = 4 * 1024 * 1024;
 /// Version du format du catalogue signé (le format 1, non signé, n'est plus accepté une fois la migration faite).
 pub const FORMAT: u32 = 2;
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Revocation {
     pub id: String,
     /// Toutes les versions strictement inférieures à celle-ci sont révoquées.
