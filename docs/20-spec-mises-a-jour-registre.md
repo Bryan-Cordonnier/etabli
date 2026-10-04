@@ -64,7 +64,7 @@ Importer un **paquet signé** et un **instantané de catalogue signé** depuis u
 
 ## 4. Étapes proposées
 
-1. ✅ Noyau : vérification d'un catalogue signé, comparaison de versions, révocations, anti-retour-en-arrière (fait, 10 tests).
+1. ✅ Noyau : vérification d'un catalogue signé, comparaison de versions, révocations, anti-retour-en-arrière (fait, 9 tests).
 2. Publication : `paquet-plugin.mjs` produit le format 2 (séquence, expiration, empreintes, permissions) et le signe ; le workflow de publication le dépose. Migration : le client lit les deux formats pendant une version, puis refuse le format 1.
 3. Client (Rust) : l'application utilise le noyau (supprime la copie de `ouvrir_paquet` et des contrôles de chemin de `catalogue.rs`), garde la dernière séquence vue, désactive les plugins révoqués. **À valider en CI Windows.**
 4. Interface : source(s) configurables, canal, bouton de retour arrière, message de révocation.
