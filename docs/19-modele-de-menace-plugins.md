@@ -47,7 +47,7 @@ Hors périmètre : un moteur compromis, une clé de signature volée (voir §5),
   l'application (`isolationComplete` faux). Acceptable tant que seuls des plugins officiels y sont (aucune installation n'y est
   possible), **inacceptable** le jour où un tiers y apparaît. Correctif prévu : servir les plugins depuis des origines séparées.
 - **Contrat ^1** (anciens plugins) : permissions non contrôlées, mais les plafonds et la forme des messages le sont. Le moteur
-  signale ces plugins à l'installation. Prévoir une date après laquelle le catalogue refuse les plugins ^1.
+  signale ces plugins à l'installation. **Mécanisme d'arrêt codé** : le catalogue signé porte `contrats` (par version majeure : `avertir_des`, `refuser_des`, `message`). À partir de `avertir_des`, l'installation d'un plugin ^1 affiche l'avertissement ; à partir de `refuser_des`, le moteur refuse d'installer ou de mettre à jour un plugin ^1 depuis le catalogue (les plugins déjà installés continuent, un fichier `.etabli-plugin` choisi par l'utilisateur reste permis). Sans entrée, rien n'est jamais refusé : **aucune date n'est fixée** (question ouverte, docs/20). Procédure : [14](14-publier-une-version.md), `scripts/arret-contrat.mjs`.
 - **Origine par plugin** : exige un enregistrement DNS générique (`*.plugins.exemple.fr`) et, en HTTPS, un certificat générique.
   Sans cela, les mini-apps fonctionnent en cadre opaque, **en ligne seulement**. Sur une machine seule, `*.localhost` suffit.
 - **Fiche imprimée** : le HTML du plugin est inséré dans un cadre sans script mais de l'origine de l'application. Une politique

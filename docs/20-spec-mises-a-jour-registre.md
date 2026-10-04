@@ -59,6 +59,9 @@ Un atelier fermé peut pointer vers son **registre privé** et fournir sa propre
 - Le moteur embarque la clé racine (et la prochaine, pour pouvoir la changer). Compromission d'une clé de publication = rotation + révocation, sans nouvelle version du moteur.
 - Aujourd'hui une seule clé fait tout : la séparer est la dernière étape, car elle demande une procédure d'exploitation écrite et répétée.
 
+### 3.5 bis Arrêt d'un contrat d'API
+Le catalogue signé peut annoncer l'arrêt d'une version majeure du contrat des plugins : `"contrats": [{ "majeure": 1, "avertir_des": 1800000000, "refuser_des": 1815000000, "message": "…" }]` (secondes depuis 1970). Avertissement dans la fenêtre d'installation, puis refus d'installer ou de mettre à jour un plugin de ce contrat (`noyau::catalogue::statut_contrat`, copie dans l'interface `plugins/contrat-arret.ts`). Les dates sont dans le catalogue signé : on les change sans nouvelle version d'Établi. Plugins déjà installés : non touchés (pas de désactivation).
+
 ### 3.6 Hors ligne et réseaux fermés
 Importer un **paquet signé** et un **instantané de catalogue signé** depuis une clé USB reste possible (le catalogue importé obéit à la même règle de séquence et d'expiration).
 
@@ -70,6 +73,7 @@ Importer un **paquet signé** et un **instantané de catalogue signé** depuis u
 4. ✅ (partiel) Interface : bouton de retour arrière (une version précédente gardée dans `<catalogue>/.precedent/<id>`, mises à jour automatiques suspendues ensuite), plugin révoqué désactivé avec sa raison. **Sources configurables** ✅ (branche `sources-configurables` : réglage « Source du catalogue » dans Paramètres › Mises à jour, `crates/noyau/src/source.rs`, mémoire de séquence par source) ; **canal bêta préparé seulement** (le champ existe, le moteur refuse `beta` tant qu'aucun catalogue bêta n'est publié). Pas de liste de plusieurs sources ni de repli automatique : une seule source à la fois (question 5).
 5. ✅ (partiel) Rotation de clés : `crates/noyau/src/cles.rs` (liste de clés signée par la racine, séquence, dates, clés retirées refusées, plusieurs racines), script `scripts/cles-rotation.mjs`, procédure et plan de perte/compromission dans [docs/14](14-publier-une-version.md). Le moteur lit `cles.json` à côté du catalogue ; `CLES_RACINES` est **vide** tant que Bryan n'a pas créé la racine. **À valider en CI Windows ; reste : créer la vraie racine, répéter à blanc, publier une version qui l'embarque.**
 6. Déploiement progressif, canal bêta de l'application.
+7. ✅ (mécanisme) Arrêt du contrat ^1 : avertissement puis refus par dates du catalogue signé (`contrats`), tests noyau, interface et scripts. **Aucune date fixée** (question 7).
 
 ## 5. Questions ouvertes
 
@@ -81,3 +85,4 @@ Importer un **paquet signé** et un **instantané de catalogue signé** depuis u
 4. Conserver la version précédente d'un plugin : une seule, ou deux ?
 5. Sources : la spec 3.2 parle d'une liste ordonnée avec repli (domaine puis GitHub). Seule une source choisie est codée ; faut-il le repli automatique vers GitHub quand la source personnalisée est injoignable ? (Proposé : non, pour un registre privé on ne veut pas basculer sur le public sans le dire.)
 6. Source personnalisée : les révocations qu'elle publie ne désactivent pas encore un plugin déjà installé (seule la source officielle alimente `plugins_list`) ; elles bloquent seulement l'installation. À étendre ?
+7. Arrêt du contrat ^1 : quelles dates ? Proposé : avertissement dès que tous les plugins officiels sont en ^2 (c'est le cas), refus six mois plus tard ; et faut-il aussi désactiver les plugins ^1 déjà installés au-delà de la date de refus (non codé) ?

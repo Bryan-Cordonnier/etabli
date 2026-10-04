@@ -9,7 +9,8 @@
 use crate::{plugins, AppState};
 use etabli_noyau::{
     catalogue::{
-        comparer_versions, peut_installer, verifier_catalogue_parmi, Catalogue, Revocation,
+        comparer_versions, peut_installer, verifier_catalogue_parmi, ArretContrat, Catalogue,
+        Revocation, StatutContrat,
     },
     cles::{cles_de_confiance, verifier_liste, ListeCles, TAILLE_MAX_LISTE},
     paquet::{fichiers_du_plugin, lire_manifeste, ouvrir_paquet_parmi, TAILLE_MAX_PAQUET},
@@ -64,6 +65,9 @@ pub struct EtatCatalogue {
     pub sequence: u64,
     #[serde(default)]
     pub revocations: Vec<Revocation>,
+    /// Arrêts programmés de contrats d'API (docs/19 et 20), retenus pour refuser une installation même hors ligne.
+    #[serde(default)]
+    pub contrats: Vec<ArretContrat>,
 }
 
 /// État de la source officielle.
@@ -190,6 +194,7 @@ pub fn analyser_catalogue_parmi<S: AsRef<str>>(
                 &EtatCatalogue {
                     sequence: catalogue.sequence,
                     revocations: catalogue.revocations.clone(),
+                    contrats: catalogue.contrats.clone(),
                 },
             )?;
             Ok(json!({
@@ -198,6 +203,7 @@ pub fn analyser_catalogue_parmi<S: AsRef<str>>(
                 "sequence": catalogue.sequence,
                 "plugins": catalogue.plugins,
                 "revocations": catalogue.revocations,
+                "contrats": catalogue.contrats,
             }))
         }
         None => {
@@ -250,7 +256,19 @@ pub fn controler_installation(
         expire: u64::MAX,
         plugins: Vec::new(),
         revocations: etat.revocations.clone(),
+        contrats: etat.contrats.clone(),
     };
+    // Arrêt du contrat d'API (docs/19) : le catalogue refuse un plugin d'un contrat arrêté, même pour une mise à jour.
+    // Une installation depuis un fichier (`reinstaller`) reste permise : c'est le choix explicite de l'utilisateur.
+    if !reinstaller {
+        let api = manifeste
+            .get("apiVersion")
+            .and_then(Value::as_str)
+            .unwrap_or("^1");
+        if let StatutContrat::Refuse(phrase) = regles.statut_contrat(api, maintenant()) {
+            return Err(format!("« {id} » {candidate} : {phrase}"));
+        }
+    }
     let meme_version = installee
         .as_deref()
         .is_some_and(|v| comparer_versions(candidate, v) == Some(Ordering::Equal));
@@ -366,6 +384,7 @@ pub fn raison_revocation(etat: &EtatCatalogue, id: &str, version: &str) -> Optio
         expire: u64::MAX,
         plugins: Vec::new(),
         revocations: etat.revocations.clone(),
+        contrats: etat.contrats.clone(),
     };
     regles.revocation(id, version).map(|r| {
         if r.is_empty() {
@@ -901,6 +920,7 @@ mod tests {
         // Raison vide : message par défaut.
         let sans_raison = EtatCatalogue {
             sequence: 1,
+            contrats: Vec::new(),
             revocations: vec![Revocation {
                 id: "x".into(),
                 avant: Some("2.0.0".into()),
@@ -980,6 +1000,55 @@ mod tests {
         assert_eq!(lire_etat(&config), EtatCatalogue::default());
     }
 
+    fn plugin_contrat(id: &str, version: &str, api: &str) -> Vec<u8> {
+        let manifeste = format!(r#"{{"id":"{id}","version":"{version}","apiVersion":"{api}"}}"#);
+        zip_de(&[("manifest.json", manifeste.as_bytes()), ("a.js", b"1")])
+    }
+
+    #[test]
+    fn contrat_arrete_refuse_depuis_le_catalogue_mais_pas_depuis_un_fichier() {
+        let racine = scratch("catalogue-contrat-arret");
+        let etat = EtatCatalogue {
+            sequence: 1,
+            revocations: Vec::new(),
+            // Date de refus dans le passé : le contrat 1 est arrêté.
+            contrats: vec![ArretContrat {
+                majeure: 1,
+                avertir_des: None,
+                refuser_des: Some(1),
+                message: String::new(),
+            }],
+        };
+        // Sans apiVersion lisible, c'est le contrat 1 ; « ^2 » n'est pas touché.
+        let e =
+            controler_installation(&plugin("ancien", "1.0.0"), &racine, &etat, false).unwrap_err();
+        assert!(e.contains("ancien") && e.contains("plus acceptés"), "{e}");
+        assert!(controler_installation(
+            &plugin_contrat("ancien", "1.0.0", "^1"),
+            &racine,
+            &etat,
+            false
+        )
+        .is_err());
+        controler_installation(
+            &plugin_contrat("moderne", "1.0.0", "^2"),
+            &racine,
+            &etat,
+            false,
+        )
+        .unwrap();
+        // Depuis un fichier choisi par l'utilisateur : permis.
+        controler_installation(&plugin("ancien", "1.0.0"), &racine, &etat, true).unwrap();
+        // Sans arrêt annoncé : tout passe.
+        controler_installation(
+            &plugin("ancien", "1.0.0"),
+            &racine,
+            &EtatCatalogue::default(),
+            false,
+        )
+        .unwrap();
+    }
+
     #[test]
     fn catalogue_expire_refuse_avec_un_conseil() {
         let config = scratch("catalogue-etat-expire");
@@ -1004,6 +1073,7 @@ mod tests {
             &config,
             &EtatCatalogue {
                 sequence: 8,
+                contrats: Vec::new(),
                 revocations: Vec::new(),
             },
         )

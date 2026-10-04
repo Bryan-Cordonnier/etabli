@@ -6,6 +6,7 @@
 import { compareVersions, planInstall } from "@etabli/sdk/deps";
 import { api, type CatalogueEntry } from "$lib/api";
 import { activeSource } from "$lib/catalogue-source";
+import { readArrets, statutContrat, type ArretContrat } from "$lib/plugins/contrat-arret";
 import { PLUGINS, getPlugin, installedNodes, loadPlugins, stringMap } from "$lib/plugins/registry.svelte";
 import { wasUsedBefore } from "$lib/storage";
 import { services } from "./services.svelte";
@@ -40,6 +41,8 @@ function entries(raw: unknown): CatalogueEntry[] {
 
 class Catalogue {
   entries = $state<CatalogueEntry[]>([]);
+  /** Arrêts programmés de contrats d'API annoncés par le catalogue signé (docs/19, docs/20). */
+  contrats = $state<ArretContrat[]>([]);
   status = $state<"idle" | "loading" | "ready" | "error">("idle");
   error = $state("");
   /** Plugins en cours d'installation → pourcentage téléchargé. */
@@ -53,7 +56,9 @@ class Catalogue {
     if (this.status === "loading") return;
     this.status = "loading";
     try {
-      this.entries = entries(await api.catalogueRead(activeSource(settings.catalogueSource), settings.catalogueChannel));
+      const raw = await api.catalogueRead(activeSource(settings.catalogueSource), settings.catalogueChannel);
+      this.entries = entries(raw);
+      this.contrats = readArrets(raw);
       this.status = "ready";
       this.error = "";
     } catch (err) {
@@ -65,6 +70,11 @@ class Catalogue {
   /** Entrée du catalogue pour un plugin (la plus récente), ou `undefined`. */
   entryOf(id: string): CatalogueEntry | undefined {
     return this.entries.filter((e) => e.id === id).sort((a, b) => compareVersions(b.version, a.version))[0];
+  }
+
+  /** Statut du contrat d'API d'un plugin du catalogue à la date du jour (docs/19 §4). */
+  contractStatus(entry: CatalogueEntry) {
+    return statutContrat(this.contrats, entry.apiVersion, Math.floor(Date.now() / 1000));
   }
 
   /** Une version plus récente que celle installée depuis le catalogue est publiée. */
@@ -198,6 +208,8 @@ class Catalogue {
     const updated: string[] = [];
     for (const entry of this.entries) {
       if (!this.hasUpdate(entry) || settings.isPinned(entry.id)) continue;
+      // Contrat arrêté : le moteur refuserait la mise à jour ; on ne la tente pas (et on ne notifie pas à chaque démarrage).
+      if (this.contractStatus(entry).statut === "refuse") continue;
       const plan = planInstall(entry, this.entries, installedNodes());
       if (plan.missing.length) continue;
       let ok = true;

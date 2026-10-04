@@ -22,6 +22,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Ajouté (suite)
 
+- **Fin programmée des anciens plugins (contrat ^1)** : le catalogue peut annoncer une date après laquelle les plugins de l'ancien contrat ne
+  sont plus installables ni mis à jour ; avant cela, l'installation vous en avertit. Aucune date n'est fixée pour l'instant, rien ne change
+  tant qu'elle n'est pas annoncée. Les plugins déjà installés continuent de fonctionner.
+
 - **Source du catalogue réglable** : dans Paramètres › Mises à jour, un atelier peut indiquer l'adresse de son propre registre de plugins et la clé
   publique qui le signe (par défaut : le catalogue officiel). Un catalogue non signé ou périmé est refusé comme pour le catalogue officiel.
   Le choix du canal « bêta » est préparé mais pas encore disponible.
