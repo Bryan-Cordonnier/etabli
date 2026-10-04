@@ -22,6 +22,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Ajouté (suite)
 
+- **Changement de clé de signature sans nouvelle version** (préparation) : Établi sait accepter plusieurs clés de publication d'une liste signée par
+  une clé racine, et refuser une clé retirée. Rien ne change tant que la clé racine n'est pas en place ; procédure dans la documentation de publication.
+
 - **Retour à la version précédente d'un plugin** : après une mise à jour, la page Plugins propose « Revenir à la … » (un second clic
   revient en avant). Les mises à jour automatiques sont alors suspendues pour ce plugin jusqu'à un clic sur « Mettre à jour ».
 - **Plugin révoqué** : si l'éditeur retire une version (faille, données corrompues), Établi la désactive et affiche la raison dans

@@ -68,10 +68,12 @@ Importer un **paquet signé** et un **instantané de catalogue signé** depuis u
 2. ✅ Publication : `paquet-plugin.mjs`, « Notes de version » et le workflow mensuel « Catalogue (renouvellement) » produisent le format 2 (séquence, expiration 30 jours, empreinte `sha256`, permissions) et le signent (`scripts/catalogue-signe.mjs`, 5 tests). Migration : le client lit les deux formats tant qu'aucun catalogue signé n'a été vu, puis refuse le non signé. **À faire par Bryan : lancer une première fois « Catalogue (renouvellement) » dans l'onglet Actions** pour passer au format signé.
 3. ✅ (PR « Moteur PC 1/3 ») Client (Rust) : l'application utilise le noyau (supprime la copie de `ouvrir_paquet` et des contrôles de chemin de `catalogue.rs`), garde la dernière séquence vue, désactive les plugins révoqués. **À valider en CI Windows.**
 4. ✅ (partiel) Interface : bouton de retour arrière (une version précédente gardée dans `<catalogue>/.precedent/<id>`, mises à jour automatiques suspendues ensuite), plugin révoqué désactivé avec sa raison. **Reste : sources configurables et canal bêta** (inutiles tant qu'il n'y a qu'une source, GitHub).
-5. Rotation de clés : clé racine, liste de clés de publication, procédure écrite et répétée à blanc.
+5. ✅ (partiel) Rotation de clés : `crates/noyau/src/cles.rs` (liste de clés signée par la racine, séquence, dates, clés retirées refusées, plusieurs racines), script `scripts/cles-rotation.mjs`, procédure et plan de perte/compromission dans [docs/14](14-publier-une-version.md). Le moteur lit `cles.json` à côté du catalogue ; `CLES_RACINES` est **vide** tant que Bryan n'a pas créé la racine. **À valider en CI Windows ; reste : créer la vraie racine, répéter à blanc, publier une version qui l'embarque.**
 6. Déploiement progressif, canal bêta de l'application.
 
 ## 5. Questions ouvertes
+
+0. Rotation : la clé d'origine (`tauri.conf.json`) devient-elle obligatoirement une entrée de la première `cles.json` (sinon elle est retirée dès la première liste) ? Proposé : oui, avec `jusqua` quelques mois après la première rotation. Et faut-il une durée de vie maximale d'une clé de publication (ex. 12 mois) ?
 
 1. Durée de validité d'un catalogue : 30 jours (proposé) ?
 2. Canal « bêta » : utile dès maintenant, ou seulement avec de vrais clients ?

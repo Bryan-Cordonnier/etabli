@@ -8,8 +8,11 @@
 
 use crate::{plugins, AppState};
 use etabli_noyau::{
-    catalogue::{comparer_versions, peut_installer, verifier_catalogue, Catalogue, Revocation},
-    paquet::{fichiers_du_plugin, lire_manifeste, ouvrir_paquet, TAILLE_MAX_PAQUET},
+    catalogue::{
+        comparer_versions, peut_installer, verifier_catalogue_parmi, Catalogue, Revocation,
+    },
+    cles::{cles_de_confiance, verifier_liste, ListeCles, TAILLE_MAX_LISTE},
+    paquet::{fichiers_du_plugin, lire_manifeste, ouvrir_paquet_parmi, TAILLE_MAX_PAQUET},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -28,6 +31,15 @@ const CATALOGUE_URL: &str =
 /// Signature du catalogue (format 2, docs/20) ; absente tant que la publication n'est pas passée au format signé.
 const SIGNATURE_URL: &str =
     "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/catalogue.json.minisig";
+/// Liste des clés de publication de confiance, signée par la clé racine (docs/20 §3.5, rotation) ; facultative.
+const CLES_URL: &str =
+    "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/cles.json";
+const CLES_SIGNATURE_URL: &str =
+    "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/cles.json.minisig";
+/// Clés racines de confiance (publiques, base64 comme `pubkey`) : la courante, puis la suivante embarquée d'avance.
+/// **Vide tant que Bryan n'a pas créé la clé racine** (docs/14, « Rotation des clés ») : la liste de clés est alors ignorée
+/// et seule la clé de `tauri.conf.json` fait foi, comme avant.
+const CLES_RACINES: &[&str] = &[];
 /// Seules adresses de téléchargement acceptées pour un paquet.
 const PREFIXE: &str = "https://github.com/Bryan-Cordonnier/etabli/releases/download/";
 
@@ -37,6 +49,9 @@ const PLUGINS_CHANGES: &str = "etabli:plugins";
 const PROGRESSION: &str = "etabli:installation";
 /// Fichier (dans le dossier de configuration) qui garde la dernière séquence de catalogue vue et ses révocations.
 const FICHIER_ETAT: &str = "catalogue-etat.json";
+/// Dernière liste de clés acceptée (et sa signature), gardées dans le dossier de configuration.
+const FICHIER_CLES: &str = "cles.json";
+const FICHIER_CLES_SIGNATURE: &str = "cles.json.minisig";
 
 // ——— État du catalogue signé ———
 
@@ -72,6 +87,7 @@ fn maintenant() -> u64 {
 /// Lit une réponse du catalogue. Avec une signature : catalogue signé (format 2), vérifié puis retenu. Sans signature :
 /// ancien format, accepté seulement tant qu'aucun catalogue signé n'a jamais été vu (sinon on pourrait faire croire à
 /// un client à jour que le catalogue n'est plus signé).
+#[cfg(test)]
 pub fn analyser_catalogue(
     octets: &[u8],
     signature: Option<&str>,
@@ -79,18 +95,34 @@ pub fn analyser_catalogue(
     maintenant: u64,
     config: &Path,
 ) -> Result<Value, String> {
+    analyser_catalogue_parmi(octets, signature, &[cle_publique], maintenant, config)
+}
+
+/// Comme `analyser_catalogue`, avec les clés de confiance du moment (une seule suffit à signer).
+pub fn analyser_catalogue_parmi<S: AsRef<str>>(
+    octets: &[u8],
+    signature: Option<&str>,
+    cles_publiques: &[S],
+    maintenant: u64,
+    config: &Path,
+) -> Result<Value, String> {
     let etat = lire_etat(config);
     match signature {
         Some(signature) => {
-            let catalogue =
-                verifier_catalogue(octets, signature, cle_publique, maintenant, etat.sequence)
-                    .map_err(|e| {
-                        if e.contains("expiré") {
-                            format!("{e} Vérifiez aussi la date de l'ordinateur.")
-                        } else {
-                            e
-                        }
-                    })?;
+            let catalogue = verifier_catalogue_parmi(
+                octets,
+                signature,
+                cles_publiques,
+                maintenant,
+                etat.sequence,
+            )
+            .map_err(|e| {
+                if e.contains("expiré") {
+                    format!("{e} Vérifiez aussi la date de l'ordinateur.")
+                } else {
+                    e
+                }
+            })?;
             ecrire_etat(
                 config,
                 &EtatCatalogue {
@@ -382,6 +414,64 @@ fn cle_publique(app: &AppHandle) -> Result<String, String> {
         .ok_or_else(|| "Clé publique absente de tauri.conf.json.".to_string())
 }
 
+/// Dernière liste de clés acceptée, relue et revérifiée à chaque usage (le disque n'est pas cru sur parole).
+/// Sans clé racine embarquée, ou sans liste enregistrée : `None`.
+fn lire_liste_cles(config: &Path) -> Option<ListeCles> {
+    if CLES_RACINES.is_empty() {
+        return None;
+    }
+    let octets = fs::read(config.join(FICHIER_CLES)).ok()?;
+    let signature = fs::read_to_string(config.join(FICHIER_CLES_SIGNATURE)).ok()?;
+    verifier_liste(&octets, &signature, CLES_RACINES, maintenant(), 0).ok()
+}
+
+/// Clés de publication à qui faire confiance : celles de la dernière liste acceptée (une clé retirée n'y figure plus),
+/// sinon la clé de `tauri.conf.json`.
+fn cles_confiance(app: &AppHandle) -> Result<Vec<String>, String> {
+    let config = app.state::<AppState>().paths.config.clone();
+    let liste = lire_liste_cles(&config);
+    Ok(cles_de_confiance(
+        &cle_publique(app)?,
+        liste.as_ref(),
+        maintenant(),
+    ))
+}
+
+/// Cherche une liste de clés plus récente et la retient si la racine l'a signée. Sans effet (et sans erreur) si aucune
+/// clé racine n'est embarquée, si la liste n'est pas publiée ou si elle est refusée : le catalogue décidera alors seul.
+async fn rafraichir_liste_cles(client: &reqwest::Client, config: &Path) {
+    if CLES_RACINES.is_empty() {
+        return;
+    }
+    let sequence = lire_liste_cles(config).map_or(0, |l| l.sequence);
+    let Some(octets) = telecharger(client, CLES_URL, TAILLE_MAX_LISTE).await else {
+        return;
+    };
+    let Some(signature) = telecharger(client, CLES_SIGNATURE_URL, 64 * 1024).await else {
+        return;
+    };
+    let Ok(signature) = String::from_utf8(signature) else {
+        return;
+    };
+    if verifier_liste(&octets, &signature, CLES_RACINES, maintenant(), sequence).is_ok() {
+        // On écrit d'abord le fichier signé puis sa signature : une coupure entre les deux laisse une paire incohérente,
+        // refusée à la relecture (`lire_liste_cles`), donc on retombe sur la clé d'origine sans rien casser.
+        let _ = crate::files::write_atomic(&config.join(FICHIER_CLES), &octets);
+        let _ =
+            crate::files::write_atomic(&config.join(FICHIER_CLES_SIGNATURE), signature.as_bytes());
+    }
+}
+
+/// Téléchargement borné d'un petit fichier ; `None` à la moindre erreur (la liste de clés est facultative).
+async fn telecharger(client: &reqwest::Client, url: &str, max: usize) -> Option<Vec<u8>> {
+    let reponse = client.get(url).send().await.ok()?;
+    if !reponse.status().is_success() {
+        return None;
+    }
+    let octets = reponse.bytes().await.ok()?;
+    (octets.len() <= max).then(|| octets.to_vec())
+}
+
 /// Recharge la liste des plugins et prévient toutes les fenêtres (principale et aperçu rapide).
 fn plugins_changes(app: &AppHandle) {
     app.state::<AppState>().reload_plugins();
@@ -416,8 +506,9 @@ pub async fn catalogue_lire(app: AppHandle) -> Result<Value, String> {
         Ok(_) | Err(_) => return Err(injoignable_sans_detail()),
     };
     let config = app.state::<AppState>().paths.config.clone();
-    let cle = cle_publique(&app)?;
-    analyser_catalogue(&octets, signature.as_deref(), &cle, maintenant(), &config)
+    rafraichir_liste_cles(&client, &config).await;
+    let cles = cles_confiance(&app)?;
+    analyser_catalogue_parmi(&octets, signature.as_deref(), &cles, maintenant(), &config)
 }
 
 /// Télécharge, vérifie et installe (ou met à jour) un plugin du catalogue.
@@ -451,7 +542,7 @@ pub async fn plugin_installer(app: AppHandle, id: String, url: String) -> Result
             }
         }
     }
-    let zip = ouvrir_paquet(&paquet, &cle_publique(&app)?)?;
+    let zip = ouvrir_paquet_parmi(&paquet, &cles_confiance(&app)?)?;
     let racine = app.state::<AppState>().paths.catalogue.clone();
     let etat = lire_etat(&app.state::<AppState>().paths.config);
     let id = tauri::async_runtime::spawn_blocking(move || {
@@ -482,7 +573,7 @@ pub async fn plugin_installer_fichier(app: AppHandle) -> Result<Option<String>, 
         return Err("Paquet trop volumineux.".into());
     }
     let paquet = fs::read(&chemin).map_err(|e| format!("Lecture impossible : {e}"))?;
-    let zip = ouvrir_paquet(&paquet, &cle_publique(&app)?)?;
+    let zip = ouvrir_paquet_parmi(&paquet, &cles_confiance(&app)?)?;
     let racine = app.state::<AppState>().paths.catalogue.clone();
     let etat = lire_etat(&app.state::<AppState>().paths.config);
     let id = tauri::async_runtime::spawn_blocking(move || {
@@ -521,6 +612,7 @@ pub fn plugin_desinstaller(app: AppHandle, id: String) -> Result<(), String> {
 mod tests {
     use super::*;
     use crate::files::tests::scratch;
+    use etabli_noyau::paquet::ouvrir_paquet;
     use std::io::{Cursor, Write};
     use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
