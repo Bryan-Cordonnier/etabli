@@ -13,6 +13,7 @@ use etabli_noyau::{
     },
     cles::{cles_de_confiance, verifier_liste, ListeCles, TAILLE_MAX_LISTE},
     paquet::{fichiers_du_plugin, lire_manifeste, ouvrir_paquet_parmi, TAILLE_MAX_PAQUET},
+    source::{valider_source, verifier_canal, CANAL_STABLE},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -65,17 +66,69 @@ pub struct EtatCatalogue {
     pub revocations: Vec<Revocation>,
 }
 
+/// État de la source officielle.
 pub fn lire_etat(config: &Path) -> EtatCatalogue {
-    fs::read(config.join(FICHIER_ETAT))
+    lire_etat_fichier(config, FICHIER_ETAT)
+}
+
+/// État d'une source (chaque source a sa propre séquence : on ne mélange pas deux registres).
+pub fn lire_etat_fichier(config: &Path, fichier: &str) -> EtatCatalogue {
+    fs::read(config.join(fichier))
         .ok()
         .and_then(|octets| serde_json::from_slice(&octets).ok())
         .unwrap_or_default()
 }
 
+#[cfg(test)]
 fn ecrire_etat(config: &Path, etat: &EtatCatalogue) -> Result<(), String> {
+    ecrire_etat_fichier(config, FICHIER_ETAT, etat)
+}
+
+fn ecrire_etat_fichier(config: &Path, fichier: &str, etat: &EtatCatalogue) -> Result<(), String> {
     let octets = serde_json::to_vec_pretty(etat).map_err(|e| e.to_string())?;
-    crate::files::write_atomic(&config.join(FICHIER_ETAT), &octets)
+    crate::files::write_atomic(&config.join(fichier), &octets)
         .map_err(|e| format!("Enregistrement impossible : {e}"))
+}
+
+/// Source de catalogue choisie dans les réglages (adresse du catalogue et clé publique qui le signe). Absente : la source
+/// officielle, avec ses adresses et sa clé écrites dans l'application.
+#[derive(Debug, Deserialize)]
+pub struct SourcePerso {
+    pub url: String,
+    pub cle: String,
+}
+
+/// Ce que le moteur utilise pour lire un catalogue et installer ses paquets.
+struct SourceResolue {
+    catalogue_url: String,
+    signature_url: String,
+    /// Les paquets doivent venir d'une adresse qui commence par ceci.
+    prefixe: String,
+    fichier_etat: String,
+    /// Clé de la source personnalisée ; `None` pour la source officielle (clé de `tauri.conf.json`, liste de clés).
+    cle: Option<String>,
+}
+
+fn resoudre_source(source: Option<SourcePerso>) -> Result<SourceResolue, String> {
+    match source {
+        None => Ok(SourceResolue {
+            catalogue_url: CATALOGUE_URL.to_string(),
+            signature_url: SIGNATURE_URL.to_string(),
+            prefixe: PREFIXE.to_string(),
+            fichier_etat: FICHIER_ETAT.to_string(),
+            cle: None,
+        }),
+        Some(perso) => {
+            let valide = valider_source(&perso.url, &perso.cle)?;
+            Ok(SourceResolue {
+                catalogue_url: valide.url,
+                signature_url: valide.url_signature,
+                prefixe: valide.prefixe,
+                fichier_etat: valide.fichier_etat,
+                cle: Some(perso.cle),
+            })
+        }
+    }
 }
 
 fn maintenant() -> u64 {
@@ -95,7 +148,14 @@ pub fn analyser_catalogue(
     maintenant: u64,
     config: &Path,
 ) -> Result<Value, String> {
-    analyser_catalogue_parmi(octets, signature, &[cle_publique], maintenant, config)
+    analyser_catalogue_parmi(
+        octets,
+        signature,
+        &[cle_publique],
+        maintenant,
+        config,
+        FICHIER_ETAT,
+    )
 }
 
 /// Comme `analyser_catalogue`, avec les clés de confiance du moment (une seule suffit à signer).
@@ -105,8 +165,9 @@ pub fn analyser_catalogue_parmi<S: AsRef<str>>(
     cles_publiques: &[S],
     maintenant: u64,
     config: &Path,
+    fichier_etat: &str,
 ) -> Result<Value, String> {
-    let etat = lire_etat(config);
+    let etat = lire_etat_fichier(config, fichier_etat);
     match signature {
         Some(signature) => {
             let catalogue = verifier_catalogue_parmi(
@@ -123,8 +184,9 @@ pub fn analyser_catalogue_parmi<S: AsRef<str>>(
                     e
                 }
             })?;
-            ecrire_etat(
+            ecrire_etat_fichier(
                 config,
+                fichier_etat,
                 &EtatCatalogue {
                     sequence: catalogue.sequence,
                     revocations: catalogue.revocations.clone(),
@@ -437,6 +499,15 @@ fn cles_confiance(app: &AppHandle) -> Result<Vec<String>, String> {
     ))
 }
 
+/// Clés de confiance pour une source : sa propre clé si elle est personnalisée (la liste de clés officielle ne la concerne
+/// pas), sinon celles de la source officielle.
+fn cles_de_la_source(app: &AppHandle, source: &SourceResolue) -> Result<Vec<String>, String> {
+    match &source.cle {
+        Some(cle) => Ok(vec![cle.clone()]),
+        None => cles_confiance(app),
+    }
+}
+
 /// Cherche une liste de clés plus récente et la retient si la racine l'a signée. Sans effet (et sans erreur) si aucune
 /// clé racine n'est embarquée, si la liste n'est pas publiée ou si elle est refusée : le catalogue décidera alors seul.
 async fn rafraichir_liste_cles(client: &reqwest::Client, config: &Path) {
@@ -483,10 +554,16 @@ fn plugins_changes(app: &AppHandle) {
 /// Lit le catalogue publié (liste des plugins officiels, avec leur version et leur adresse). S'il est signé
 /// (docs/20), la signature, l'expiration et la séquence sont vérifiées, et ses révocations retenues.
 #[tauri::command]
-pub async fn catalogue_lire(app: AppHandle) -> Result<Value, String> {
+pub async fn catalogue_lire(
+    app: AppHandle,
+    source: Option<SourcePerso>,
+    canal: Option<String>,
+) -> Result<Value, String> {
+    verifier_canal(canal.as_deref().unwrap_or(CANAL_STABLE))?;
+    let source = resoudre_source(source)?;
     let client = client()?;
     let octets = client
-        .get(CATALOGUE_URL)
+        .get(&source.catalogue_url)
         .send()
         .await
         .and_then(reqwest::Response::error_for_status)
@@ -498,23 +575,42 @@ pub async fn catalogue_lire(app: AppHandle) -> Result<Value, String> {
         return Err("Catalogue trop volumineux.".into());
     }
     // La signature est facultative pendant la migration : son absence (404) donne l'ancien format.
-    let signature = match client.get(SIGNATURE_URL).send().await {
+    let signature = match client.get(&source.signature_url).send().await {
         Ok(reponse) if reponse.status().is_success() => {
             Some(reponse.text().await.map_err(injoignable)?)
         }
-        Ok(reponse) if reponse.status().as_u16() == 404 => None,
+        // Une source personnalisée n'a pas d'ancien format à tolérer : sans signature, elle est refusée.
+        Ok(reponse) if reponse.status().as_u16() == 404 && source.cle.is_none() => None,
+        Ok(reponse) if reponse.status().as_u16() == 404 => {
+            return Err("Cette source ne publie pas de signature du catalogue : refusée.".into())
+        }
         Ok(_) | Err(_) => return Err(injoignable_sans_detail()),
     };
     let config = app.state::<AppState>().paths.config.clone();
-    rafraichir_liste_cles(&client, &config).await;
-    let cles = cles_confiance(&app)?;
-    analyser_catalogue_parmi(&octets, signature.as_deref(), &cles, maintenant(), &config)
+    if source.cle.is_none() {
+        rafraichir_liste_cles(&client, &config).await;
+    }
+    let cles = cles_de_la_source(&app, &source)?;
+    analyser_catalogue_parmi(
+        &octets,
+        signature.as_deref(),
+        &cles,
+        maintenant(),
+        &config,
+        &source.fichier_etat,
+    )
 }
 
 /// Télécharge, vérifie et installe (ou met à jour) un plugin du catalogue.
 #[tauri::command]
-pub async fn plugin_installer(app: AppHandle, id: String, url: String) -> Result<String, String> {
-    if !plugins::valid_id(&id) || !url.starts_with(PREFIXE) {
+pub async fn plugin_installer(
+    app: AppHandle,
+    id: String,
+    url: String,
+    source: Option<SourcePerso>,
+) -> Result<String, String> {
+    let source = resoudre_source(source)?;
+    if !plugins::valid_id(&id) || !url.starts_with(&source.prefixe) {
         return Err("Adresse de téléchargement refusée.".into());
     }
     let mut reponse = client()?
@@ -542,9 +638,9 @@ pub async fn plugin_installer(app: AppHandle, id: String, url: String) -> Result
             }
         }
     }
-    let zip = ouvrir_paquet_parmi(&paquet, &cles_confiance(&app)?)?;
+    let zip = ouvrir_paquet_parmi(&paquet, &cles_de_la_source(&app, &source)?)?;
     let racine = app.state::<AppState>().paths.catalogue.clone();
-    let etat = lire_etat(&app.state::<AppState>().paths.config);
+    let etat = lire_etat_fichier(&app.state::<AppState>().paths.config, &source.fichier_etat);
     let id = tauri::async_runtime::spawn_blocking(move || {
         controler_installation(&zip, &racine, &etat, false)?;
         installer(&zip, &racine, Some(&id))

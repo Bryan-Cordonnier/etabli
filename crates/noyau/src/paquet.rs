@@ -33,6 +33,13 @@ fn texte_base64(texte: &str) -> Result<String, String> {
     String::from_utf8(octets).map_err(|_| "signature ou clé mal encodée".to_string())
 }
 
+/// La clé publique est lisible (même encodage que `pubkey` de `tauri.conf.json`).
+pub fn cle_publique_valide(cle_publique: &str) -> bool {
+    texte_base64(cle_publique)
+        .ok()
+        .is_some_and(|t| PublicKey::decode(&t).is_ok())
+}
+
 /// Vérifie une signature minisign (format de `tauri signer sign`, encodée en base64).
 pub fn verifier_signature(
     donnees: &[u8],
