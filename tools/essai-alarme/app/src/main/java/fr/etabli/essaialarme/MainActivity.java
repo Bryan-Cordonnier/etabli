@@ -51,6 +51,18 @@ public class MainActivity extends Activity {
         minutes.setText("2");
         racine.addView(minutes);
 
+        TextView titreNotif = new TextView(this);
+        titreNotif.setText("\nNOTIFICATIONS ordinaires (son de notification)");
+        racine.addView(titreNotif);
+        racine.addView(bouton("Notification immédiate", v -> {
+            AlarmReceiver.afficher(this, "immédiate", System.currentTimeMillis(), 3, true);
+            rafraichir();
+        }));
+        racine.addView(bouton("Programmer : notification dans N min (application fermée)", v -> programmer("notification", 4)));
+
+        TextView titreAlarme = new TextView(this);
+        titreAlarme.setText("\nALARMES (sonnerie d'alarme)");
+        racine.addView(titreAlarme);
         racine.addView(bouton("Programmer : réveil (setAlarmClock)", v -> programmer("setAlarmClock", 1)));
         racine.addView(bouton("Programmer : exacte en veille (setExactAndAllowWhileIdle)", v -> programmer("setExactAndAllowWhileIdle", 2)));
         racine.addView(bouton("Annuler les alarmes", v -> annuler()));
@@ -127,6 +139,7 @@ public class MainActivity extends Activity {
 
     private PendingIntent intention(String mode, long prevu, int id) {
         Intent i = new Intent(this, AlarmReceiver.class);
+        if (mode.equals("notification")) i.putExtra(AlarmReceiver.EXTRA_TYPE, AlarmReceiver.TYPE_NOTIF);
         i.putExtra(AlarmReceiver.EXTRA_MODE, mode);
         i.putExtra(AlarmReceiver.EXTRA_PREVU, prevu);
         i.putExtra(AlarmReceiver.EXTRA_ID, id);
@@ -147,6 +160,7 @@ public class MainActivity extends Activity {
                 PendingIntent ouvrir = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
                 gestionnaire().setAlarmClock(new AlarmManager.AlarmClockInfo(prevu, ouvrir), intention(mode, prevu, id));
             } else {
+                // « notification » et « setExactAndAllowWhileIdle » : alarme exacte qui réveille l'appareil en veille.
                 gestionnaire().setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, prevu, intention(mode, prevu, id));
             }
             Journal.ajouter(this, "PROGRAMMÉE " + mode + " pour " + Journal.heure(prevu) + " (dans " + min + " min)");
@@ -159,6 +173,7 @@ public class MainActivity extends Activity {
     private void annuler() {
         gestionnaire().cancel(intention("setAlarmClock", 0, 1));
         gestionnaire().cancel(intention("setExactAndAllowWhileIdle", 0, 2));
+        gestionnaire().cancel(intention("notification", 0, 4));
         Journal.ajouter(this, "ANNULÉES");
         rafraichir();
     }

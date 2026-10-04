@@ -17,5 +17,8 @@ Onglet Actions de GitHub › « Android (essai d'alarme natif) » › Run workfl
    l'optimisation de batterie (bouton 3).
 6. Noter les retards. Critère de réussite : sonnerie audible à ± 1 minute dans tous les cas.
 
+7. **Notifications ordinaires** : « Notification immédiate » (doit apparaître tout de suite avec le son de notification), puis
+   « Programmer : notification dans N min » application fermée (c'est ce que feront les rappels non critiques).
+
 Si une alarme ne sonne pas, noter le modèle du téléphone et la marque (certains constructeurs tuent les applications en
 arrière-plan) et si le journal contient une ligne « REFUSÉE ».
