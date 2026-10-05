@@ -218,6 +218,14 @@ racine passée par `TAURI_SIGNING_PRIVATE_KEY` (contenu) et `TAURI_SIGNING_PRIVA
 - **Répétition à blanc** : avant d'embarquer la vraie racine, rejouer toute la procédure avec des clés jetables (les tests de
   `crates/noyau/src/cles.rs` et `scripts/cles-rotation.test.mjs` en couvrent la logique).
 
+## Arrêter un contrat d'API (plugins ^1)
+
+Les dates d'avertissement et de refus sont dans le catalogue signé, pas dans l'application (docs/19 §4, docs/20 §3.5 bis). Pour les fixer :
+1. télécharger `catalogue.json` de la Release « catalogue » ;
+2. `node scripts/arret-contrat.mjs catalogue.json --majeure 1 --avertir AAAA-MM-JJ --refuser AAAA-MM-JJ --message "…"` (`--annuler` retire l'arrêt) ;
+3. `node scripts/catalogue-signe.mjs catalogue.json` (clé de publication), puis remettre `catalogue.json` et `catalogue.json.minisig` dans la Release.
+Le renouvellement mensuel garde les arrêts. Un client qui n'a pas revu le catalogue garde les dernières dates connues (retenues avec la séquence).
+
 ## Installer (pour les utilisateurs)
 
 - Télécharger `Etabli_<version>_x64_fr-FR.msi` sur la page des Releases et le lancer : installation
