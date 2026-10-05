@@ -140,7 +140,10 @@ de compte.
   Android seulement) programme une alarme exacte à N minutes pour l'essai. Capacitor supprime `public/plugins/` à chaque `cap sync`
   (réservé à Cordova) : `scripts/preparer.mjs` le remet. Pour le mode serveur depuis l'application Android, l'origine de la page est
   `https://localhost` : lancer le serveur avec `--origine https://localhost`. Le serveur doit être joignable en HTTPS (le contenu
-  mixte est refusé). iPhone : balises de page d'accueil ajoutées ; notifications à l'heure près non garanties (limites d'iOS).
+  mixte est refusé). **Une origine par plugin** : la partie native (`MainActivity`, `OriginesPlugins`, plugin local `EtabliOrigines`)
+  sert chaque plugin sur `https://<id>.plugins.localhost` depuis les ressources embarquées, et retire du pont natif ce que les
+  cadres pourraient atteindre (docs/19, §4) ; le dossier `android/` est versionné, ce code n'est donc pas écrasé par `cap sync`.
+  `npm run apk` ne remplace que `assets/public`. iPhone : balises de page d'accueil ajoutées ; notifications à l'heure près non garanties (limites d'iOS).
 
 ## 7. Capacités facultatives pour les plugins (permissions du manifeste)
 

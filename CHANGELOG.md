@@ -33,11 +33,15 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Corrigé
 
+- **Android : chaque mini-app dans son propre espace** : dans l'application Android, une mini-app est maintenant servie sur sa propre
+  adresse interne (`https://<plugin>.plugins.localhost`), comme sur PC et avec un serveur : elle ne voit ni vos calculs, ni
+  les données des autres mini-apps, et n'a aucun accès au réseau. Le pont vers les fonctions du téléphone (alarmes, notifications)
+  est en plus réservé à la page principale. Une sonde de test existe (`tools/sonde-pont-android`).
 - **Version web : les mini-apps ne voient plus l'application** : jusqu'ici, dans la version web « Établi seul », une mini-app
   partageait l'origine de l'application (elle pouvait lire vos calculs enregistrés et les données des autres mini-apps). Quand
   l'hébergement le permet (GitHub Pages, Netlify, Cloudflare Pages, `npm run preview:web`), chaque mini-app est maintenant
   enfermée dans un cadre isolé, et ses pages portent une politique de sécurité sans accès au réseau. Sur Android (version
-  locale), l'ancien fonctionnement reste, faute de pouvoir envoyer l'en-tête nécessaire : voir docs/19.
+  locale), voir la correction précédente.
 
 ### Ajouté (suite)
 
