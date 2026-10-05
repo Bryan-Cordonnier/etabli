@@ -39,6 +39,16 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   enfermée dans un cadre isolé, et ses pages portent une politique de sécurité sans accès au réseau. Sur Android (version
   locale), l'ancien fonctionnement reste, faute de pouvoir envoyer l'en-tête nécessaire : voir docs/19.
 
+### Ajouté (suite)
+
+- **Changement de clé de signature sans nouvelle version** (préparation) : Établi sait accepter plusieurs clés de publication d'une liste signée par
+  une clé racine, et refuser une clé retirée. Rien ne change tant que la clé racine n'est pas en place ; procédure dans la documentation de publication.
+
+- **Retour à la version précédente d'un plugin** : après une mise à jour, la page Plugins propose « Revenir à la … » (un second clic
+  revient en avant). Les mises à jour automatiques sont alors suspendues pour ce plugin jusqu'à un clic sur « Mettre à jour ».
+- **Plugin révoqué** : si l'éditeur retire une version (faille, données corrompues), Établi la désactive et affiche la raison dans
+  la page Plugins, avec la mise à jour à faire. Une version révoquée ne peut plus être installée.
+
 ### Modifié
 
 - **Catalogue de plugins plus sûr** : l'application sait lire un catalogue signé (signature, date de fin, numéro de séquence qui ne

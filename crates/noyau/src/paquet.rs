@@ -49,6 +49,23 @@ pub fn verifier_signature(
     })
 }
 
+/// Vérifie une signature contre plusieurs clés de confiance (rotation de clés, docs/20 §3.5) : une seule suffit.
+/// Aucune clé : refus. Une clé illisible est ignorée, les autres restent essayées.
+pub fn verifier_signature_parmi<S: AsRef<str>>(
+    donnees: &[u8],
+    signature: &str,
+    cles_publiques: &[S],
+) -> Result<(), String> {
+    let mut derniere = "Aucune clé de confiance.".to_string();
+    for cle in cles_publiques {
+        match verifier_signature(donnees, signature, cle.as_ref()) {
+            Ok(()) => return Ok(()),
+            Err(e) => derniere = e,
+        }
+    }
+    Err(derniere)
+}
+
 fn lire_entree(
     archive: &mut ZipArchive<Cursor<&[u8]>>,
     nom: &str,
@@ -70,6 +87,14 @@ fn lire_entree(
 
 /// Contrôle un paquet `.etabli-plugin` et renvoie le zip du plugin, une fois la signature vérifiée.
 pub fn ouvrir_paquet(paquet: &[u8], cle_publique: &str) -> Result<Vec<u8>, String> {
+    ouvrir_paquet_parmi(paquet, &[cle_publique])
+}
+
+/// Comme [`ouvrir_paquet`], avec plusieurs clés de confiance : la signature doit venir de l'une d'elles.
+pub fn ouvrir_paquet_parmi<S: AsRef<str>>(
+    paquet: &[u8],
+    cles_publiques: &[S],
+) -> Result<Vec<u8>, String> {
     if paquet.len() as u64 > TAILLE_MAX_PAQUET {
         return Err("Paquet trop volumineux.".into());
     }
@@ -79,7 +104,7 @@ pub fn ouvrir_paquet(paquet: &[u8], cle_publique: &str) -> Result<Vec<u8>, Strin
     let signature = lire_entree(&mut archive, "plugin.zip.minisig", 64 * 1024)?;
     let signature =
         String::from_utf8(signature).map_err(|_| "Signature du plugin illisible.".to_string())?;
-    verifier_signature(&plugin, &signature, cle_publique)?;
+    verifier_signature_parmi(&plugin, &signature, cles_publiques)?;
     Ok(plugin)
 }
 
