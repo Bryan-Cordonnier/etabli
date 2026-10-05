@@ -45,6 +45,8 @@ createServer((req, res) => {
     res.end("Introuvable");
     return;
   }
+  // Comme GitHub Pages ou le fichier _headers : les cadres de mini-apps (origine opaque) lisent les fichiers de plugins.
+  if (adresse.startsWith("/plugins/")) res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", MIME[extname(fichier)] ?? "application/octet-stream");
   res.end(readFileSync(fichier));
 }).listen(port, () => console.log(`Version web sur http://localhost:${port}`));

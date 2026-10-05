@@ -1,0 +1,50 @@
+# Essai d'isolation de bout en bout (docs/19, §4) : le vrai serveur, de vrais plugins signés avec une clé
+# temporaire et un vrai navigateur (Chromium, par Playwright). Une régression de l'isolation des plugins
+# (cadre, CSP, origines séparées, garde des messages) fait échouer cette vérification avant toute publication.
+name: Isolation des plugins
+
+on:
+  pull_request:
+    paths:
+      - "crates/**"
+      - "packages/**"
+      - "apps/desktop/src/**"
+      - "plugins/**"
+      - "scripts/**"
+      - ".github/workflows/isolation.yml"
+      - "Cargo.lock"
+      - "package-lock.json"
+  workflow_dispatch:
+
+concurrency:
+  group: isolation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  isolation:
+    name: Essais dans un navigateur
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Dépendances npm
+        run: npm ci
+
+      - name: Navigateur de l'essai (Chromium de Playwright)
+        run: npx playwright install --with-deps chromium
+
+      - name: Essai d'isolation (serveur, paquets signés, navigateur)
+        run: node scripts/essais-isolation.mjs
