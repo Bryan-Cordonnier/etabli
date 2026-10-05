@@ -8,8 +8,13 @@
 
 use crate::{plugins, AppState};
 use etabli_noyau::{
-    catalogue::{comparer_versions, peut_installer, verifier_catalogue, Catalogue, Revocation},
-    paquet::{fichiers_du_plugin, lire_manifeste, ouvrir_paquet, TAILLE_MAX_PAQUET},
+    catalogue::{
+        comparer_versions, peut_installer, verifier_catalogue_parmi, ArretContrat, Catalogue,
+        Revocation, StatutContrat,
+    },
+    cles::{cles_de_confiance, verifier_liste, ListeCles, TAILLE_MAX_LISTE},
+    paquet::{fichiers_du_plugin, lire_manifeste, ouvrir_paquet_parmi, TAILLE_MAX_PAQUET},
+    source::{valider_source, verifier_canal, CANAL_STABLE},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -28,6 +33,15 @@ const CATALOGUE_URL: &str =
 /// Signature du catalogue (format 2, docs/20) ; absente tant que la publication n'est pas passée au format signé.
 const SIGNATURE_URL: &str =
     "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/catalogue.json.minisig";
+/// Liste des clés de publication de confiance, signée par la clé racine (docs/20 §3.5, rotation) ; facultative.
+const CLES_URL: &str =
+    "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/cles.json";
+const CLES_SIGNATURE_URL: &str =
+    "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/cles.json.minisig";
+/// Clés racines de confiance (publiques, base64 comme `pubkey`) : la courante, puis la suivante embarquée d'avance.
+/// **Vide tant que Bryan n'a pas créé la clé racine** (docs/14, « Rotation des clés ») : la liste de clés est alors ignorée
+/// et seule la clé de `tauri.conf.json` fait foi, comme avant.
+const CLES_RACINES: &[&str] = &[];
 /// Seules adresses de téléchargement acceptées pour un paquet.
 const PREFIXE: &str = "https://github.com/Bryan-Cordonnier/etabli/releases/download/";
 
@@ -37,6 +51,9 @@ const PLUGINS_CHANGES: &str = "etabli:plugins";
 const PROGRESSION: &str = "etabli:installation";
 /// Fichier (dans le dossier de configuration) qui garde la dernière séquence de catalogue vue et ses révocations.
 const FICHIER_ETAT: &str = "catalogue-etat.json";
+/// Dernière liste de clés acceptée (et sa signature), gardées dans le dossier de configuration.
+const FICHIER_CLES: &str = "cles.json";
+const FICHIER_CLES_SIGNATURE: &str = "cles.json.minisig";
 
 // ——— État du catalogue signé ———
 
@@ -48,19 +65,74 @@ pub struct EtatCatalogue {
     pub sequence: u64,
     #[serde(default)]
     pub revocations: Vec<Revocation>,
+    /// Arrêts programmés de contrats d'API (docs/19 et 20), retenus pour refuser une installation même hors ligne.
+    #[serde(default)]
+    pub contrats: Vec<ArretContrat>,
 }
 
+/// État de la source officielle.
 pub fn lire_etat(config: &Path) -> EtatCatalogue {
-    fs::read(config.join(FICHIER_ETAT))
+    lire_etat_fichier(config, FICHIER_ETAT)
+}
+
+/// État d'une source (chaque source a sa propre séquence : on ne mélange pas deux registres).
+pub fn lire_etat_fichier(config: &Path, fichier: &str) -> EtatCatalogue {
+    fs::read(config.join(fichier))
         .ok()
         .and_then(|octets| serde_json::from_slice(&octets).ok())
         .unwrap_or_default()
 }
 
+#[cfg(test)]
 fn ecrire_etat(config: &Path, etat: &EtatCatalogue) -> Result<(), String> {
+    ecrire_etat_fichier(config, FICHIER_ETAT, etat)
+}
+
+fn ecrire_etat_fichier(config: &Path, fichier: &str, etat: &EtatCatalogue) -> Result<(), String> {
     let octets = serde_json::to_vec_pretty(etat).map_err(|e| e.to_string())?;
-    crate::files::write_atomic(&config.join(FICHIER_ETAT), &octets)
+    crate::files::write_atomic(&config.join(fichier), &octets)
         .map_err(|e| format!("Enregistrement impossible : {e}"))
+}
+
+/// Source de catalogue choisie dans les réglages (adresse du catalogue et clé publique qui le signe). Absente : la source
+/// officielle, avec ses adresses et sa clé écrites dans l'application.
+#[derive(Debug, Deserialize)]
+pub struct SourcePerso {
+    pub url: String,
+    pub cle: String,
+}
+
+/// Ce que le moteur utilise pour lire un catalogue et installer ses paquets.
+struct SourceResolue {
+    catalogue_url: String,
+    signature_url: String,
+    /// Les paquets doivent venir d'une adresse qui commence par ceci.
+    prefixe: String,
+    fichier_etat: String,
+    /// Clé de la source personnalisée ; `None` pour la source officielle (clé de `tauri.conf.json`, liste de clés).
+    cle: Option<String>,
+}
+
+fn resoudre_source(source: Option<SourcePerso>) -> Result<SourceResolue, String> {
+    match source {
+        None => Ok(SourceResolue {
+            catalogue_url: CATALOGUE_URL.to_string(),
+            signature_url: SIGNATURE_URL.to_string(),
+            prefixe: PREFIXE.to_string(),
+            fichier_etat: FICHIER_ETAT.to_string(),
+            cle: None,
+        }),
+        Some(perso) => {
+            let valide = valider_source(&perso.url, &perso.cle)?;
+            Ok(SourceResolue {
+                catalogue_url: valide.url,
+                signature_url: valide.url_signature,
+                prefixe: valide.prefixe,
+                fichier_etat: valide.fichier_etat,
+                cle: Some(perso.cle),
+            })
+        }
+    }
 }
 
 fn maintenant() -> u64 {
@@ -72,6 +144,7 @@ fn maintenant() -> u64 {
 /// Lit une réponse du catalogue. Avec une signature : catalogue signé (format 2), vérifié puis retenu. Sans signature :
 /// ancien format, accepté seulement tant qu'aucun catalogue signé n'a jamais été vu (sinon on pourrait faire croire à
 /// un client à jour que le catalogue n'est plus signé).
+#[cfg(test)]
 pub fn analyser_catalogue(
     octets: &[u8],
     signature: Option<&str>,
@@ -79,23 +152,49 @@ pub fn analyser_catalogue(
     maintenant: u64,
     config: &Path,
 ) -> Result<Value, String> {
-    let etat = lire_etat(config);
+    analyser_catalogue_parmi(
+        octets,
+        signature,
+        &[cle_publique],
+        maintenant,
+        config,
+        FICHIER_ETAT,
+    )
+}
+
+/// Comme `analyser_catalogue`, avec les clés de confiance du moment (une seule suffit à signer).
+pub fn analyser_catalogue_parmi<S: AsRef<str>>(
+    octets: &[u8],
+    signature: Option<&str>,
+    cles_publiques: &[S],
+    maintenant: u64,
+    config: &Path,
+    fichier_etat: &str,
+) -> Result<Value, String> {
+    let etat = lire_etat_fichier(config, fichier_etat);
     match signature {
         Some(signature) => {
-            let catalogue =
-                verifier_catalogue(octets, signature, cle_publique, maintenant, etat.sequence)
-                    .map_err(|e| {
-                        if e.contains("expiré") {
-                            format!("{e} Vérifiez aussi la date de l'ordinateur.")
-                        } else {
-                            e
-                        }
-                    })?;
-            ecrire_etat(
+            let catalogue = verifier_catalogue_parmi(
+                octets,
+                signature,
+                cles_publiques,
+                maintenant,
+                etat.sequence,
+            )
+            .map_err(|e| {
+                if e.contains("expiré") {
+                    format!("{e} Vérifiez aussi la date de l'ordinateur.")
+                } else {
+                    e
+                }
+            })?;
+            ecrire_etat_fichier(
                 config,
+                fichier_etat,
                 &EtatCatalogue {
                     sequence: catalogue.sequence,
                     revocations: catalogue.revocations.clone(),
+                    contrats: catalogue.contrats.clone(),
                 },
             )?;
             Ok(json!({
@@ -104,6 +203,7 @@ pub fn analyser_catalogue(
                 "sequence": catalogue.sequence,
                 "plugins": catalogue.plugins,
                 "revocations": catalogue.revocations,
+                "contrats": catalogue.contrats,
             }))
         }
         None => {
@@ -156,7 +256,19 @@ pub fn controler_installation(
         expire: u64::MAX,
         plugins: Vec::new(),
         revocations: etat.revocations.clone(),
+        contrats: etat.contrats.clone(),
     };
+    // Arrêt du contrat d'API (docs/19) : le catalogue refuse un plugin d'un contrat arrêté, même pour une mise à jour.
+    // Une installation depuis un fichier (`reinstaller`) reste permise : c'est le choix explicite de l'utilisateur.
+    if !reinstaller {
+        let api = manifeste
+            .get("apiVersion")
+            .and_then(Value::as_str)
+            .unwrap_or("^1");
+        if let StatutContrat::Refuse(phrase) = regles.statut_contrat(api, maintenant()) {
+            return Err(format!("« {id} » {candidate} : {phrase}"));
+        }
+    }
     let meme_version = installee
         .as_deref()
         .is_some_and(|v| comparer_versions(candidate, v) == Some(Ordering::Equal));
@@ -219,13 +331,101 @@ pub fn installer(zip: &[u8], racine: &Path, attendu: Option<&str>) -> Result<Str
             }
             return Err(format!("Installation impossible : {e}"));
         }
-        let _ = fs::remove_dir_all(&ancien);
+        garder_precedente(racine, &id, &ancien);
         Ok(id.clone())
     })();
     if resultat.is_err() {
         let _ = fs::remove_dir_all(&temporaire);
     }
     resultat
+}
+
+/// Dossier où la version précédente de chaque plugin est gardée (un seul exemplaire par plugin) ; il commence par un point,
+/// donc la liste des plugins l'ignore.
+const PRECEDENT: &str = ".precedent";
+
+/// Garde `ancien` comme version précédente de `id` (en remplaçant la précédente d'avant), ou le supprime si cela échoue.
+fn garder_precedente(racine: &Path, id: &str, ancien: &Path) {
+    if !ancien.is_dir() {
+        return;
+    }
+    let dossier = racine.join(PRECEDENT);
+    let cible = dossier.join(id);
+    let rangee = fs::create_dir_all(&dossier)
+        .and_then(|()| {
+            if cible.exists() {
+                fs::remove_dir_all(&cible)?;
+            }
+            fs::rename(ancien, &cible)
+        })
+        .is_ok();
+    if !rangee {
+        let _ = fs::remove_dir_all(ancien);
+    }
+}
+
+/// Version gardée comme précédente pour ce plugin, si elle existe et est lisible.
+pub fn version_precedente(racine: &Path, id: &str) -> Option<String> {
+    if !plugins::valid_id(id) {
+        return None;
+    }
+    let (_, manifeste) = plugins::read_manifest(&racine.join(PRECEDENT).join(id)).ok()?;
+    manifeste
+        .get("version")
+        .and_then(Value::as_str)
+        .map(String::from)
+}
+
+/// Raison de la révocation de la version installée d'un plugin, ou `None`.
+pub fn raison_revocation(etat: &EtatCatalogue, id: &str, version: &str) -> Option<String> {
+    let regles = Catalogue {
+        format: etabli_noyau::catalogue::FORMAT,
+        sequence: etat.sequence,
+        expire: u64::MAX,
+        plugins: Vec::new(),
+        revocations: etat.revocations.clone(),
+        contrats: etat.contrats.clone(),
+    };
+    regles.revocation(id, version).map(|r| {
+        if r.is_empty() {
+            "version retirée par l'éditeur".to_string()
+        } else {
+            r.to_string()
+        }
+    })
+}
+
+/// Retour à la version précédente d'un plugin : la version installée et la précédente échangent leur place (on peut donc
+/// revenir en avant de la même façon). Refusé si la version précédente est révoquée.
+pub fn revenir(racine: &Path, id: &str, etat: &EtatCatalogue) -> Result<String, String> {
+    if !plugins::valid_id(id) {
+        return Err("Identifiant de plugin invalide.".into());
+    }
+    let precedente = racine.join(PRECEDENT).join(id);
+    let courante = racine.join(id);
+    let version = version_precedente(racine, id)
+        .ok_or("Aucune version précédente n'est gardée pour ce plugin.")?;
+    if !courante.is_dir() {
+        return Err("Ce plugin n'est pas installé.".into());
+    }
+    if let Some(raison) = raison_revocation(etat, id, &version) {
+        return Err(format!(
+            "La version précédente ({version}) est révoquée : {raison}."
+        ));
+    }
+    let jeton = jeton();
+    let echange = racine.join(format!(".echange-{jeton}"));
+    fs::rename(&courante, &echange).map_err(|e| format!("Retour impossible : {e}"))?;
+    if let Err(e) = fs::rename(&precedente, &courante) {
+        let _ = fs::rename(&echange, &courante);
+        return Err(format!("Retour impossible : {e}"));
+    }
+    if let Err(e) = fs::rename(&echange, &precedente) {
+        // La version précédente est en place ; l'ancienne courante est perdue sans gravité.
+        log::warn!("Version remplacée non conservée : {e}");
+        let _ = fs::remove_dir_all(&echange);
+    }
+    Ok(version)
 }
 
 /// Désinstalle un plugin du catalogue : son dossier disparaît, pas les calculs faits avec
@@ -241,16 +441,19 @@ pub fn desinstaller(racine: &Path, id: &str) -> Result<(), String> {
     let corbeille = racine.join(format!(".desinstalle-{}", jeton()));
     fs::rename(&dossier, &corbeille).map_err(|e| format!("Désinstallation impossible : {e}"))?;
     let _ = fs::remove_dir_all(&corbeille);
+    let _ = fs::remove_dir_all(racine.join(PRECEDENT).join(id));
     Ok(())
 }
 
-/// Supprime les dossiers laissés par une installation interrompue (au démarrage).
+/// Supprime les dossiers laissés par une installation interrompue (au démarrage), sauf les versions précédentes.
 pub fn nettoyer(racine: &Path) {
     let Ok(entrees) = fs::read_dir(racine) else {
         return;
     };
     for entree in entrees.filter_map(Result::ok) {
-        if entree.file_name().to_string_lossy().starts_with('.') && entree.path().is_dir() {
+        let nom = entree.file_name();
+        let nom = nom.to_string_lossy();
+        if nom.starts_with('.') && nom != PRECEDENT && entree.path().is_dir() {
             let _ = fs::remove_dir_all(entree.path());
         }
     }
@@ -292,6 +495,73 @@ fn cle_publique(app: &AppHandle) -> Result<String, String> {
         .ok_or_else(|| "Clé publique absente de tauri.conf.json.".to_string())
 }
 
+/// Dernière liste de clés acceptée, relue et revérifiée à chaque usage (le disque n'est pas cru sur parole).
+/// Sans clé racine embarquée, ou sans liste enregistrée : `None`.
+fn lire_liste_cles(config: &Path) -> Option<ListeCles> {
+    if CLES_RACINES.is_empty() {
+        return None;
+    }
+    let octets = fs::read(config.join(FICHIER_CLES)).ok()?;
+    let signature = fs::read_to_string(config.join(FICHIER_CLES_SIGNATURE)).ok()?;
+    verifier_liste(&octets, &signature, CLES_RACINES, maintenant(), 0).ok()
+}
+
+/// Clés de publication à qui faire confiance : celles de la dernière liste acceptée (une clé retirée n'y figure plus),
+/// sinon la clé de `tauri.conf.json`.
+fn cles_confiance(app: &AppHandle) -> Result<Vec<String>, String> {
+    let config = app.state::<AppState>().paths.config.clone();
+    let liste = lire_liste_cles(&config);
+    Ok(cles_de_confiance(
+        &cle_publique(app)?,
+        liste.as_ref(),
+        maintenant(),
+    ))
+}
+
+/// Clés de confiance pour une source : sa propre clé si elle est personnalisée (la liste de clés officielle ne la concerne
+/// pas), sinon celles de la source officielle.
+fn cles_de_la_source(app: &AppHandle, source: &SourceResolue) -> Result<Vec<String>, String> {
+    match &source.cle {
+        Some(cle) => Ok(vec![cle.clone()]),
+        None => cles_confiance(app),
+    }
+}
+
+/// Cherche une liste de clés plus récente et la retient si la racine l'a signée. Sans effet (et sans erreur) si aucune
+/// clé racine n'est embarquée, si la liste n'est pas publiée ou si elle est refusée : le catalogue décidera alors seul.
+async fn rafraichir_liste_cles(client: &reqwest::Client, config: &Path) {
+    if CLES_RACINES.is_empty() {
+        return;
+    }
+    let sequence = lire_liste_cles(config).map_or(0, |l| l.sequence);
+    let Some(octets) = telecharger(client, CLES_URL, TAILLE_MAX_LISTE).await else {
+        return;
+    };
+    let Some(signature) = telecharger(client, CLES_SIGNATURE_URL, 64 * 1024).await else {
+        return;
+    };
+    let Ok(signature) = String::from_utf8(signature) else {
+        return;
+    };
+    if verifier_liste(&octets, &signature, CLES_RACINES, maintenant(), sequence).is_ok() {
+        // On écrit d'abord le fichier signé puis sa signature : une coupure entre les deux laisse une paire incohérente,
+        // refusée à la relecture (`lire_liste_cles`), donc on retombe sur la clé d'origine sans rien casser.
+        let _ = crate::files::write_atomic(&config.join(FICHIER_CLES), &octets);
+        let _ =
+            crate::files::write_atomic(&config.join(FICHIER_CLES_SIGNATURE), signature.as_bytes());
+    }
+}
+
+/// Téléchargement borné d'un petit fichier ; `None` à la moindre erreur (la liste de clés est facultative).
+async fn telecharger(client: &reqwest::Client, url: &str, max: usize) -> Option<Vec<u8>> {
+    let reponse = client.get(url).send().await.ok()?;
+    if !reponse.status().is_success() {
+        return None;
+    }
+    let octets = reponse.bytes().await.ok()?;
+    (octets.len() <= max).then(|| octets.to_vec())
+}
+
 /// Recharge la liste des plugins et prévient toutes les fenêtres (principale et aperçu rapide).
 fn plugins_changes(app: &AppHandle) {
     app.state::<AppState>().reload_plugins();
@@ -303,10 +573,16 @@ fn plugins_changes(app: &AppHandle) {
 /// Lit le catalogue publié (liste des plugins officiels, avec leur version et leur adresse). S'il est signé
 /// (docs/20), la signature, l'expiration et la séquence sont vérifiées, et ses révocations retenues.
 #[tauri::command]
-pub async fn catalogue_lire(app: AppHandle) -> Result<Value, String> {
+pub async fn catalogue_lire(
+    app: AppHandle,
+    source: Option<SourcePerso>,
+    canal: Option<String>,
+) -> Result<Value, String> {
+    verifier_canal(canal.as_deref().unwrap_or(CANAL_STABLE))?;
+    let source = resoudre_source(source)?;
     let client = client()?;
     let octets = client
-        .get(CATALOGUE_URL)
+        .get(&source.catalogue_url)
         .send()
         .await
         .and_then(reqwest::Response::error_for_status)
@@ -318,22 +594,42 @@ pub async fn catalogue_lire(app: AppHandle) -> Result<Value, String> {
         return Err("Catalogue trop volumineux.".into());
     }
     // La signature est facultative pendant la migration : son absence (404) donne l'ancien format.
-    let signature = match client.get(SIGNATURE_URL).send().await {
+    let signature = match client.get(&source.signature_url).send().await {
         Ok(reponse) if reponse.status().is_success() => {
             Some(reponse.text().await.map_err(injoignable)?)
         }
-        Ok(reponse) if reponse.status().as_u16() == 404 => None,
+        // Une source personnalisée n'a pas d'ancien format à tolérer : sans signature, elle est refusée.
+        Ok(reponse) if reponse.status().as_u16() == 404 && source.cle.is_none() => None,
+        Ok(reponse) if reponse.status().as_u16() == 404 => {
+            return Err("Cette source ne publie pas de signature du catalogue : refusée.".into())
+        }
         Ok(_) | Err(_) => return Err(injoignable_sans_detail()),
     };
     let config = app.state::<AppState>().paths.config.clone();
-    let cle = cle_publique(&app)?;
-    analyser_catalogue(&octets, signature.as_deref(), &cle, maintenant(), &config)
+    if source.cle.is_none() {
+        rafraichir_liste_cles(&client, &config).await;
+    }
+    let cles = cles_de_la_source(&app, &source)?;
+    analyser_catalogue_parmi(
+        &octets,
+        signature.as_deref(),
+        &cles,
+        maintenant(),
+        &config,
+        &source.fichier_etat,
+    )
 }
 
 /// Télécharge, vérifie et installe (ou met à jour) un plugin du catalogue.
 #[tauri::command]
-pub async fn plugin_installer(app: AppHandle, id: String, url: String) -> Result<String, String> {
-    if !plugins::valid_id(&id) || !url.starts_with(PREFIXE) {
+pub async fn plugin_installer(
+    app: AppHandle,
+    id: String,
+    url: String,
+    source: Option<SourcePerso>,
+) -> Result<String, String> {
+    let source = resoudre_source(source)?;
+    if !plugins::valid_id(&id) || !url.starts_with(&source.prefixe) {
         return Err("Adresse de téléchargement refusée.".into());
     }
     let mut reponse = client()?
@@ -361,9 +657,9 @@ pub async fn plugin_installer(app: AppHandle, id: String, url: String) -> Result
             }
         }
     }
-    let zip = ouvrir_paquet(&paquet, &cle_publique(&app)?)?;
+    let zip = ouvrir_paquet_parmi(&paquet, &cles_de_la_source(&app, &source)?)?;
     let racine = app.state::<AppState>().paths.catalogue.clone();
-    let etat = lire_etat(&app.state::<AppState>().paths.config);
+    let etat = lire_etat_fichier(&app.state::<AppState>().paths.config, &source.fichier_etat);
     let id = tauri::async_runtime::spawn_blocking(move || {
         controler_installation(&zip, &racine, &etat, false)?;
         installer(&zip, &racine, Some(&id))
@@ -392,7 +688,7 @@ pub async fn plugin_installer_fichier(app: AppHandle) -> Result<Option<String>, 
         return Err("Paquet trop volumineux.".into());
     }
     let paquet = fs::read(&chemin).map_err(|e| format!("Lecture impossible : {e}"))?;
-    let zip = ouvrir_paquet(&paquet, &cle_publique(&app)?)?;
+    let zip = ouvrir_paquet_parmi(&paquet, &cles_confiance(&app)?)?;
     let racine = app.state::<AppState>().paths.catalogue.clone();
     let etat = lire_etat(&app.state::<AppState>().paths.config);
     let id = tauri::async_runtime::spawn_blocking(move || {
@@ -403,6 +699,19 @@ pub async fn plugin_installer_fichier(app: AppHandle) -> Result<Option<String>, 
     .map_err(|e| e.to_string())??;
     plugins_changes(&app);
     Ok(Some(id))
+}
+
+/// Revient à la version précédente d'un plugin installé depuis le catalogue (rien n'est perdu : un second appel revient
+/// à la version qu'on vient de quitter). Renvoie la version maintenant en place.
+#[tauri::command]
+pub async fn plugin_revenir(app: AppHandle, id: String) -> Result<String, String> {
+    let racine = app.state::<AppState>().paths.catalogue.clone();
+    let etat = lire_etat(&app.state::<AppState>().paths.config);
+    let version = tauri::async_runtime::spawn_blocking(move || revenir(&racine, &id, &etat))
+        .await
+        .map_err(|e| e.to_string())??;
+    plugins_changes(&app);
+    Ok(version)
 }
 
 /// Désinstalle un plugin installé depuis le catalogue (les calculs restent).
@@ -418,6 +727,7 @@ pub fn plugin_desinstaller(app: AppHandle, id: String) -> Result<(), String> {
 mod tests {
     use super::*;
     use crate::files::tests::scratch;
+    use etabli_noyau::paquet::ouvrir_paquet;
     use std::io::{Cursor, Write};
     use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
@@ -508,6 +818,139 @@ mod tests {
     }
 
     #[test]
+    fn la_version_precedente_est_gardee_et_on_peut_y_revenir() {
+        let racine = scratch("catalogue-precedente");
+        let etat = EtatCatalogue::default();
+        installer(&plugin("outil", "1.0.0"), &racine, None).unwrap();
+        assert_eq!(version_precedente(&racine, "outil"), None);
+        installer(&plugin("outil", "2.0.0"), &racine, Some("outil")).unwrap();
+        assert_eq!(
+            version_precedente(&racine, "outil").as_deref(),
+            Some("1.0.0")
+        );
+        // La liste des plugins ne voit pas le dossier des précédentes (il commence par un point).
+        assert!(racine.join(".precedent/outil/manifest.json").is_file());
+
+        // Retour : 1.0.0 est en place, 2.0.0 devient la précédente.
+        assert_eq!(revenir(&racine, "outil", &etat).unwrap(), "1.0.0");
+        assert_eq!(
+            version_installee(&racine, "outil").as_deref(),
+            Some("1.0.0")
+        );
+        assert_eq!(
+            version_precedente(&racine, "outil").as_deref(),
+            Some("2.0.0")
+        );
+        // Et retour « en avant » de la même façon.
+        assert_eq!(revenir(&racine, "outil", &etat).unwrap(), "2.0.0");
+        assert_eq!(
+            version_installee(&racine, "outil").as_deref(),
+            Some("2.0.0")
+        );
+        // Aucun dossier temporaire ne reste.
+        let restes: Vec<_> = fs::read_dir(&racine)
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        assert!(
+            restes.iter().all(|n| n == "outil" || n == ".precedent"),
+            "{restes:?}"
+        );
+    }
+
+    #[test]
+    fn une_troisieme_version_remplace_la_precedente() {
+        let racine = scratch("catalogue-precedente-trois");
+        installer(&plugin("outil", "1.0.0"), &racine, None).unwrap();
+        installer(&plugin("outil", "2.0.0"), &racine, None).unwrap();
+        installer(&plugin("outil", "3.0.0"), &racine, None).unwrap();
+        // Une seule version précédente : la 2.0.0 ; la 1.0.0 n'est plus gardée.
+        assert_eq!(
+            version_precedente(&racine, "outil").as_deref(),
+            Some("2.0.0")
+        );
+    }
+
+    #[test]
+    fn retour_refuse_sans_precedente_ou_si_elle_est_revoquee() {
+        let racine = scratch("catalogue-precedente-refus");
+        let config = scratch("catalogue-precedente-config");
+        analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config,
+        )
+        .unwrap();
+        let etat = lire_etat(&config);
+        // Rien à restaurer.
+        installer(&plugin("maths", "1.0.0"), &racine, None).unwrap();
+        assert!(revenir(&racine, "maths", &etat).is_err());
+        assert!(revenir(&racine, "../x", &etat).is_err());
+        // « tracage » avant 1.2.0 est révoqué : on ne peut pas y revenir.
+        installer(&plugin("tracage", "1.1.1"), &racine.join("autre"), None).unwrap();
+        installer(&plugin("tracage", "1.2.0"), &racine.join("autre"), None).unwrap();
+        let e = revenir(&racine.join("autre"), "tracage", &etat).unwrap_err();
+        assert!(e.contains("révoquée"), "{e}");
+        assert_eq!(
+            version_installee(&racine.join("autre"), "tracage").as_deref(),
+            Some("1.2.0")
+        );
+    }
+
+    #[test]
+    fn revocation_de_la_version_installee() {
+        let config = scratch("catalogue-revocation-config");
+        analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config,
+        )
+        .unwrap();
+        let etat = lire_etat(&config);
+        assert!(raison_revocation(&etat, "tracage", "1.1.1")
+            .unwrap()
+            .contains("faille"));
+        assert!(raison_revocation(&etat, "tracage", "1.2.0").is_none());
+        assert!(raison_revocation(&etat, "maths", "0.0.1").is_none());
+        // Raison vide : message par défaut.
+        let sans_raison = EtatCatalogue {
+            sequence: 1,
+            contrats: Vec::new(),
+            revocations: vec![Revocation {
+                id: "x".into(),
+                avant: Some("2.0.0".into()),
+                versions: Vec::new(),
+                raison: String::new(),
+            }],
+        };
+        assert!(raison_revocation(&sans_raison, "x", "1.0.0")
+            .unwrap()
+            .contains("retirée"));
+    }
+
+    #[test]
+    fn desinstaller_supprime_aussi_la_precedente_et_le_nettoyage_la_respecte() {
+        let racine = scratch("catalogue-precedente-nettoyage");
+        installer(&plugin("outil", "1.0.0"), &racine, None).unwrap();
+        installer(&plugin("outil", "2.0.0"), &racine, None).unwrap();
+        fs::create_dir_all(racine.join(".installation-reste")).unwrap();
+        nettoyer(&racine);
+        assert!(!racine.join(".installation-reste").exists());
+        assert!(
+            racine.join(".precedent/outil").is_dir(),
+            "le nettoyage garde les précédentes"
+        );
+        desinstaller(&racine, "outil").unwrap();
+        assert!(!racine.join("outil").exists());
+        assert!(!racine.join(".precedent/outil").exists());
+    }
+
+    #[test]
     fn nettoyage_des_restes() {
         let racine = scratch("catalogue-nettoyage");
         fs::create_dir_all(racine.join(".installation-abc")).unwrap();
@@ -557,6 +1000,55 @@ mod tests {
         assert_eq!(lire_etat(&config), EtatCatalogue::default());
     }
 
+    fn plugin_contrat(id: &str, version: &str, api: &str) -> Vec<u8> {
+        let manifeste = format!(r#"{{"id":"{id}","version":"{version}","apiVersion":"{api}"}}"#);
+        zip_de(&[("manifest.json", manifeste.as_bytes()), ("a.js", b"1")])
+    }
+
+    #[test]
+    fn contrat_arrete_refuse_depuis_le_catalogue_mais_pas_depuis_un_fichier() {
+        let racine = scratch("catalogue-contrat-arret");
+        let etat = EtatCatalogue {
+            sequence: 1,
+            revocations: Vec::new(),
+            // Date de refus dans le passé : le contrat 1 est arrêté.
+            contrats: vec![ArretContrat {
+                majeure: 1,
+                avertir_des: None,
+                refuser_des: Some(1),
+                message: String::new(),
+            }],
+        };
+        // Sans apiVersion lisible, c'est le contrat 1 ; « ^2 » n'est pas touché.
+        let e =
+            controler_installation(&plugin("ancien", "1.0.0"), &racine, &etat, false).unwrap_err();
+        assert!(e.contains("ancien") && e.contains("plus acceptés"), "{e}");
+        assert!(controler_installation(
+            &plugin_contrat("ancien", "1.0.0", "^1"),
+            &racine,
+            &etat,
+            false
+        )
+        .is_err());
+        controler_installation(
+            &plugin_contrat("moderne", "1.0.0", "^2"),
+            &racine,
+            &etat,
+            false,
+        )
+        .unwrap();
+        // Depuis un fichier choisi par l'utilisateur : permis.
+        controler_installation(&plugin("ancien", "1.0.0"), &racine, &etat, true).unwrap();
+        // Sans arrêt annoncé : tout passe.
+        controler_installation(
+            &plugin("ancien", "1.0.0"),
+            &racine,
+            &EtatCatalogue::default(),
+            false,
+        )
+        .unwrap();
+    }
+
     #[test]
     fn catalogue_expire_refuse_avec_un_conseil() {
         let config = scratch("catalogue-etat-expire");
@@ -581,6 +1073,7 @@ mod tests {
             &config,
             &EtatCatalogue {
                 sequence: 8,
+                contrats: Vec::new(),
                 revocations: Vec::new(),
             },
         )

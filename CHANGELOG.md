@@ -19,6 +19,47 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - **Contrôle de ce que font les mini-apps** : chaque message d'une mini-app est vérifié (forme, taille) avant d'être pris en
   compte ; une mini-app ne peut plus enregistrer qu'un fichier de données (CSV, DXF, JSON, texte, SVG…), jamais un programme.
   Les documents et réglages ont une taille maximale.
+- **Essai d'isolation automatique** (pour les mainteneurs) : à chaque demande de fusion qui touche au serveur, à l'interface, aux
+  plugins ou aux scripts, GitHub installe deux plugins signés sur un vrai serveur et vérifie dans un navigateur qu'une mini-app ne
+  peut ni lire l'application ni les données d'un autre plugin, ni sortir par le réseau, et que les messages hostiles sont refusés.
+  Le même essai se lance chez soi avec `node scripts/essais-isolation.mjs`.
+
+### Ajouté (suite)
+
+- **Retour à la version précédente d'un plugin** : après une mise à jour, la page Plugins propose « Revenir à la … » (un second clic
+  revient en avant). Les mises à jour automatiques sont alors suspendues pour ce plugin jusqu'à un clic sur « Mettre à jour ».
+- **Plugin révoqué** : si l'éditeur retire une version (faille, données corrompues), Établi la désactive et affiche la raison dans
+  la page Plugins, avec la mise à jour à faire. Une version révoquée ne peut plus être installée.
+
+### Corrigé
+
+- **Android : chaque mini-app dans son propre espace** : dans l'application Android, une mini-app est maintenant servie sur sa propre
+  adresse interne (`https://<plugin>.plugins.localhost`), comme sur PC et avec un serveur : elle ne voit ni vos calculs, ni
+  les données des autres mini-apps, et n'a aucun accès au réseau. Le pont vers les fonctions du téléphone (alarmes, notifications)
+  est en plus réservé à la page principale. Une sonde de test existe (`tools/sonde-pont-android`).
+- **Version web : les mini-apps ne voient plus l'application** : jusqu'ici, dans la version web « Établi seul », une mini-app
+  partageait l'origine de l'application (elle pouvait lire vos calculs enregistrés et les données des autres mini-apps). Quand
+  l'hébergement le permet (GitHub Pages, Netlify, Cloudflare Pages, `npm run preview:web`), chaque mini-app est maintenant
+  enfermée dans un cadre isolé, et ses pages portent une politique de sécurité sans accès au réseau. Sur Android (version
+  locale), voir la correction précédente.
+
+### Ajouté (suite)
+
+- **Fin programmée des anciens plugins (contrat ^1)** : le catalogue peut annoncer une date après laquelle les plugins de l'ancien contrat ne
+  sont plus installables ni mis à jour ; avant cela, l'installation vous en avertit. Aucune date n'est fixée pour l'instant, rien ne change
+  tant qu'elle n'est pas annoncée. Les plugins déjà installés continuent de fonctionner.
+
+- **Source du catalogue réglable** : dans Paramètres › Mises à jour, un atelier peut indiquer l'adresse de son propre registre de plugins et la clé
+  publique qui le signe (par défaut : le catalogue officiel). Un catalogue non signé ou périmé est refusé comme pour le catalogue officiel.
+  Le choix du canal « bêta » est préparé mais pas encore disponible.
+
+- **Changement de clé de signature sans nouvelle version** (préparation) : Établi sait accepter plusieurs clés de publication d'une liste signée par
+  une clé racine, et refuser une clé retirée. Rien ne change tant que la clé racine n'est pas en place ; procédure dans la documentation de publication.
+
+- **Retour à la version précédente d'un plugin** : après une mise à jour, la page Plugins propose « Revenir à la … » (un second clic
+  revient en avant). Les mises à jour automatiques sont alors suspendues pour ce plugin jusqu'à un clic sur « Mettre à jour ».
+- **Plugin révoqué** : si l'éditeur retire une version (faille, données corrompues), Établi la désactive et affiche la raison dans
+  la page Plugins, avec la mise à jour à faire. Une version révoquée ne peut plus être installée.
 
 - **Appels entre plugins** (fondations) : un plugin peut appeler une fonction d'un autre plugin et recevoir la réponse (par exemple
   « ajouter un rappel » dans un futur Agenda). L'autorisation est montrée avant l'installation, une ligne par service (« Lire des
@@ -36,7 +77,11 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   (`https://{id}.plugins.maison.fr`) : chaque plugin a son propre nom d'hôte et ne peut ni lire l'application ni un autre
   plugin. Les mini-apps restent utilisables hors ligne. Voir [docs/17](docs/17-serveur.md).
 
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
+
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - **Appels entre plugins** (docs/24, A.1.2) : manifeste `functions` / `serviceEntry` (fournisseur) et `services` / permission
   `appelle:<service>:<lecture|ecriture>` (appelant) ; SDK `etabli.services.call(...)` et `etabli.services.handle(...)`, `ServiceError` ;
@@ -79,7 +124,11 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   à l'heure**, application fermée. L'APK de test se fabrique par le workflow GitHub « Android (APK de test) ». iPhone : la version web
   s'ajoute à l'écran d'accueil (plein écran, icône).
 
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
+
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - Espace de travail Cargo à la racine : `crates/noyau` (règles communes) et `crates/serveur`. L'application Tauri
   (`apps/desktop/src-tauri`) reste à part, avec son propre `Cargo.lock`. La CI vérifie aussi le serveur (format, analyse, 51 tests).
@@ -111,7 +160,11 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   exécution de code dans les sources, contenu du plugin compilé. La publication d'un plugin lance cette validation.
 - Chaque plugin a un `CHANGELOG.md` ; sa section pour la version publiée devient les nouveautés du catalogue.
 
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
+
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - **Couche de stockage unifiée** (`lib/fond/`) : les calculs, réglages et plugins passent par une interface unique (« fond »), avec
   une version « fichiers » (application, inchangée pour l'utilisateur : ses calculs sont conservés) et une version « navigateur »

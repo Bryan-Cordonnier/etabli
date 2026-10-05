@@ -47,7 +47,8 @@
 
   let { src, title, pluginId, appId, initial, docTitle = "", incoming = null, forward = true, onmessage }: Props = $props();
 
-  // Avec une origine propre au plugin (serveur), le cadre peut garder son origine : elle ne contient rien d'autre que
+  // Avec une origine propre au plugin (serveur, ou Android : https://<id>.plugins.localhost servie par la partie native),
+  // le cadre peut garder son origine : elle ne contient rien d'autre que
   // ce plugin. C'est ce qui permet à son service worker de le servir hors ligne.
   const sandbox = $derived(sandboxDe(pluginId));
   let incomingSent = false;

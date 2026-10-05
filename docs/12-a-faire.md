@@ -3,6 +3,18 @@
 Les spécifications détaillées (formules, cas de test) sont recopiées dans
 [13-specs-a-venir.md](13-specs-a-venir.md). Rappel : **faire valider la spécification par Bryan avant de coder**.
 
+## Prochaines étapes du plan « moteur PC d'abord » (octobre 2026)
+
+Détail et décisions : [18](18-spec-plateforme-comptes-licences.md), [19](19-modele-de-menace-plugins.md), [20](20-spec-mises-a-jour-registre.md), [21](21-spec-licences-baux.md).
+- **À faire par Bryan** : lancer une fois « Catalogue (renouvellement) » (onglet Actions) pour passer au catalogue signé ; essayer à l'écran les
+  permissions affichées à l'installation, le retour à la version précédente et un plugin révoqué ; choisir le nom commercial ; répondre aux questions ouvertes de 20 et 21.
+- **Sources configurables et canal bêta** (spec 20 §3.2 et §3.3) : inutiles tant que GitHub est la seule source.
+- **Clé racine et rotation des clés de signature** (spec 20 §3.5) : procédure à écrire et à répéter à blanc avant le premier client.
+- **Essais d'isolation automatiques en CI** (docs/19 §4) : navigateur sans interface + binaire du serveur + plugin hostile.
+- **Mode web local** : plugins sur des origines séparées avant d'accepter un plugin tiers ; contrat « ^1 » à refuser dans le catalogue après une date.
+- **Service de licences** (spec 21) puis **distributions** (nom, logo, plugins embarqués par configuration de build), puis l'hôte mobile.
+- **Hors périmètre pour l'instant** : Linux, iPhone, plugins IA, vente hors de France, place de marché de développeurs tiers.
+
 ## À vérifier à l'écran par Bryan (codé fin septembre 2026)
 
 Bryan a déjà vu Traçage, Matériaux et le débit v2 et a demandé les changements ci-dessous (faits le
@@ -101,6 +113,6 @@ Jamais vus :
 - Vitesses de la machine (Matériaux) : séparées par des espaces, donc sans espace dans les milliers
   (« 1120 », pas « 1 120 »).
 - Catalogue : sans Internet au premier lancement, Établi reste vide (installation depuis un fichier
-  possible) ; la version minimale de l'application par plugin (`apiVersion`) n'est pas contrôlée.
+  possible) ; la version minimale de l'application par plugin n'est pas contrôlée (`apiVersion` ne sert qu'à choisir le contrôle strict des permissions).
 - Le commit `8360f99` a un caractère BOM au début de son titre (sans conséquence).
 - `Pythagore.svelte` n'utilise pas encore `MiniAppDocument` (fonctionne, mais style ancien).

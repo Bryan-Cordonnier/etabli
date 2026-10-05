@@ -6,6 +6,14 @@
 pour faire un calcul d'atelier (trigonométrie, développé de pliage, débit de tubes, calepinage de
 tôles…), enregistrer le calcul et imprimer une fiche à emporter à l'atelier.
 
+## Orientation depuis octobre 2026
+
+Bryan arrête le BTS et fait d'Établi le **socle d'une plateforme** : le moteur reste libre (Apache-2.0 décidé, marque protégée à part),
+les plugins payants vivent dans des dépôts privés, avec comptes, licences à baux de 48 h et registre signé. Trois applications séparées
+partageront ce moteur (par configuration de build, pas par copie) : Établi (tests), un ERP pour son entreprise et un budget/agenda
+personnel. Le plan et les décisions sont dans [18](18-spec-plateforme-comptes-licences.md) ; le **moteur sur PC (Windows) passe
+avant le mobile**, Linux et iPhone viennent plus tard. Le nom commercial n'est pas encore choisi.
+
 ## Pour qui
 
 - **Utilisateur et porteur du projet** : Bryan, étudiant en BTS CRCI (conception et réalisation en
@@ -21,7 +29,7 @@ tôles…), enregistrer le calcul et imprimer une fiche à emporter à l'atelier
 - **Ergonomique** : entrées à gauche, résultats à droite, calcul en direct, un clic copie une valeur.
 - **Design plat moderne**, animations fluides et discrètes, cohérence visuelle stricte (mêmes
   arrondis, mêmes états actifs partout).
-- **100 % local**, aucun compte, aucun réseau (sauf, plus tard, les mises à jour via GitHub).
+- **Local d'abord** : la logique des plugins tourne toujours sur l'appareil, et sans compte ni réseau l'application marche comme avant. Le serveur de données, les comptes et les licences sont **facultatifs** ([16](16-spec-serveur-utilisateurs-mobile.md), [18](18-spec-plateforme-comptes-licences.md)).
 - **Extensible** : tout le métier est dans des plugins ; le moteur fournit les briques communes.
 - **Français** partout.
 
@@ -49,7 +57,18 @@ Dépôt : https://github.com/Bryan-Cordonnier/etabli (public, branche `main`, CI
 | 3 | Soudage, Tolérances et ajustements | aucune |
 | 4 | Chiffrage (proposé) | lecture facultative des résultats d'autres plugins et des prix fournisseurs |
 
-## État d'avancement (fin septembre 2026)
+## État d'avancement (octobre 2026)
+
+- **Version 0.5.0** : serveur facultatif (`crates/serveur`, [17](17-serveur.md)), version web connectée et hors ligne, projet Android de test.
+- **Isolation et permissions** ([19](19-modele-de-menace-plugins.md)) : garde de chaque message d'une mini-app, permissions v1 déclarées
+  au manifeste et montrées avant l'installation, une origine par plugin côté serveur. Les 7 plugins officiels passent au contrat « ^2 ».
+- **Mises à jour « en béton »** ([20](20-spec-mises-a-jour-registre.md)) : l'application utilise le noyau (`crates/noyau`) pour les paquets,
+  lit un **catalogue signé** (séquence, expiration, révocations), refuse un retour en arrière ; retour à la version précédente d'un plugin ;
+  plugin révoqué désactivé. Le catalogue est resigné à chaque modification et chaque mois (**à lancer une première fois à la main**).
+- **Essai d'alarme natif Android** (`tools/essai-alarme`) : alarmes et notifications exactes à la seconde près.
+- **Licences, comptes, baux** : spécifiés ([21](21-spec-licences-baux.md)), pas codés. Mobile et iPhone : plus tard.
+
+## Historique (fin septembre 2026)
 
 **Moteur — fait**
 - Fenêtre principale sans bordure : colonne des plugins (repliable, réordonnable), onglets globaux,

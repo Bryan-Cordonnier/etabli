@@ -44,9 +44,14 @@ describe("fond Tauri : commandes du cœur Rust", () => {
     await fondTauri.pluginsList();
     expect(invoke).toHaveBeenLastCalledWith("plugins_list");
     await fondTauri.catalogueRead();
-    expect(invoke).toHaveBeenLastCalledWith("catalogue_lire");
+    expect(invoke).toHaveBeenLastCalledWith("catalogue_lire", { source: null, canal: "stable" });
+    const source = { url: "https://registre.exemple.fr/c.json", key: "cle" };
+    await fondTauri.catalogueRead(source, "beta");
+    expect(invoke).toHaveBeenLastCalledWith("catalogue_lire", { source, canal: "beta" });
     await fondTauri.pluginInstall("maths", "https://exemple/maths.etabli-plugin");
-    expect(invoke).toHaveBeenLastCalledWith("plugin_installer", { id: "maths", url: "https://exemple/maths.etabli-plugin" });
+    expect(invoke).toHaveBeenLastCalledWith("plugin_installer", { id: "maths", url: "https://exemple/maths.etabli-plugin", source: null });
+    await fondTauri.pluginInstall("maths", "https://registre.exemple.fr/m.etabli-plugin", source);
+    expect(invoke).toHaveBeenLastCalledWith("plugin_installer", { id: "maths", url: "https://registre.exemple.fr/m.etabli-plugin", source });
     await fondTauri.pluginInstallFile();
     expect(invoke).toHaveBeenLastCalledWith("plugin_installer_fichier");
     await fondTauri.pluginUninstall("maths");
