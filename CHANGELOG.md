@@ -31,6 +31,14 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - **Plugin révoqué** : si l'éditeur retire une version (faille, données corrompues), Établi la désactive et affiche la raison dans
   la page Plugins, avec la mise à jour à faire. Une version révoquée ne peut plus être installée.
 
+### Corrigé
+
+- **Version web : les mini-apps ne voient plus l'application** : jusqu'ici, dans la version web « Établi seul », une mini-app
+  partageait l'origine de l'application (elle pouvait lire vos calculs enregistrés et les données des autres mini-apps). Quand
+  l'hébergement le permet (GitHub Pages, Netlify, Cloudflare Pages, `npm run preview:web`), chaque mini-app est maintenant
+  enfermée dans un cadre isolé, et ses pages portent une politique de sécurité sans accès au réseau. Sur Android (version
+  locale), l'ancien fonctionnement reste, faute de pouvoir envoyer l'en-tête nécessaire : voir docs/19.
+
 ### Modifié
 
 - **Catalogue de plugins plus sûr** : l'application sait lire un catalogue signé (signature, date de fin, numéro de séquence qui ne

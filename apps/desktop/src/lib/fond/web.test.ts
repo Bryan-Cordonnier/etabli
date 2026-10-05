@@ -6,7 +6,7 @@ import type { DocumentInput, Fond } from "./types";
 
 /** Un fond neuf sur une base vide, sans reprise de l'ancien stockage ni plugins. */
 const neuf = (extra: Parameters<typeof creerFondWeb>[0] = {}): Fond =>
-  creerFondWeb({ idb: new IDBFactory(), ancien: null, plugins: async () => [], ...extra });
+  creerFondWeb({ idb: new IDBFactory(), ancien: null, plugins: async () => [], sonde: async () => false, ...extra });
 
 /** Ancien localStorage en mémoire. */
 function ancienStockage(valeurs: Record<string, string>): AncienStockage {
@@ -117,6 +117,24 @@ describe("fond web : données, réglages, plugins", () => {
     const fond = neuf();
     expect(fond.id).toBe("web");
     expect(Object.values(fond.capacites)).toEqual([false, false, false, false, false]);
+  });
+});
+
+describe("fond web : isolation des mini-apps", () => {
+  it("origine opaque seulement quand la sonde confirme le CORS, décidée par pluginsList()", async () => {
+    const opaque = neuf({ sonde: async () => true });
+    expect(opaque.capacites.isolationComplete).toBe(false);
+    await opaque.pluginsList();
+    expect(opaque.capacites.isolationComplete).toBe(true);
+    const repli = neuf({ sonde: async () => false });
+    await repli.pluginsList();
+    expect(repli.capacites.isolationComplete).toBe(false);
+  });
+
+  it("une sonde qui échoue ne casse pas la liste et laisse le repli", async () => {
+    const fond = neuf({ sonde: () => Promise.reject(new Error("x")), plugins: async () => [{ manifest: { id: "a" }, official: true }] });
+    expect(await fond.pluginsList()).toHaveLength(1);
+    expect(fond.capacites.isolationComplete).toBe(false);
   });
 });
 
