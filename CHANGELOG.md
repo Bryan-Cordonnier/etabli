@@ -61,6 +61,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   utilisée par l'application. Spécification : [docs/20](docs/20-spec-mises-a-jour-registre.md).
 - `npm run valider` : permissions connues, doublons, fonction du SDK utilisée sans permission ; avertissement pour un plugin « ^1 ».
   `npm run nouveau-plugin` crée un plugin « ^2 ». Modèle de menace : [docs/19](docs/19-modele-de-menace-plugins.md).
+- Spécification (brouillon) des plugins « agenda », « finances », « paie » et « budget » (services entre plugins) et inventaire de l'ancien projet de gestion de budget : [docs/24](docs/24-spec-plugins-budget.md). Aucun code.
 
 ## [0.5.0] — 2026-10-03
 
