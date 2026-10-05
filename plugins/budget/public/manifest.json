@@ -1,0 +1,47 @@
+{
+  "id": "budget",
+  "name": "Budget",
+  "version": "0.1.0",
+  "apiVersion": "^2",
+  "author": "Bryan Cordonnier",
+  "description": "Ce qui est prévu : la courbe « combien j'aurai à telle date », les virements et abonnements, les plafonds par catégorie. L'argent réel reste dans Finances.",
+  "color": "#b45309",
+  "icon": "gauge",
+  "permissions": ["appelle:finances:lecture", "appelle:finances:ecriture"],
+  "dependencies": { "finances": "^1" },
+  "services": { "finances": "^1" },
+  "provides": {
+    "budget": "1"
+  },
+  "serviceEntry": "service/index.html",
+  "functions": {
+    "budget": {
+      "previsions.liste": { "acces": "lecture" },
+      "previsions.remplacer": { "acces": "ecriture" },
+      "previsions.supprimer": { "acces": "ecriture" },
+      "previsions.realiser": { "acces": "ecriture" }
+    }
+  },
+  "miniApps": [
+    {
+      "id": "courbe",
+      "name": "Courbe du mois",
+      "description": "Combien j'aurai à telle date : le solde réel puis les prévisions, les jours sous le seuil, le budget par catégorie",
+      "icon": "gauge",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/courbe/index.html",
+      "accepts": []
+    },
+    {
+      "id": "previsions",
+      "name": "Prévisions",
+      "description": "Prévisions, virements entre comptes, abonnements et plafonds par catégorie",
+      "icon": "wallet",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/previsions/index.html",
+      "accepts": []
+    }
+  ]
+}

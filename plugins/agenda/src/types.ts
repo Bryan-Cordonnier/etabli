@@ -87,7 +87,8 @@ export interface Carnet {
   cles: Record<string, ReponseMemorisee[]>;
 }
 
-export const UTILISATEUR = "utilisateur";
+/** Source des événements saisis dans l'écran de l'Agenda (le « @ » est interdit dans un identifiant de plugin : aucun plugin ne peut s'en réclamer). */
+export const UTILISATEUR = "@utilisateur";
 
 /** Codes communs des contrats (docs/24, A.1.3). */
 export type CodeErreur = "argument_invalide" | "introuvable" | "limite_atteinte" | "permission_refusee" | "illisible";
