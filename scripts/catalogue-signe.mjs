@@ -30,7 +30,31 @@ export function preparerCatalogue(catalogue, maintenant) {
     expire: Math.floor(maintenant) + VALIDITE_SECONDES,
     plugins,
     revocations,
+    // Arrêts programmés de contrats d'API (docs/19 §4) : gardés tels quels à chaque renouvellement, sinon le mois suivant les effacerait.
+    contrats: verifierContrats(catalogue?.contrats),
   };
+}
+
+/** Contrôle la liste des arrêts de contrat (échoue franchement : une faute de frappe ne doit pas passer en silence). */
+export function verifierContrats(contrats) {
+  if (contrats === undefined || contrats === null) return [];
+  if (!Array.isArray(contrats)) throw new Error("« contrats » doit être une liste.");
+  const vus = new Set();
+  for (const c of contrats) {
+    if (!Number.isSafeInteger(c?.majeure) || c.majeure < 1) throw new Error("Arrêt de contrat : « majeure » doit être un entier ≥ 1.");
+    if (vus.has(c.majeure)) throw new Error(`Arrêt de contrat en double pour la majeure ${c.majeure}.`);
+    vus.add(c.majeure);
+    for (const champ of ["avertir_des", "refuser_des"]) {
+      if (c[champ] !== undefined && c[champ] !== null && (!Number.isSafeInteger(c[champ]) || c[champ] < 0)) {
+        throw new Error(`Arrêt de contrat : « ${champ} » doit être une date en secondes depuis 1970.`);
+      }
+    }
+    if (c.message !== undefined && typeof c.message !== "string") throw new Error("Arrêt de contrat : « message » doit être un texte.");
+    if (Number.isSafeInteger(c.avertir_des) && Number.isSafeInteger(c.refuser_des) && c.avertir_des > c.refuser_des) {
+      throw new Error("Arrêt de contrat : l'avertissement doit précéder le refus.");
+    }
+  }
+  return contrats;
 }
 
 /** Écrit le catalogue (une seule fois : la signature porte sur ces octets exacts) puis le signe. */

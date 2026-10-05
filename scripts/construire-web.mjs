@@ -18,6 +18,29 @@ export function listerFichiers(dossier, base = dossier) {
   });
 }
 
+/**
+ * Politique de sécurité des pages de plugins de la version web : mêmes règles que le serveur (aucun réseau). Un hébergement
+ * statique ne peut pas l'envoyer en en-tête de façon portable (GitHub Pages) : elle est posée par une balise <meta> dans chaque
+ * page de mini-app. `sandbox` et `frame-ancestors` n'existent pas en <meta> : le cadre de l'application pose le sandbox.
+ */
+export const CSP_PLUGIN_WEB =
+  "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; " +
+  "font-src 'self' data:; worker-src 'self' blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
+
+/** Insère la politique en tête du <head> d'une page de plugin (avant tout script) ; refuse une page sans <head>. */
+export function avecCsp(html) {
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${CSP_PLUGIN_WEB}" />`;
+  if (!/<head(\s[^>]*)?>/i.test(html)) throw new Error("page de plugin sans <head> : politique de sécurité impossible");
+  return html.replace(/<head(\s[^>]*)?>/i, (balise) => `${balise}\n    ${meta}`);
+}
+
+/**
+ * Fichier _headers (Netlify, Cloudflare Pages) : les cadres de mini-apps ont une origine opaque, leurs scripts, styles et polices
+ * sont des requêtes CORS. GitHub Pages envoie déjà l'en-tête ; la WebView Android de Capacitor ne peut pas l'envoyer, mais
+ * elle sert une origine par plugin depuis les ressources embarquées (apps/mobile, voir docs/19).
+ */
+export const ENTETES_WEB = "/plugins/*\n  Access-Control-Allow-Origin: *\n";
+
 /** Code du service worker : cache de tous les fichiers, réponse depuis le cache d'abord. */
 export function serviceWorker(version, fichiers) {
   return `// Généré par scripts/construire-web.mjs : ne pas modifier à la main.
@@ -86,6 +109,11 @@ export function construire() {
     cpSync(dist, join(sortie, "plugins", id), { recursive: true });
     index.push({ manifest: JSON.parse(readFileSync(join(dist, "manifest.json"), "utf-8")), official: true });
   }
+  for (const fichier of listerFichiers(join(sortie, "plugins")).filter((f) => f.endsWith(".html"))) {
+    const chemin = join(sortie, "plugins", fichier);
+    writeFileSync(chemin, avecCsp(readFileSync(chemin, "utf-8")));
+  }
+  writeFileSync(join(sortie, "_headers"), ENTETES_WEB);
   if (index.length === 0) throw new Error("Aucun plugin compilé : lancez « npm run build:plugins ».");
   writeFileSync(join(sortie, "plugins", "index.json"), JSON.stringify(index));
 

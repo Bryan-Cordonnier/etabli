@@ -173,6 +173,59 @@ Après coup, une faute dans les notes se corrige dans `CHANGELOG.md` : le workfl
   `msiexec /i <msi> /qn`, désinstallation : `msiexec /x <msi> /qn`. Sous PowerShell 5, une variable
   mise à `''` est supprimée : ne pas utiliser de mot de passe vide.
 
+## Rotation des clés de signature (docs/20, section 3.5)
+
+Deux niveaux de clés, **toutes minisign** (`npx tauri signer generate`) :
+
+| Clé | Rôle | Où elle vit |
+| --- | --- | --- |
+| **Racine** | signe seulement `cles.json`, la liste des clés de publication valides | **hors ligne** (clé USB chiffrée + copie papier ailleurs), jamais sur GitHub ni dans le dépôt |
+| **Publication** | signe le catalogue et les paquets (c'est la clé des secrets GitHub d'aujourd'hui) | secrets GitHub `TAURI_SIGNING_PRIVATE_KEY` |
+
+Côté application (`crates/noyau/src/cles.rs`, `catalogue.rs` de `src-tauri`) : la clé racine publique est écrite dans `CLES_RACINES`
+(`apps/desktop/src-tauri/src/catalogue.rs`, **vide tant que la racine n'existe pas** : l'application se comporte alors comme avant, avec
+la seule clé de `tauri.conf.json`). L'application cherche `cles.json` + `cles.json.minisig` à côté du catalogue (Release « catalogue »),
+vérifie la signature de la racine, refuse une séquence plus ancienne que la dernière vue, puis ne fait confiance **qu'aux clés de cette
+liste** à la date du jour (début/fin de validité). Une clé absente de la liste est retirée, y compris la clé d'origine.
+
+Le script `scripts/cles-rotation.mjs` prépare la liste (voir son en-tête). Il ne contient aucune clé ; la signature se fait avec la clé
+racine passée par `TAURI_SIGNING_PRIVATE_KEY` (contenu) et `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, sur le PC de Bryan.
+
+### Mise en place (une fois)
+1. `node scripts/cles-rotation.mjs generer H:\outils\cles\racine` (mot de passe fort), puis sauvegardes hors ligne de la clé privée.
+2. Mettre le contenu de `racine.key.pub` dans `CLES_RACINES`, **et** générer tout de suite une **racine suivante** (`racine-suivante`) dont la
+   clé publique est aussi dans `CLES_RACINES` (la clé privée reste hors ligne) : c'est elle qui permettra de changer de racine.
+3. Créer la liste avec la clé de publication actuelle : `ajouter cles.json 2026-a <clé de publication>.pub`, puis `signer cles.json`
+   (avec la clé **racine**), et déposer `cles.json` et `cles.json.minisig` dans la Release « catalogue ».
+4. **Publier une version d'Établi** qui embarque `CLES_RACINES` : une liste n'est lue que par les versions qui contiennent la racine.
+
+### Rotation planifiée (la clé de publication vieillit)
+1. Générer la nouvelle clé (`generer`), `ajouter cles.json 2027-a nouvelle.key.pub --depuis AAAA-MM-JJ` ; garder l'ancienne (`finir cles.json 2026-a AAAA-MM-JJ`, quelques semaines plus tard).
+2. `signer cles.json` avec la racine, déposer les deux fichiers dans la Release.
+3. Remplacer le secret GitHub `TAURI_SIGNING_PRIVATE_KEY` par la nouvelle clé de publication **à la date `depuis`** ; republier le catalogue.
+4. Une fois l'ancienne clé échue, plus rien ne la reconnaît ; une dernière liste peut la retirer.
+
+### Clé de publication compromise ou perdue
+- **Compromise (volée)** : `retirer cles.json <id>` et `ajouter` une nouvelle clé, `signer`, déposer ; remplacer le secret GitHub ; republier le
+  catalogue (signé par la nouvelle) et les paquets utiles. Les clients qui voient la nouvelle liste refusent aussitôt tout ce que l'ancienne a signé. Un client
+  **hors ligne** garde ses plugins installés mais ne reçoit pas la liste : il reste exposé jusqu'à sa prochaine connexion (limite assumée).
+- **Perdue (plus de copie)** : même procédure, la racine seule suffit (la clé de publication n'est pas nécessaire pour la retirer).
+- **Racine compromise ou perdue** : la liste ne se corrige plus ; si la **racine suivante** est embarquée, signer une liste avec elle (le client accepte
+  l'une des racines embarquées). Sinon il faut une **nouvelle version d'Établi** avec une nouvelle racine, installée à la main (téléchargement du MSI) : c'est pourquoi la
+  racine suivante est embarquée dès le début.
+- **Mises à jour de l'application elle-même** : le plugin de mise à jour de Tauri ne connaît **qu'une** clé (`pubkey` de `tauri.conf.json`). Changer cette clé exige
+  une version intermédiaire signée par l'ancienne clé et contenant la nouvelle `pubkey` ; la liste de clés ne couvre que le catalogue et les paquets de plugins.
+- **Répétition à blanc** : avant d'embarquer la vraie racine, rejouer toute la procédure avec des clés jetables (les tests de
+  `crates/noyau/src/cles.rs` et `scripts/cles-rotation.test.mjs` en couvrent la logique).
+
+## Arrêter un contrat d'API (plugins ^1)
+
+Les dates d'avertissement et de refus sont dans le catalogue signé, pas dans l'application (docs/19 §4, docs/20 §3.5 bis). Pour les fixer :
+1. télécharger `catalogue.json` de la Release « catalogue » ;
+2. `node scripts/arret-contrat.mjs catalogue.json --majeure 1 --avertir AAAA-MM-JJ --refuser AAAA-MM-JJ --message "…"` (`--annuler` retire l'arrêt) ;
+3. `node scripts/catalogue-signe.mjs catalogue.json` (clé de publication), puis remettre `catalogue.json` et `catalogue.json.minisig` dans la Release.
+Le renouvellement mensuel garde les arrêts. Un client qui n'a pas revu le catalogue garde les dernières dates connues (retenues avec la séquence).
+
 ## Installer (pour les utilisateurs)
 
 - Télécharger `Etabli_<version>_x64_fr-FR.msi` sur la page des Releases et le lancer : installation

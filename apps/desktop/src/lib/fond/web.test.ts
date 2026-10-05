@@ -6,7 +6,7 @@ import type { DocumentInput, Fond } from "./types";
 
 /** Un fond neuf sur une base vide, sans reprise de l'ancien stockage ni plugins. */
 const neuf = (extra: Parameters<typeof creerFondWeb>[0] = {}): Fond =>
-  creerFondWeb({ idb: new IDBFactory(), ancien: null, plugins: async () => [], ...extra });
+  creerFondWeb({ idb: new IDBFactory(), ancien: null, plugins: async () => [], sonde: async () => false, ...extra });
 
 /** Ancien localStorage en mémoire. */
 function ancienStockage(valeurs: Record<string, string>): AncienStockage {
@@ -120,6 +120,24 @@ describe("fond web : données, réglages, plugins", () => {
   });
 });
 
+describe("fond web : isolation des mini-apps", () => {
+  it("origine opaque seulement quand la sonde confirme le CORS, décidée par pluginsList()", async () => {
+    const opaque = neuf({ sonde: async () => true });
+    expect(opaque.capacites.isolationComplete).toBe(false);
+    await opaque.pluginsList();
+    expect(opaque.capacites.isolationComplete).toBe(true);
+    const repli = neuf({ sonde: async () => false });
+    await repli.pluginsList();
+    expect(repli.capacites.isolationComplete).toBe(false);
+  });
+
+  it("une sonde qui échoue ne casse pas la liste et laisse le repli", async () => {
+    const fond = neuf({ sonde: () => Promise.reject(new Error("x")), plugins: async () => [{ manifest: { id: "a" }, official: true }] });
+    expect(await fond.pluginsList()).toHaveLength(1);
+    expect(fond.capacites.isolationComplete).toBe(false);
+  });
+});
+
 describe("fond web : reprise de l'ancien aperçu (localStorage)", () => {
   const ancien = () =>
     ancienStockage({
@@ -149,5 +167,37 @@ describe("fond web : reprise de l'ancien aperçu (localStorage)", () => {
     const fond = neuf({ ancien: ancienStockage({ "etabli.preview-documents": "{pas du json", "etabli.store": "oups" }) });
     expect(await fond.documentsList()).toEqual([]);
     expect(await fond.storeLoad()).toEqual({});
+  });
+});
+
+describe("fond web : origine par plugin (Android)", () => {
+  const natif = (etat: unknown) => async () => ({ etat: async () => etat as never });
+  const bon = { version: 1, origines: true, modele: "https://{id}.plugins.localhost", pont: "isole" };
+
+  it("donne à chaque plugin sa propre origine et l'isolation complète", async () => {
+    const fond = neuf({ natif: natif(bon), sonde: async () => false });
+    expect(fond.originePlugin?.("maths")).toBeUndefined(); // avant pluginsList
+    await fond.pluginsList();
+    expect(fond.capacites.isolationComplete).toBe(true);
+    expect(fond.originePlugin?.("maths")).toBe("https://maths.plugins.localhost");
+    expect(fond.originePlugin?.("economie-3d")).toBe("https://economie-3d.plugins.localhost");
+    expect(fond.originePlugin?.("Maths")).toBeUndefined();
+    expect(fond.originePlugin?.("a.b")).toBeUndefined();
+  });
+
+  it("ne sonde pas le CORS quand la partie native sert les origines", async () => {
+    let sondes = 0;
+    const fond = neuf({ natif: natif(bon), sonde: async () => (sondes++, true) });
+    await fond.pluginsList();
+    expect(sondes).toBe(0);
+  });
+
+  it("garde le repli prudent si la partie native est indisponible", async () => {
+    for (const natifIndispo of [natif({ ...bon, origines: false }), async () => undefined, async () => Promise.reject(new Error("x"))]) {
+      const fond = neuf({ natif: natifIndispo, sonde: async () => false });
+      await fond.pluginsList();
+      expect(fond.capacites.isolationComplete).toBe(false);
+      expect(fond.originePlugin?.("maths")).toBeUndefined();
+    }
   });
 });

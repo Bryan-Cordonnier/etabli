@@ -25,7 +25,8 @@ const PLUGINS_MAX = 100;
 /** Prépare le hors ligne des mini-apps, une fois par ouverture ; sans effet si le serveur n'a pas d'origine par plugin. */
 export function preparerPluginsHorsLigne(fond: Fond, documentHote: Document = document): void {
   const origineDe = fond.originePlugin;
-  if (!origineDe || lance || typeof navigator === "undefined" || navigator.onLine === false) return;
+  // Seul le serveur a un service worker par origine de plugin ; l'origine par plugin d'Android est servie par la partie native.
+  if (fond.id !== "serveur" || !origineDe || lance || typeof navigator === "undefined" || navigator.onLine === false) return;
   lance = true;
 
   void fond.pluginsList().then((plugins) => {
