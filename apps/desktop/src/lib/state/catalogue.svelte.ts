@@ -5,6 +5,7 @@
 // (livrée avec ses plugins), reprise des fournisseurs et machines saisis avant les plugins qui les portent.
 import { compareVersions, planInstall } from "@etabli/sdk/deps";
 import { api, type CatalogueEntry } from "$lib/api";
+import { activeSource } from "$lib/catalogue-source";
 import { PLUGINS, getPlugin, installedNodes, loadPlugins, stringMap } from "$lib/plugins/registry.svelte";
 import { wasUsedBefore } from "$lib/storage";
 import { services } from "./services.svelte";
@@ -52,7 +53,7 @@ class Catalogue {
     if (this.status === "loading") return;
     this.status = "loading";
     try {
-      this.entries = entries(await api.catalogueRead());
+      this.entries = entries(await api.catalogueRead(activeSource(settings.catalogueSource), settings.catalogueChannel));
       this.status = "ready";
       this.error = "";
     } catch (err) {
@@ -81,7 +82,7 @@ class Catalogue {
     const update = !!getPlugin(entry.id);
     this.progress[entry.id] = 0;
     try {
-      await api.pluginInstall(entry.id, entry.url);
+      await api.pluginInstall(entry.id, entry.url, activeSource(settings.catalogueSource));
       // Une installation voulue (pas la mise à jour automatique) lève la suspension qui suit un retour en arrière.
       if (!silent) settings.setPinned(entry.id, false);
       await loadPlugins();

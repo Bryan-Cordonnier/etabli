@@ -1,4 +1,5 @@
 import { revoques } from "$lib/plugins/revoques.svelte";
+import { DEFAULT_CHANNEL, OFFICIAL_SOURCE, readChannel, readSource, type CatalogueSource, type Channel } from "$lib/catalogue-source";
 import { load, save } from "$lib/storage";
 import { SYSTEM_THEME, type Theme } from "$lib/themes";
 
@@ -52,6 +53,10 @@ interface Persisted {
    * Fournisseurs et Machines (ou il n'y avait rien à reprendre).
    */
   librariesMigrated: boolean;
+  /** Source du catalogue de plugins : adresse vide = la source officielle (docs/20 §3.2). */
+  catalogueSource: CatalogueSource;
+  /** Canal du catalogue (docs/20 §3.3) ; seul « stable » est publié pour l'instant. */
+  catalogueChannel: Channel;
 }
 
 const DEFAULTS: Persisted = {
@@ -72,6 +77,8 @@ const DEFAULTS: Persisted = {
   checkUpdates: true,
   catalogueMigrated: false,
   librariesMigrated: false,
+  catalogueSource: OFFICIAL_SOURCE,
+  catalogueChannel: DEFAULT_CHANNEL,
 };
 
 class Settings {
@@ -92,6 +99,8 @@ class Settings {
   checkUpdates = $state(DEFAULTS.checkUpdates);
   catalogueMigrated = $state(DEFAULTS.catalogueMigrated);
   librariesMigrated = $state(DEFAULTS.librariesMigrated);
+  catalogueSource = $state<CatalogueSource>(OFFICIAL_SOURCE);
+  catalogueChannel = $state<Channel>(DEFAULT_CHANNEL);
 
   constructor() {
     this.reload();
@@ -117,6 +126,8 @@ class Settings {
     this.checkUpdates = saved.checkUpdates;
     this.catalogueMigrated = saved.catalogueMigrated;
     this.librariesMigrated = saved.librariesMigrated;
+    this.catalogueSource = readSource(saved.catalogueSource);
+    this.catalogueChannel = readChannel(saved.catalogueChannel);
   }
 
   #save(): void {
@@ -138,6 +149,8 @@ class Settings {
       checkUpdates: this.checkUpdates,
       catalogueMigrated: this.catalogueMigrated,
       librariesMigrated: this.librariesMigrated,
+      catalogueSource: $state.snapshot(this.catalogueSource),
+      catalogueChannel: this.catalogueChannel,
     } satisfies Persisted);
   }
 
@@ -147,6 +160,17 @@ class Settings {
     value: Settings[K],
   ): void {
     (this as Settings)[key] = value;
+    this.#save();
+  }
+
+  /** Choisit la source du catalogue (adresse vide : retour à la source officielle). */
+  setCatalogueSource(source: CatalogueSource): void {
+    this.catalogueSource = { url: source.url.trim(), key: source.key.trim() };
+    this.#save();
+  }
+
+  setCatalogueChannel(channel: Channel): void {
+    this.catalogueChannel = channel;
     this.#save();
   }
 

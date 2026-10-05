@@ -1,6 +1,7 @@
 // Types partagés par les « fonds » : la couche qui stocke les calculs, les réglages et les plugins.
 // Un fond est soit local (Rust dans l'application, ou navigateur), soit — plus tard — un serveur.
 // Voir docs/16-spec-serveur-utilisateurs-mobile.md.
+import type { CatalogueSource } from "$lib/catalogue-source";
 
 export interface DocumentMeta {
   id: string;
@@ -125,9 +126,9 @@ export interface Fond {
 
   pluginsList(): Promise<PluginInfo[]>;
   /** Catalogue des plugins officiels (lu sur GitHub par Rust). */
-  catalogueRead(): Promise<unknown>;
+  catalogueRead(source?: CatalogueSource | null, channel?: string): Promise<unknown>;
   /** Télécharge, vérifie la signature et installe (ou met à jour) un plugin ; renvoie son identifiant. */
-  pluginInstall(id: string, url: string): Promise<string>;
+  pluginInstall(id: string, url: string, source?: CatalogueSource | null): Promise<string>;
   /** Installe un fichier .etabli-plugin choisi par l'utilisateur ; null s'il annule. */
   pluginInstallFile(): Promise<string | null>;
   pluginUninstall(id: string): Promise<void>;

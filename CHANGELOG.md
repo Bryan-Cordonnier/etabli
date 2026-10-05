@@ -41,6 +41,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Ajouté (suite)
 
+- **Source du catalogue réglable** : dans Paramètres › Mises à jour, un atelier peut indiquer l'adresse de son propre registre de plugins et la clé
+  publique qui le signe (par défaut : le catalogue officiel). Un catalogue non signé ou périmé est refusé comme pour le catalogue officiel.
+  Le choix du canal « bêta » est préparé mais pas encore disponible.
+
 - **Changement de clé de signature sans nouvelle version** (préparation) : Établi sait accepter plusieurs clés de publication d'une liste signée par
   une clé racine, et refuser une clé retirée. Rien ne change tant que la clé racine n'est pas en place ; procédure dans la documentation de publication.
 

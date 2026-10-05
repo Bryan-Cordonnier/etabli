@@ -8,8 +8,9 @@ export const fondTauri: Fond = {
   capacites: { catalogue: true, miseAJour: true, fenetresNatives: true, isolationComplete: true, journal: true },
 
   pluginsList: (): Promise<PluginInfo[]> => invoke("plugins_list"),
-  catalogueRead: (): Promise<unknown> => invoke("catalogue_lire"),
-  pluginInstall: (id, url): Promise<string> => invoke("plugin_installer", { id, url }),
+  catalogueRead: (source, channel): Promise<unknown> =>
+    invoke("catalogue_lire", { source: source ?? null, canal: channel ?? "stable" }),
+  pluginInstall: (id, url, source): Promise<string> => invoke("plugin_installer", { id, url, source: source ?? null }),
   pluginInstallFile: (): Promise<string | null> => invoke("plugin_installer_fichier"),
   pluginUninstall: (id): Promise<void> => invoke("plugin_desinstaller", { id }),
   pluginRevert: (id): Promise<string> => invoke("plugin_revenir", { id }),
