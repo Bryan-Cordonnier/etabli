@@ -7,7 +7,7 @@
 //!
 //! Fonctions pures : l'heure et la dernière séquence vue sont passées en paramètres.
 
-use crate::paquet::verifier_signature;
+use crate::paquet::verifier_signature_parmi;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::cmp::Ordering;
@@ -31,6 +31,48 @@ pub struct Revocation {
     pub raison: String,
 }
 
+/// Arrêt programmé d'un contrat d'API de plugin (docs/19, section 4 ; docs/20). La date vient du catalogue **signé** : la
+/// repousser ou l'avancer ne demande pas de nouvelle version d'Établi. Sans entrée pour une majeure, rien n'est jamais refusé.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ArretContrat {
+    /// Version majeure du contrat concernée (1 pour `apiVersion` « ^1 »).
+    pub majeure: u32,
+    /// À partir de cette date (secondes depuis 1970), l'installation affiche un avertissement.
+    #[serde(default)]
+    pub avertir_des: Option<u64>,
+    /// À partir de cette date, le catalogue refuse d'installer ou de mettre à jour un plugin de ce contrat.
+    #[serde(default)]
+    pub refuser_des: Option<u64>,
+    /// Phrase pour l'utilisateur (« Les plugins ^1 ne seront plus acceptés après… ») ; texte par défaut si vide.
+    #[serde(default)]
+    pub message: String,
+}
+
+/// Ce que le moteur fait d'un plugin selon son contrat et la date.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StatutContrat {
+    Accepte,
+    /// Accepté, mais l'utilisateur est prévenu (phrase prête à afficher).
+    Avertir(String),
+    /// Refusé (phrase prête à afficher).
+    Refuse(String),
+}
+
+/// Version majeure d'un contrat d'après `apiVersion` (`^2`, `>=2.1`, `2`) ; 1 si le texte est illisible ou absent
+/// (même règle que `majeure` côté interface, `plugins/permissions.ts`).
+pub fn majeure_contrat(api_version: &str) -> u32 {
+    let chiffres: String = api_version
+        .chars()
+        .skip_while(|c| !c.is_ascii_digit())
+        .take_while(char::is_ascii_digit)
+        .collect();
+    chiffres
+        .parse::<u32>()
+        .ok()
+        .filter(|&n| n >= 1)
+        .unwrap_or(1)
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Catalogue {
     pub format: u32,
@@ -42,6 +84,9 @@ pub struct Catalogue {
     pub plugins: Vec<Value>,
     #[serde(default)]
     pub revocations: Vec<Revocation>,
+    /// Arrêts programmés de contrats d'API (absent : aucun arrêt prévu).
+    #[serde(default)]
+    pub contrats: Vec<ArretContrat>,
 }
 
 /// Vérifie la signature d'un catalogue puis son contenu : format, expiration, séquence.
@@ -55,11 +100,28 @@ pub fn verifier_catalogue(
     maintenant: u64,
     derniere_sequence: u64,
 ) -> Result<Catalogue, String> {
+    verifier_catalogue_parmi(
+        octets,
+        signature,
+        &[cle_publique],
+        maintenant,
+        derniere_sequence,
+    )
+}
+
+/// Comme [`verifier_catalogue`], avec plusieurs clés de confiance (rotation, `crate::cles`) : une seule doit avoir signé.
+pub fn verifier_catalogue_parmi<S: AsRef<str>>(
+    octets: &[u8],
+    signature: &str,
+    cles_publiques: &[S],
+    maintenant: u64,
+    derniere_sequence: u64,
+) -> Result<Catalogue, String> {
     if octets.len() > TAILLE_MAX_CATALOGUE {
         return Err("Catalogue trop volumineux.".into());
     }
     // La signature d'abord : on n'analyse rien de ce qui n'est pas authentique.
-    verifier_signature(octets, signature, cle_publique)
+    verifier_signature_parmi(octets, signature, cles_publiques)
         .map_err(|_| "Catalogue refusé : signature invalide.".to_string())?;
     let catalogue: Catalogue = serde_json::from_slice(octets)
         .map_err(|_| "Catalogue illisible (format inattendu).".to_string())?;
@@ -114,7 +176,42 @@ pub fn comparer_versions(a: &str, b: &str) -> Option<Ordering> {
     }))
 }
 
+/// Statut d'un contrat à une date, d'après les arrêts programmés.
+pub fn statut_contrat(
+    arrets: &[ArretContrat],
+    api_version: &str,
+    maintenant: u64,
+) -> StatutContrat {
+    let majeure = majeure_contrat(api_version);
+    let Some(arret) = arrets.iter().find(|a| a.majeure == majeure) else {
+        return StatutContrat::Accepte;
+    };
+    let phrase = |defaut: &str| {
+        if arret.message.trim().is_empty() {
+            defaut.to_string()
+        } else {
+            arret.message.trim().to_string()
+        }
+    };
+    if arret.refuser_des.is_some_and(|d| maintenant >= d) {
+        return StatutContrat::Refuse(phrase(&format!(
+            "Les plugins du contrat ^{majeure} ne sont plus acceptés : une version plus récente du plugin est nécessaire."
+        )));
+    }
+    if arret.avertir_des.is_some_and(|d| maintenant >= d) {
+        return StatutContrat::Avertir(phrase(&format!(
+            "Les plugins du contrat ^{majeure} cesseront d'être acceptés."
+        )));
+    }
+    StatutContrat::Accepte
+}
+
 impl Catalogue {
+    /// Statut du contrat d'un plugin (voir [`statut_contrat`]).
+    pub fn statut_contrat(&self, api_version: &str, maintenant: u64) -> StatutContrat {
+        statut_contrat(&self.contrats, api_version, maintenant)
+    }
+
     /// Raison pour laquelle cette version d'un plugin est révoquée, ou `None` si elle peut être utilisée.
     /// Une version illisible est considérée comme révoquée par une règle « avant » (par prudence).
     pub fn revocation(&self, id: &str, version: &str) -> Option<&str> {
@@ -283,6 +380,88 @@ mod tests {
         // Version illisible.
         assert!(peut_installer(&c, "maths", None, "latest", false).is_err());
         assert!(peut_installer(&c, "maths", Some("zzz"), "1.1.0", false).is_err());
+    }
+
+    fn arret(avertir: Option<u64>, refuser: Option<u64>, message: &str) -> Vec<ArretContrat> {
+        vec![ArretContrat {
+            majeure: 1,
+            avertir_des: avertir,
+            refuser_des: refuser,
+            message: message.into(),
+        }]
+    }
+
+    #[test]
+    fn majeure_du_contrat() {
+        for (texte, attendu) in [
+            ("^1", 1),
+            ("^2", 2),
+            ("^2.1", 2),
+            (">=3", 3),
+            ("2", 2),
+            ("", 1),
+            ("latest", 1),
+            ("^0", 1),
+            ("^99999999999", 1),
+        ] {
+            assert_eq!(majeure_contrat(texte), attendu, "{texte}");
+        }
+    }
+
+    #[test]
+    fn arret_du_contrat_avertissement_puis_refus() {
+        let a = arret(Some(100), Some(200), "");
+        assert_eq!(statut_contrat(&a, "^1", 99), StatutContrat::Accepte);
+        assert!(
+            matches!(statut_contrat(&a, "^1", 100), StatutContrat::Avertir(m) if m.contains("^1"))
+        );
+        assert!(matches!(
+            statut_contrat(&a, "^1", 199),
+            StatutContrat::Avertir(_)
+        ));
+        assert!(
+            matches!(statut_contrat(&a, "^1", 200), StatutContrat::Refuse(m) if m.contains("plus acceptés"))
+        );
+        // Le contrat 2 n'est jamais touché, ni un plugin sans apiVersion lisible n'échappe au contrat 1.
+        assert_eq!(statut_contrat(&a, "^2", 9_999), StatutContrat::Accepte);
+        assert!(matches!(
+            statut_contrat(&a, "", 200),
+            StatutContrat::Refuse(_)
+        ));
+    }
+
+    #[test]
+    fn arret_sans_date_ou_sans_entree_ne_refuse_jamais() {
+        assert_eq!(statut_contrat(&[], "^1", u64::MAX), StatutContrat::Accepte);
+        assert_eq!(
+            statut_contrat(&arret(None, None, ""), "^1", u64::MAX),
+            StatutContrat::Accepte
+        );
+        // Refus sans avertissement préalable : permis (c'est une décision de publication), refus seul.
+        assert!(matches!(
+            statut_contrat(&arret(None, Some(5), "Fini."), "^1", 5),
+            StatutContrat::Refuse(m) if m == "Fini."
+        ));
+    }
+
+    #[test]
+    fn le_catalogue_signe_porte_les_arrets() {
+        // Le catalogue d'essai n'en annonce aucun : champ absent = aucun arrêt.
+        assert!(catalogue().contrats.is_empty());
+        let c: Catalogue = serde_json::from_str(
+            r#"{"format":2,"sequence":1,"expire":9,"contrats":[{"majeure":1,"refuser_des":7}]}"#,
+        )
+        .unwrap();
+        assert_eq!(c.statut_contrat("^1", 6), StatutContrat::Accepte);
+        assert!(matches!(
+            c.statut_contrat("^1", 7),
+            StatutContrat::Refuse(_)
+        ));
+        // Un champ mal formé fait refuser tout le catalogue (signé, donc c'est une erreur de publication) plutôt que d'ignorer l'arrêt.
+        assert!(serde_json::from_str::<Catalogue>(
+            r#"{"format":2,"sequence":1,"expire":9,"contrats":[{"majeure":"un"}]}"#
+        )
+        .is_err());
     }
 
     #[test]

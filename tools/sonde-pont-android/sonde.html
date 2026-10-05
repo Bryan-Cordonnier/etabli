@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Sonde hostile</title>
+<script src="/ok.js"></script>
+</head>
+<body>
+<script>
+  // Faux plugin hostile : essaie d'atteindre le pont natif et l'application. Chaque essai « bien » = false.
+  const resultats = [];
+  const essai = (texte, estFaille) => {
+    let faille;
+    try { faille = estFaille(); } catch (e) { faille = false; }
+    resultats.push({ ok: !faille, texte });
+  };
+  essai("origine du cadre : " + location.origin, () => false);
+  essai("window.androidBridge absent", () => typeof window.androidBridge !== "undefined");
+  essai("window.Capacitor absent", () => typeof window.Capacitor !== "undefined");
+  essai("CapacitorHttpAndroidInterface absent", () => typeof window.CapacitorHttpAndroidInterface !== "undefined");
+  essai("CapacitorCookiesAndroidInterface absent", () => typeof window.CapacitorCookiesAndroidInterface !== "undefined");
+  essai("parent.document inaccessible", () => { void parent.document.title; return true; });
+  essai("parent.Capacitor inaccessible", () => typeof parent.Capacitor !== "undefined");
+  essai("top.androidBridge inaccessible", () => typeof top.androidBridge !== "undefined");
+  essai("localStorage de l'application illisible", () => { void parent.localStorage.length; return true; });
+  essai("document.domain ne peut pas être relâché", () => { document.domain = "localhost"; void parent.document.title; return true; });
+  essai("cookies sans effet sur l'application", () => { document.cookie = "sonde=1; domain=localhost"; return document.cookie.indexOf("sonde=1") >= 0; });
+  // Réseau : la politique de sécurité doit tout bloquer, y compris l'application elle-même.
+  const reseau = (nom, url) =>
+    fetch(url, { mode: "no-cors" }).then(
+      () => resultats.push({ ok: false, texte: nom + " : requête partie" }),
+      () => resultats.push({ ok: true, texte: nom + " bloqué" }),
+    );
+  Promise.all([
+    reseau("réseau extérieur", "https://example.com/"),
+    reseau("application (https://localhost)", "https://localhost/"),
+    reseau("autre plugin", "https://maths.plugins.localhost/manifest.json"),
+  ]).then(() => parent.postMessage({ resultats }, "*"));
+</script>
+</body>
+</html>

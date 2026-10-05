@@ -240,7 +240,10 @@ export function formatHeure(minutes: number): string {
 /** « 8:30 », « 08:30 », « 8h30 », « 8 h 30 », « 8h » → minutes depuis minuit (0..1 439) ; `null` si illisible ou hors 00:00–23:59. */
 export function parseHeure(texte: string): number | null {
   if (typeof texte !== "string") return null;
-  const m = /^\s*(\d{1,2})\s*[:hH]\s*(\d{2})?\s*$/.exec(texte);
+  // Espaces ramenés à un seul puis motif sans `\s*` voisins d'un groupe facultatif (pas de ralentissement sur un texte hostile).
+  const t = texte.trim().replace(/\s+/g, " ");
+  if (t.length > 16) return null;
+  const m = /^(\d{1,2}) ?[:hH] ?(\d{2})?$/.exec(t);
   if (!m) return null;
   const h = Number(m[1]);
   const min = m[2] === undefined ? 0 : Number(m[2]);
@@ -271,15 +274,18 @@ export function formatDuree(minutes: number): string {
 /** « 7h30 », « 7 h 30 », « 7:30 », « 7h », « 45 min », « 1h05 », « 90 » (un entier seul = minutes) → minutes ; `null` si illisible. */
 export function parseDuree(texte: string): number | null {
   if (typeof texte !== "string") return null;
-  const t = texte.trim().toLowerCase().replace(/[  ]/g, " ");
-  let m = /^(-)?(\d+)\s*(?:h|:)\s*(\d{2})?\s*(?:min)?$/.exec(t);
+  let t = texte.trim().toLowerCase().replace(/[  ]/g, " ");
+  if (t.length > 40) return null;
+  // Espaces ramenés à un seul : motifs sans `\s*` voisins (pas de ralentissement sur un texte hostile).
+  t = t.replace(/\s+/g, " ");
+  let m = /^(-)?(\d+) ?(?:h|:) ?(\d{2})? ?(?:min)?$/.exec(t);
   if (m) {
     const min = m[3] === undefined ? 0 : Number(m[3]);
     if (min > 59) return null;
     const v = Number(m[2]) * 60 + min;
     return Number.isSafeInteger(v) ? (m[1] ? -v : v) : null;
   }
-  m = /^(-)?(\d+)\s*(?:min|mn|m)?$/.exec(t);
+  m = /^(-)?(\d+) ?(?:min|mn|m)?$/.exec(t);
   if (m) {
     const v = Number(m[2]);
     return Number.isSafeInteger(v) ? (m[1] ? -v : v) : null;

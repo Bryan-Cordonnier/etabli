@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sonde du pont natif (hôte)</title>
+<style>
+  body { font: 15px/1.45 system-ui, sans-serif; margin: 16px; background: #fff; color: #111; }
+  h1 { font-size: 18px; } h2 { font-size: 15px; margin: 18px 0 6px; }
+  .ok { color: #0a6b2d; } .ko { color: #b00020; font-weight: 700; } pre { white-space: pre-wrap; margin: 0; }
+  iframe { width: 1px; height: 1px; border: 0; position: absolute; left: -10px; }
+</style>
+</head>
+<body>
+<h1>Sonde du pont natif (APK de sonde, ne pas distribuer)</h1>
+<p>Cette page tient la place de l'application. Elle charge un faux plugin hostile (<code>sonde-pont</code>) dans des cadres, comme
+le fait l'application, et affiche ce que le cadre a pu atteindre. Attendu : <b>tout en vert</b>. Un rouge = faille.</p>
+<h2>Hôte (page principale)</h2><pre id="hote">…</pre>
+<h2>Cadre à origine propre (<code>allow-scripts allow-same-origin</code>)</h2><pre id="propre">attente…</pre>
+<h2>Cadre opaque (<code>allow-scripts</code>)</h2><pre id="opaque">attente…</pre>
+<h2>Chemins refusés (doivent tous échouer à charger)</h2><pre id="chemins">attente…</pre>
+<script>
+  const ORIGINE = "https://sonde-pont.plugins.localhost";
+  const ligne = (ok, texte) => `<span class="${ok ? "ok" : "ko"}">${ok ? "OK " : "FAILLE "}</span>${texte}\n`;
+  const vers = (id, html) => (document.getElementById(id).innerHTML = html);
+
+  // 1. Le pont natif répond à la page principale, et dit que l'ancien pont est retiré.
+  (async () => {
+    let html = ligne(typeof window.Capacitor === "object", "window.Capacitor présent dans la page principale");
+    html += ligne(typeof window.androidBridge !== "undefined", "androidBridge (pont à règles d'origine) présent dans la page principale");
+    try {
+      const etat = await window.Capacitor.nativePromise("EtabliOrigines", "etat", {});
+      html += ligne(etat.origines === true && etat.pont === "isole" && etat.version === 1, "EtabliOrigines.etat() = " + JSON.stringify(etat));
+    } catch (e) {
+      html += ligne(false, "EtabliOrigines.etat() a échoué : " + e);
+    }
+    vers("hote", html);
+  })();
+
+  // 2. Deux cadres hostiles.
+  const rapports = {};
+  function cadre(id, sandbox) {
+    const f = document.createElement("iframe");
+    f.setAttribute("sandbox", sandbox);
+    f.src = ORIGINE + "/index.html";
+    document.body.appendChild(f);
+    rapports[id] = f;
+  }
+  cadre("propre", "allow-scripts allow-same-origin");
+  cadre("opaque", "allow-scripts");
+  window.addEventListener("message", (event) => {
+    for (const [id, f] of Object.entries(rapports)) {
+      if (event.source !== f.contentWindow || !event.data || !Array.isArray(event.data.resultats)) continue;
+      vers(id, event.data.resultats.map((r) => ligne(r.ok, r.texte)).join(""));
+    }
+  });
+
+  // 3. Évasions de chemin : chaque adresse doit répondre 404 (le script ne se charge pas) ; « ok.js » doit se charger.
+  const essais = [
+    ["/ok.js", true],
+    ["/%2e%2e/%2e%2e/index.html", false],
+    ["/..%2f..%2findex.html", false],
+    ["/%2e%2e/manifest.json", false],
+    ["/a%2fb.js", false],
+    ["/.cache.js", false],
+    ["//ok.js", false],
+    ["/ok.js%00.png", false],
+  ];
+  const sortie = [];
+  Promise.all(
+    essais.map(
+      ([chemin, attendu]) =>
+        new Promise((resolve) => {
+          const s = document.createElement("script");
+          s.onload = () => resolve([chemin, attendu, true]);
+          s.onerror = () => resolve([chemin, attendu, false]);
+          s.src = ORIGINE + chemin;
+          document.head.appendChild(s);
+        }),
+    ),
+  ).then((r) => vers("chemins", r.map(([c, attendu, charge]) => ligne(attendu === charge, `${c} → ${charge ? "chargé" : "refusé"}`)).join("")));
+</script>
+</body>
+</html>
