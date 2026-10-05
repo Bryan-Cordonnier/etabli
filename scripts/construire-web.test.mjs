@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { Script } from "node:vm";
-import { listerFichiers, serviceWorker } from "./construire-web.mjs";
+import { avecCsp, CSP_PLUGIN_WEB, ENTETES_WEB, listerFichiers, serviceWorker } from "./construire-web.mjs";
 
 test("listerFichiers : chemins relatifs avec des « / », sous-dossiers compris", () => {
   const dossier = mkdtempSync(join(tmpdir(), "web-"));
@@ -36,4 +36,20 @@ test("serviceWorker : plugins d'un serveur réseau d'abord, API jamais intercept
   assert.match(code, /pathname\.includes\("\/plugins\/"\)/);
   assert.match(code, /pathname\.includes\("\/api\/"\)\) return;/);
   assert.doesNotThrow(() => new Script(code));
+});
+
+test("avecCsp : la politique sans réseau est la première balise du <head>, avant tout script", () => {
+  const html = '<!doctype html><html><head>\n<meta charset="UTF-8" />\n<script type="module" src="a.js"></script></head><body></body></html>';
+  const sortie = avecCsp(html);
+  assert.ok(sortie.indexOf("Content-Security-Policy") < sortie.indexOf("<script"));
+  assert.ok(sortie.indexOf("Content-Security-Policy") < sortie.indexOf("<meta charset"));
+  assert.match(CSP_PLUGIN_WEB, /default-src 'none'/);
+  assert.match(CSP_PLUGIN_WEB, /connect-src 'none'/);
+  assert.match(CSP_PLUGIN_WEB, /form-action 'none'/);
+  assert.doesNotMatch(CSP_PLUGIN_WEB, /'unsafe-eval'|https?:/);
+  assert.throws(() => avecCsp("<body>sans head</body>"), /sans <head>/);
+});
+
+test("ENTETES_WEB : CORS ouvert sous plugins/ seulement", () => {
+  assert.match(ENTETES_WEB, /^\/plugins\/\*\n  Access-Control-Allow-Origin: \*\n$/);
 });
