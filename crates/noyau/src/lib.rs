@@ -3,6 +3,8 @@
 //! fonctions pures, testées, que chaque côté appelle avant de toucher au disque ou à la base.
 
 pub mod catalogue;
+pub mod cles;
 pub mod document;
 pub mod identifiants;
 pub mod paquet;
+pub mod source;

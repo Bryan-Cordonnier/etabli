@@ -7,7 +7,7 @@
 //!
 //! Fonctions pures : l'heure et la dernière séquence vue sont passées en paramètres.
 
-use crate::paquet::verifier_signature;
+use crate::paquet::verifier_signature_parmi;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::cmp::Ordering;
@@ -55,11 +55,28 @@ pub fn verifier_catalogue(
     maintenant: u64,
     derniere_sequence: u64,
 ) -> Result<Catalogue, String> {
+    verifier_catalogue_parmi(
+        octets,
+        signature,
+        &[cle_publique],
+        maintenant,
+        derniere_sequence,
+    )
+}
+
+/// Comme [`verifier_catalogue`], avec plusieurs clés de confiance (rotation, `crate::cles`) : une seule doit avoir signé.
+pub fn verifier_catalogue_parmi<S: AsRef<str>>(
+    octets: &[u8],
+    signature: &str,
+    cles_publiques: &[S],
+    maintenant: u64,
+    derniere_sequence: u64,
+) -> Result<Catalogue, String> {
     if octets.len() > TAILLE_MAX_CATALOGUE {
         return Err("Catalogue trop volumineux.".into());
     }
     // La signature d'abord : on n'analyse rien de ce qui n'est pas authentique.
-    verifier_signature(octets, signature, cle_publique)
+    verifier_signature_parmi(octets, signature, cles_publiques)
         .map_err(|_| "Catalogue refusé : signature invalide.".to_string())?;
     let catalogue: Catalogue = serde_json::from_slice(octets)
         .map_err(|_| "Catalogue illisible (format inattendu).".to_string())?;

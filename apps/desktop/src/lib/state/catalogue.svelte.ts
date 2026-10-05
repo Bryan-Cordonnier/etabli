@@ -5,6 +5,7 @@
 // (livrée avec ses plugins), reprise des fournisseurs et machines saisis avant les plugins qui les portent.
 import { compareVersions, planInstall } from "@etabli/sdk/deps";
 import { api, type CatalogueEntry } from "$lib/api";
+import { activeSource } from "$lib/catalogue-source";
 import { PLUGINS, getPlugin, installedNodes, loadPlugins, stringMap } from "$lib/plugins/registry.svelte";
 import { wasUsedBefore } from "$lib/storage";
 import { services } from "./services.svelte";
@@ -52,7 +53,7 @@ class Catalogue {
     if (this.status === "loading") return;
     this.status = "loading";
     try {
-      this.entries = entries(await api.catalogueRead());
+      this.entries = entries(await api.catalogueRead(activeSource(settings.catalogueSource), settings.catalogueChannel));
       this.status = "ready";
       this.error = "";
     } catch (err) {
@@ -81,7 +82,9 @@ class Catalogue {
     const update = !!getPlugin(entry.id);
     this.progress[entry.id] = 0;
     try {
-      await api.pluginInstall(entry.id, entry.url);
+      await api.pluginInstall(entry.id, entry.url, activeSource(settings.catalogueSource));
+      // Une installation voulue (pas la mise à jour automatique) lève la suspension qui suit un retour en arrière.
+      if (!silent) settings.setPinned(entry.id, false);
       await loadPlugins();
       await services.load();
       if (!silent) ui.notify(`${entry.name} ${update ? "mis à jour" : "installé"} · signature vérifiée`);
@@ -103,6 +106,22 @@ class Catalogue {
       return true;
     } catch (err) {
       ui.notify(message(err));
+      return false;
+    }
+  }
+
+  /** Revient à la version précédente d'un plugin ; les mises à jour automatiques sont alors suspendues pour lui. */
+  async revert(id: string): Promise<boolean> {
+    const name = getPlugin(id)?.name ?? id;
+    try {
+      const version = await api.pluginRevert(id);
+      settings.setPinned(id, true);
+      await loadPlugins();
+      await services.load();
+      ui.notify(`${name} : retour à la version ${version} · les mises à jour automatiques sont suspendues pour ce plugin`);
+      return true;
+    } catch (err) {
+      ui.notify(`${name} : ${message(err)}`);
       return false;
     }
   }
@@ -178,7 +197,7 @@ class Catalogue {
 
     const updated: string[] = [];
     for (const entry of this.entries) {
-      if (!this.hasUpdate(entry)) continue;
+      if (!this.hasUpdate(entry) || settings.isPinned(entry.id)) continue;
       const plan = planInstall(entry, this.entries, installedNodes());
       if (plan.missing.length) continue;
       let ok = true;

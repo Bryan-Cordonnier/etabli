@@ -3,6 +3,8 @@
   // de réglages (fournisseurs, machines…) : elles s'affichent dans le menu, sous « Plugins ».
   import type { PluginToHost } from "@etabli/sdk/protocol";
   import { api, system, type AppInfo } from "$lib/api";
+  import { CHANNELS, OFFICIAL_CATALOGUE_URL, sourceError, type Channel } from "$lib/catalogue-source";
+  import { catalogue } from "$lib/state/catalogue.svelte";
   import { lireConnexion } from "$lib/connexion";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
@@ -77,6 +79,31 @@
       lead: "Version d'Établi, recherche de mises à jour et liens du projet.",
     },
   };
+
+  // Source du catalogue (docs/20 §3.2) : brouillon local, enregistré seulement s'il est correct.
+  let sourceUrl = $state(settings.catalogueSource.url);
+  let sourceKey = $state(settings.catalogueSource.key);
+  const sourceProblem = $derived(sourceError({ url: sourceUrl, key: sourceKey }));
+  const sourceDirty = $derived(
+    sourceUrl.trim() !== settings.catalogueSource.url || sourceKey.trim() !== settings.catalogueSource.key,
+  );
+
+  function saveSource(): void {
+    if (sourceProblem) return;
+    settings.setCatalogueSource({ url: sourceUrl, key: sourceKey });
+    void catalogue.load();
+  }
+
+  function officialSource(): void {
+    sourceUrl = "";
+    sourceKey = "";
+    saveSource();
+  }
+
+  function changeChannel(channel: Channel): void {
+    settings.setCatalogueChannel(channel);
+    void catalogue.load();
+  }
 
   /** Administrateur du serveur auquel on est connecté (le seul à voir la page Administration). */
   const connexion = lireConnexion();
@@ -580,6 +607,38 @@
           </div>
         </div>
         <div class="box">
+          <h3>Source du catalogue</h3>
+          <p class="hint">
+            Par défaut, le catalogue officiel ({OFFICIAL_CATALOGUE_URL}). Un atelier peut indiquer son propre registre et la clé
+            publique qui le signe : les mêmes contrôles s'appliquent (signature, date de fin, numéro de séquence), et un catalogue
+            non signé est refusé.
+          </p>
+          <p class="hint">Adresse du catalogue (https, fichier .json)</p>
+          <input class="text-input wide" type="url" bind:value={sourceUrl} placeholder="Vide : catalogue officiel" spellcheck="false" aria-label="Adresse du catalogue" />
+          <p class="hint">Clé publique de la source (contenu du fichier .pub)</p>
+          <textarea class="text-input wide key" rows="3" bind:value={sourceKey} spellcheck="false" disabled={!sourceUrl.trim()} aria-label="Clé publique de la source"></textarea>
+          {#if sourceProblem}<p class="hint">{sourceProblem}</p>{/if}
+          <div class="buttons">
+            <button class="btn" disabled={!sourceDirty || sourceProblem !== null} onclick={saveSource}>Enregistrer la source</button>
+            <button class="btn" disabled={!settings.catalogueSource.url && !sourceUrl} onclick={officialSource}>Revenir au catalogue officiel</button>
+          </div>
+          <div class="setting">
+            {@render row("Canal", "Le canal bêta n'est pas encore publié : le catalogue refusera ce choix tant qu'il n'existe pas.")}
+            <div class="segmented" role="radiogroup" aria-label="Canal du catalogue">
+              {#each CHANNELS as channel (channel)}
+                <button
+                  class:on={settings.catalogueChannel === channel}
+                  role="radio"
+                  aria-checked={settings.catalogueChannel === channel}
+                  onclick={() => changeChannel(channel)}
+                >
+                  {channel === "stable" ? "Stable" : "Bêta (pas encore publié)"}
+                </button>
+              {/each}
+            </div>
+          </div>
+        </div>
+        <div class="box">
           <h3>Projet</h3>
           <div class="buttons">
             <button class="btn" onclick={() => void system.openUrl(REPO)}>Code source sur GitHub</button>
@@ -723,6 +782,16 @@
   .text-input:focus {
     border-color: var(--accent);
     background: var(--surface);
+  }
+  .text-input.wide {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .text-input.key {
+    height: auto;
+    padding: 8px 10px;
+    font: 12px var(--mono, monospace);
+    resize: vertical;
   }
   .box-head {
     display: flex;

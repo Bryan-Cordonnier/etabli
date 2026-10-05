@@ -19,6 +19,17 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - **Contrôle de ce que font les mini-apps** : chaque message d'une mini-app est vérifié (forme, taille) avant d'être pris en
   compte ; une mini-app ne peut plus enregistrer qu'un fichier de données (CSV, DXF, JSON, texte, SVG…), jamais un programme.
   Les documents et réglages ont une taille maximale.
+- **Essai d'isolation automatique** (pour les mainteneurs) : à chaque demande de fusion qui touche au serveur, à l'interface, aux
+  plugins ou aux scripts, GitHub installe deux plugins signés sur un vrai serveur et vérifie dans un navigateur qu'une mini-app ne
+  peut ni lire l'application ni les données d'un autre plugin, ni sortir par le réseau, et que les messages hostiles sont refusés.
+  Le même essai se lance chez soi avec `node scripts/essais-isolation.mjs`.
+
+### Ajouté (suite)
+
+- **Retour à la version précédente d'un plugin** : après une mise à jour, la page Plugins propose « Revenir à la … » (un second clic
+  revient en avant). Les mises à jour automatiques sont alors suspendues pour ce plugin jusqu'à un clic sur « Mettre à jour ».
+- **Plugin révoqué** : si l'éditeur retire une version (faille, données corrompues), Établi la désactive et affiche la raison dans
+  la page Plugins, avec la mise à jour à faire. Une version révoquée ne peut plus être installée.
 
 ### Corrigé
 
@@ -32,6 +43,20 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   enfermée dans un cadre isolé, et ses pages portent une politique de sécurité sans accès au réseau. Sur Android (version
   locale), voir la correction précédente.
 
+### Ajouté (suite)
+
+- **Source du catalogue réglable** : dans Paramètres › Mises à jour, un atelier peut indiquer l'adresse de son propre registre de plugins et la clé
+  publique qui le signe (par défaut : le catalogue officiel). Un catalogue non signé ou périmé est refusé comme pour le catalogue officiel.
+  Le choix du canal « bêta » est préparé mais pas encore disponible.
+
+- **Changement de clé de signature sans nouvelle version** (préparation) : Établi sait accepter plusieurs clés de publication d'une liste signée par
+  une clé racine, et refuser une clé retirée. Rien ne change tant que la clé racine n'est pas en place ; procédure dans la documentation de publication.
+
+- **Retour à la version précédente d'un plugin** : après une mise à jour, la page Plugins propose « Revenir à la … » (un second clic
+  revient en avant). Les mises à jour automatiques sont alors suspendues pour ce plugin jusqu'à un clic sur « Mettre à jour ».
+- **Plugin révoqué** : si l'éditeur retire une version (faille, données corrompues), Établi la désactive et affiche la raison dans
+  la page Plugins, avec la mise à jour à faire. Une version révoquée ne peut plus être installée.
+
 ### Modifié
 
 - **Catalogue de plugins plus sûr** : l'application sait lire un catalogue signé (signature, date de fin, numéro de séquence qui ne
@@ -42,7 +67,11 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   (`https://{id}.plugins.maison.fr`) : chaque plugin a son propre nom d'hôte et ne peut ni lire l'application ni un autre
   plugin. Les mini-apps restent utilisables hors ligne. Voir [docs/17](docs/17-serveur.md).
 
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
+
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
   « Catalogue (renouvellement) » ; les entrées portent l'empreinte `sha256` du paquet. Voir [docs/14](docs/14-publier-une-version.md).
@@ -50,6 +79,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   utilisée par l'application. Spécification : [docs/20](docs/20-spec-mises-a-jour-registre.md).
 - `npm run valider` : permissions connues, doublons, fonction du SDK utilisée sans permission ; avertissement pour un plugin « ^1 ».
   `npm run nouveau-plugin` crée un plugin « ^2 ». Modèle de menace : [docs/19](docs/19-modele-de-menace-plugins.md).
+- Spécification (brouillon) des plugins « agenda », « finances », « paie » et « budget » (services entre plugins) et inventaire de l'ancien projet de gestion de budget : [docs/24](docs/24-spec-plugins-budget.md). Aucun code.
 
 ## [0.5.0] — 2026-10-03
 
@@ -69,7 +99,11 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   à l'heure**, application fermée. L'APK de test se fabrique par le workflow GitHub « Android (APK de test) ». iPhone : la version web
   s'ajoute à l'écran d'accueil (plein écran, icône).
 
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
+
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - Espace de travail Cargo à la racine : `crates/noyau` (règles communes) et `crates/serveur`. L'application Tauri
   (`apps/desktop/src-tauri`) reste à part, avec son propre `Cargo.lock`. La CI vérifie aussi le serveur (format, analyse, 51 tests).
@@ -101,7 +135,11 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   exécution de code dans les sources, contenu du plugin compilé. La publication d'un plugin lance cette validation.
 - Chaque plugin a un `CHANGELOG.md` ; sa section pour la version publiée devient les nouveautés du catalogue.
 
+### Sécurité
+- Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
+
 ### Pour les contributeurs
+- Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
 - **Couche de stockage unifiée** (`lib/fond/`) : les calculs, réglages et plugins passent par une interface unique (« fond »), avec
   une version « fichiers » (application, inchangée pour l'utilisateur : ses calculs sont conservés) et une version « navigateur »
