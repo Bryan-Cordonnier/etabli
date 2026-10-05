@@ -95,6 +95,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   manquante, fournisseur absent, contrat incompatible, file d'attente, plafond, délai, isolation du cadre de service). Il a trouvé un défaut,
   corrigé : les arguments d'un appel (objets) n'arrivaient jamais au fournisseur (proxys Svelte non copiables par `postMessage`) ; seuls
   les appels sans argument passaient. Non essayé dans WebView2 ni sur Android.
+- **Outils communs `money` et `civil` dans `@etabli/ui`** (docs/24, M10) : argent en centimes entiers (arrondi explicite, pourcentages en points de base, répartition sans
+  perte, formatage et lecture à la française) ; jours civils, jours ouvrés et fériés français, ajout de mois avec fin de mois, conversion UTC ↔ Europe/Paris
+  aux changements d'heure, durées en minutes. Utilisables aussi depuis une page sans interface (`@etabli/ui/money`, `@etabli/ui/civil`). Voir `packages/ui/README.md`.
 - Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
   « Catalogue (renouvellement) » ; les entrées portent l'empreinte `sha256` du paquet. Voir [docs/14](docs/14-publier-une-version.md).
 - `etabli-noyau` : vérification d'un catalogue signé (séquence, expiration, révocation, refus des retours en arrière), pas encore

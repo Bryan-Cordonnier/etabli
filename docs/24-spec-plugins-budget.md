@@ -222,7 +222,7 @@ Fondations d'abord (`finances` et `agenda`). Chaque étape est utilisable seule 
 | # | Étape | Sortie | Test |
 | --- | --- | --- | --- |
 | 0 | Validation de cette spec ; réponses aux questions ; montants de solde et de cotisations confirmés (agence, lundi 5 octobre) | spec figée | — |
-| 1 | **Outils communs** (moteur) : `money.ts`, `civil.ts` dans `@etabli/ui` + vecteurs d'or | modules testés | Vitest |
+| 1 | **Outils communs** (moteur) : `money.ts`, `civil.ts` dans `@etabli/ui` + vecteurs d'or — **fait** (4 octobre 2026) | modules testés | Vitest |
 | 2 | **Appels entre plugins** (moteur) : « appeler la fonction X du plugin Y », permission montrée à l'installation (annexe A.3, M1 à M5, M13) | mécanisme prouvé par un plugin d'essai | Vitest + essai |
 | 3 | Plugin **`finances`** (comptes, catégories, registre, soldes, courbes ; fonctions offertes `finances@1`) | plugin publiable | vecteurs d'or, tests de contrat |
 | 4 | Plugin **`agenda`** sans rappels (calendrier, événements, chronologie, repos, `.ics` ; fonctions `agenda@1`) | plugin | idem |
@@ -480,7 +480,8 @@ dépendances facultatives et leur installation, `send` (geste utilisateur), `sav
 | M5 identité et espace propre | **identité faite** (`caller` écrit par le moteur) ; le **contrôle de propriété** (`source.plugin = appelant`) reste à écrire dans chaque fournisseur |
 | M12 schémas vérifiés par le moteur | pas fait (le fournisseur valide) |
 | M13 `mockService` | pas fait ; les fixtures `fixtures/appels-entre-plugins/` et `appels.integration.test.ts` montrent un appel complet |
-| M6 à M11, M14 à M16 | pas faits |
+| M10 argent et dates partagés | **fait** (`money.ts`, `civil.ts` dans `@etabli/ui`, 179 tests ; voir `packages/ui/README.md`). Choix : arrondi `demi-haut` par défaut (le `arr()` du Rust), `parseEuros` refuse plus de deux décimales, fériés français fournis en option (jamais supposés) |
+| M6 à M9, M11, M14 à M16 | pas faits |
 
 **Choix de conception retenus** (à valider) : (1) `ecriture` ne donne pas `lecture` ; (2) `services` (plage de contrat) est
 obligatoire pour appeler, la dépendance sur le plugin aussi ; (3) le délai (5 s par défaut, 10 s au plus) couvre l'attente en file ;

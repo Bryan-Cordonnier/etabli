@@ -28,7 +28,7 @@ plugins/<id>/             @etabli/plugin-<id> : un plugin = un paquet Vite multi
 ```
 
 Les paquets internes sont consommés **en source** (pas de build intermédiaire) : `@etabli/sdk`
-exporte `src/index.ts`, `src/protocol.ts` et `src/base.css` ; `@etabli/ui` exporte `src/index.ts`.
+exporte `src/index.ts`, `src/protocol.ts` et `src/base.css` ; `@etabli/ui` exporte `src/index.ts`, `src/money.ts` et `src/civil.ts`.
 Après avoir ajouté un workspace (nouveau plugin), lancer `npm install` pour le lier.
 
 ## Scripts (à la racine)

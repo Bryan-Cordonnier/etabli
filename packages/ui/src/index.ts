@@ -13,3 +13,7 @@ export { box, esc, facts, fmt, hatch, mark, section, signature, table, tint, typ
 export { toDxf, type DxfDrawing, type DxfLayer } from "./dxf";
 export { gabaritPages, type GabaritLabel, type GabaritShape } from "./gabarit";
 export { COLORS, colorOf } from "./colors";
+// Argent (centimes entiers) et dates civiles : `money.formatEuros(...)`, `civil.ajouterMois(...)`. Pour une page sans interface (un
+// fournisseur de service) : `import { formatEuros } from "@etabli/ui/money"` évite de charger les composants Svelte.
+export * as money from "./money";
+export * as civil from "./civil";
