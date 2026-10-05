@@ -194,5 +194,5 @@ connu, les champs bien formés, les tailles bornées (4 Mo de données par messa
 20 000 px), et — pour un plugin `"apiVersion": "^2"` — la **permission** correspondante déclarée dans le manifeste
 (`fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages`, ou `appelle:<service>:<accès>` pour un appel de service). Un message refusé est
 ignoré (une ligne dans la console) ; seul un `serviceCall` refusé reçoit une réponse d'erreur, pour que l'appelant n'attende pas en vain.
-`saveFile` n'accepte que des formats de données (`csv tsv dxf json txt svg md xml`) et un nom sans chemin. Détail, menaces et
+`saveFile` n'accepte que des formats de données (`csv tsv dxf json txt svg md xml ics`) et un nom sans chemin. Détail, menaces et
 limites : [19](19-modele-de-menace-plugins.md).

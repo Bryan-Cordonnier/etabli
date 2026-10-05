@@ -213,6 +213,24 @@ Limites : 500 événements par appel, 2 000 par plugin, 5 000 occurrences par le
 Choix de conception (à valider) : types `travail`, `retux`, `rdv`, `autre` ; seuls `travail` et `retux` comptent pour le repos légal ; icône `clock` (le moteur n'a pas d'icône calendrier).
 **Pas vérifié à l'écran** : l'écran Calendrier n'a été ni ouvert ni vu (types, tests et construction seulement).
 
+## Budget (`plugins/budget`)
+
+Le **prévu** ; dépend de Finances (obligatoire). Spécification : [docs/24](24-spec-plugins-budget.md). Budget ne calcule jamais le solde : il le **demande** à Finances (`services.call`).
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/types.ts` | `Prevision` (statut `attendue`, `realisee`, `abandonnee`), `Virement`, `Abonnement`, `Enveloppe`, `Plan` ; sources `@utilisateur` et `@budget` |
+| `src/plan.ts` | lecture du plan (**vide si rien n'est enregistré, erreur `illisible` si les données sont abîmées**) et `synchroniser` : crée les échéances manquantes des virements et abonnements (de J−31 à J+180), sans jamais recréer une échéance existante, quel que soit son statut |
+| `src/operations.ts` | ajouter, abandonner, réaliser ; virements, abonnements, plafonds, seuil ; `remplacer`, `supprimer`, `realiser` pour le service (idempotent par `cle`, espace propre) |
+| `src/calculs.ts` | échéances (semaine, mois depuis l'origine, an), **courbe** (solde d'aujourd'hui + attendues, plancher, jours sous le seuil, en retard), **budget du mois** par catégorie |
+| `src/finances.ts` | ce que Budget lit dans Finances (`comptes.liste`, `categories.liste`, `soldes.aLaDate`, `totaux.parCategorie`) et écrit (`ecritures.ajouter`, clé `budget-<id>`) ; fonctions pures, appelant injecté |
+| `src/service.ts`, `service/main.ts` | service `budget@1` : `previsions.liste` (lecture), `previsions.remplacer`, `previsions.supprimer`, `previsions.realiser` (écriture) |
+| `src/session.svelte.ts`, `apps/courbe/`, `apps/previsions/` | état partagé et deux écrans : « Courbe du mois » et « Prévisions » |
+
+Une prévision attendue d'**aujourd'hui** compte dans la courbe ; une attendue d'hier ou plus ancienne est « en retard », ne compte pas et n'est **jamais** réalisée automatiquement. On ne confirme qu'à partir du jour prévu (Finances refuse le futur).
+Écart avec docs/24 : `previsions.realiser` accepte un `jour` facultatif (pour une paie parmi plusieurs) ; les prévisions peuvent n'avoir pas de compte (`null`, à choisir avant de confirmer).
+**Pas fait** : agenda (rappel de virement), simulateur de déménagement, paliers et runway, trois scénarios.
+**Pas vérifié à l'écran** : les deux écrans n'ont été ni ouverts ni vus (types, tests, construction), ni l'appel réel de Finances depuis un cadre.
 ## Paie (`plugins/paie`)
 
 Programmer sa paie de **particulier** : missions d'intérim, réserve, CDI et CDD. Spécification : [docs/24](24-spec-plugins-budget.md). Ne fournit aucun service (personne n'en a besoin) ; Budget, Finances et l'Agenda sont des dépendances **facultatives**.
