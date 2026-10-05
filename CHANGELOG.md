@@ -33,6 +33,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Corrigé
 
+- **Réglages de plugin abîmés ou illisibles** : si le fichier de réglages d'un plugin ne peut pas être lu (disque, JSON abîmé), Établi
+  vous prévient et n'enregistre plus rien pour ce plugin, au lieu de repartir de zéro et d'écraser vos données. Le fichier n'est jamais
+  modifié. Un fichier simplement absent reste normal.
 - **Android : chaque mini-app dans son propre espace** : dans l'application Android, une mini-app est maintenant servie sur sa propre
   adresse interne (`https://<plugin>.plugins.localhost`), comme sur PC et avec un serveur : elle ne voit ni vos calculs, ni
   les données des autres mini-apps, et n'a aucun accès au réseau. Le pont vers les fonctions du téléphone (alarmes, notifications)
@@ -90,6 +93,17 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   `npm run valider` contrôle les nouveaux champs. Le versionnage d'un appel porte sur la **version du contrat** (`provides`), non
   sur celle du plugin. Deux plugins de test dans `fixtures/appels-entre-plugins/` (non distribués) et un test d'appel complet.
   Voir [docs/06](docs/06-protocole-sdk.md) et [docs/19](docs/19-modele-de-menace-plugins.md).
+- **Essai des appels entre plugins dans un vrai navigateur** : `node scripts/essai-appels.mjs` monte l'interface web et les plugins de test dans
+  Chromium (Playwright, non ajouté aux dépendances : voir l'en-tête du script) et joue 45 essais (succès, argument invalide, permission
+  manquante, fournisseur absent, contrat incompatible, file d'attente, plafond, délai, isolation du cadre de service). Il a trouvé un défaut,
+  corrigé : les arguments d'un appel (objets) n'arrivaient jamais au fournisseur (proxys Svelte non copiables par `postMessage`) ; seuls
+  les appels sans argument passaient. Non essayé dans WebView2 ni sur Android.
+- **Outils communs `money` et `civil` dans `@etabli/ui`** (docs/24, M10) : argent en centimes entiers (arrondi explicite, pourcentages en points de base, répartition sans
+  perte, formatage et lecture à la française) ; jours civils, jours ouvrés et fériés français, ajout de mois avec fin de mois, conversion UTC ↔ Europe/Paris
+  aux changements d'heure, durées en minutes. Utilisables aussi depuis une page sans interface (`@etabli/ui/money`, `@etabli/ui/civil`). Voir `packages/ui/README.md`.
+- **Plugin Finances (version préliminaire, hors catalogue)** : tableau de bord de l'argent réel (soldes, courbe, dépenses du mois, dernières écritures, saisie rapide),
+  registre qui ne s'efface jamais (une erreur s'annule par une écriture inverse) et service `finances` que d'autres plugins pourront appeler. Montants en centimes, limite de
+  3,5 Mo gérée par un message clair. Nouvelle icône « wallet » et graphiques `LineChart` / `DonutChart` dans `@etabli/ui`. Voir `plugins/finances/CHANGELOG.md`.
 - Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
   « Catalogue (renouvellement) » ; les entrées portent l'empreinte `sha256` du paquet. Voir [docs/14](docs/14-publier-une-version.md).
 - `etabli-noyau` : vérification d'un catalogue signé (séquence, expiration, révocation, refus des retours en arrière), pas encore

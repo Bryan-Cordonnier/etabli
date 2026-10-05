@@ -1,7 +1,7 @@
 {
   "name": "@etabli/ui",
   "version": "0.1.0",
-  "description": "Kit d'interface des mini-apps Établi : champs numériques, résultats copiables, cartes, sélecteurs.",
+  "description": "Kit d'interface des mini-apps Établi : champs numériques, résultats copiables, cartes, sélecteurs, et outils sans interface (argent en centimes, dates civiles).",
   "type": "module",
   "svelte": "./src/index.ts",
   "exports": {
@@ -9,6 +9,14 @@
       "types": "./src/index.ts",
       "svelte": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./money": {
+      "types": "./src/money.ts",
+      "default": "./src/money.ts"
+    },
+    "./civil": {
+      "types": "./src/civil.ts",
+      "default": "./src/civil.ts"
     }
   },
   "scripts": {
@@ -27,7 +35,7 @@
     "svelte": "^5.57.1",
     "svelte-check": "^4.7.6",
     "typescript": "^7.0.2",
-    "vite": "^8.3.1",
-    "vitest": "^5.0.2"
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
   }
 }

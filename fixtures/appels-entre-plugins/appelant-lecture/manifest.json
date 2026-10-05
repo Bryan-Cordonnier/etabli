@@ -1,0 +1,30 @@
+{
+  "id": "appelant-lecture",
+  "name": "Appelant en lecture seule",
+  "version": "1.0.0",
+  "apiVersion": "^2",
+  "author": "Établi (essai, non distribué)",
+  "description": "Fixture de test : n'a que la permission de lecture sur le registre (l'écriture doit être refusée).",
+  "color": "#6b7280",
+  "icon": "puzzle",
+  "permissions": [
+    "appelle:registre:lecture"
+  ],
+  "optionalDependencies": {
+    "fournisseur-essai": "^3"
+  },
+  "services": {
+    "registre": "^1"
+  },
+  "miniApps": [
+    {
+      "id": "essai",
+      "name": "Essai d'appels (lecture)",
+      "description": "Page d'essai sans interface",
+      "icon": "puzzle",
+      "entry": "essai/index.html",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    }
+  ]
+}

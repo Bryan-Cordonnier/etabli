@@ -1,0 +1,61 @@
+{
+  "id": "finances",
+  "name": "Finances",
+  "version": "0.1.0",
+  "apiVersion": "^2",
+  "author": "Bryan Cordonnier",
+  "description": "Votre argent réel : comptes, écritures qui ne se suppriment pas (une erreur s'annule), soldes à une date, courbe et dépenses du mois.",
+  "color": "#0f766e",
+  "icon": "wallet",
+  "permissions": [],
+  "provides": {
+    "finances": "1"
+  },
+  "serviceEntry": "service/index.html",
+  "functions": {
+    "finances": {
+      "comptes.liste": {
+        "acces": "lecture"
+      },
+      "categories.liste": {
+        "acces": "lecture"
+      },
+      "ecritures.liste": {
+        "acces": "lecture"
+      },
+      "soldes.aLaDate": {
+        "acces": "lecture"
+      },
+      "serie.parJour": {
+        "acces": "lecture"
+      },
+      "totaux.parCategorie": {
+        "acces": "lecture"
+      },
+      "comptes.creer": {
+        "acces": "ecriture"
+      },
+      "categories.creer": {
+        "acces": "ecriture"
+      },
+      "ecritures.ajouter": {
+        "acces": "ecriture"
+      },
+      "ecritures.annuler": {
+        "acces": "ecriture"
+      }
+    }
+  },
+  "miniApps": [
+    {
+      "id": "tableau",
+      "name": "Tableau de bord",
+      "description": "Solde, dernières écritures, courbe du solde, dépenses du mois",
+      "icon": "wallet",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/tableau/index.html",
+      "accepts": []
+    }
+  ]
+}

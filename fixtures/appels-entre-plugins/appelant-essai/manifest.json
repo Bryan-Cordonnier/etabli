@@ -7,8 +7,25 @@
   "description": "Fixture de test des appels entre plugins : appelle les fonctions du fournisseur d'essai.",
   "color": "#6b7280",
   "icon": "puzzle",
-  "permissions": ["appelle:registre:ecriture", "appelle:registre:lecture"],
-  "optionalDependencies": { "fournisseur-essai": "^3" },
-  "services": { "registre": "^1" },
-  "miniApps": []
+  "permissions": [
+    "appelle:registre:ecriture",
+    "appelle:registre:lecture"
+  ],
+  "optionalDependencies": {
+    "fournisseur-essai": "^3"
+  },
+  "services": {
+    "registre": "^1"
+  },
+  "miniApps": [
+    {
+      "id": "essai",
+      "name": "Essai d'appels",
+      "description": "Page d'essai sans interface",
+      "icon": "puzzle",
+      "entry": "essai/index.html",
+      "dataVersion": 1,
+      "plannedFor": "v1"
+    }
+  ]
 }

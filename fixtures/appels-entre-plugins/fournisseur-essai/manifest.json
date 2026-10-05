@@ -8,13 +8,30 @@
   "color": "#6b7280",
   "icon": "puzzle",
   "permissions": [],
-  "provides": { "registre": "1" },
+  "provides": {
+    "registre": "1"
+  },
   "serviceEntry": "service/index.html",
   "functions": {
     "registre": {
-      "ecritures.ajouter": { "acces": "ecriture" },
-      "soldes.total": { "acces": "lecture" },
-      "echo.appelant": { "acces": "lecture" }
+      "ecritures.ajouter": {
+        "acces": "ecriture"
+      },
+      "soldes.total": {
+        "acces": "lecture"
+      },
+      "echo.appelant": {
+        "acces": "lecture"
+      },
+      "sonde.isolation": {
+        "acces": "lecture"
+      },
+      "attendre.ms": {
+        "acces": "lecture"
+      },
+      "ne.repond.jamais": {
+        "acces": "lecture"
+      }
     }
   },
   "miniApps": []

@@ -107,6 +107,10 @@ directement (seul `Pythagore` le fait encore, par ancienneté).
 | `esc`, `fmt`, `tint`, `mark`, `box`, `section`, `facts`, `table`, `signature`, `hatch`, `type Column` | écrire les pages HTML d'une fiche d'atelier |
 | `toDxf(drawing)` | texte DXF R12 d'un dessin en mm (polylignes, lignes, textes, calques `CONTOUR`, `PLI`, `TRACE`, `TEXTE`) |
 | `gabaritPages(shapes, labels, title)` | pages A4 d'un gabarit à l'échelle 1, à ajouter aux `pages` d'une fiche |
+| `money` (`import { money } from "@etabli/ui"` ou `@etabli/ui/money`) | argent en **centimes entiers** : somme, pourcentage en points de base avec règle d'arrondi explicite, répartition sans perte, `formatEuros`, `parseEuros` |
+| `civil` (`@etabli/ui` ou `@etabli/ui/civil`) | jours civils `AAAA-MM-JJ`, ajout de mois avec fin de mois, jours ouvrés et fériés français, instant UTC ↔ Europe/Paris (changements d'heure), durées en minutes |
+
+Détail de `money` et `civil` : [packages/ui/README.md](../packages/ui/README.md).
 
 **Composants**
 
@@ -118,6 +122,8 @@ directement (seul `Pythagore` le fait encore, par ancienneté).
 | `Segmented` | `options: {value,label}[]`, `bind:value`, `label`, `onchange` |
 | `SelectField` | liste de choix dessinée par Établi (lisible en thème sombre, clavier complet, s'ouvre vers le haut si besoin) : `label`, `options`, `bind:value`, `compact`, `onchange` |
 | `Check` | case à cocher : `label`, `bind:checked`, `hint` |
+| `LineChart` | courbe SVG : `points: {label, value}[]`, `format`, `title` ; survol et flèches du clavier, tableau des valeurs pour les lecteurs d'écran |
+| `DonutChart` | anneau + légende : `parts: {label, value}[]` (8 au plus, le reste en « Autres »), `format`, `title`, `centre` |
 
 **Outils** : `evaluate(texte)` (calcul saisi, NaN si invalide, fonctions trigonométriques en degrés),
 `format(n, décimales)` (nombre à la française), `isExpression`, `parsePasted` (lignes collées depuis
