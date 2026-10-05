@@ -1,3 +1,4 @@
+import { majRevoques } from "./revoques.svelte";
 import { api, type PluginSource } from "$lib/api";
 import { ICONS, type IconName } from "$lib/icons";
 import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
@@ -23,8 +24,15 @@ export interface MiniAppRef {
 export async function loadPlugins(): Promise<void> {
   const raw = await api.pluginsList().catch(() => []);
   const plugins = raw
-    .map(({ manifest, official, source }) => normalize(manifest, official, source ?? (official ? "integre" : "utilisateur")))
+    .map(({ manifest, official, source, revoque, precedente }) => {
+      const plugin = normalize(manifest, official, source ?? (official ? "integre" : "utilisateur"));
+      if (!plugin) return null;
+      if (typeof revoque === "string") plugin.revoked = revoque;
+      if (typeof precedente === "string") plugin.previousVersion = precedente;
+      return plugin;
+    })
     .filter((p) => p !== null);
+  majRevoques(plugins.flatMap((p) => (p.revoked ? [{ id: p.id, raison: p.revoked }] : [])));
   plugins.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "fr"));
   PLUGINS.splice(0, PLUGINS.length, ...plugins);
 }

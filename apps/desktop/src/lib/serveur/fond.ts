@@ -86,6 +86,7 @@ export function creerFondServeur(client: ClientApi, urlPlugins?: string): Fond {
     pluginInstall: gereParLAdmin("L'installation de plugins"),
     pluginInstallFile: gereParLAdmin("L'installation de plugins"),
     pluginUninstall: gereParLAdmin("La désinstallation de plugins"),
+    pluginRevert: gereParLAdmin("Le retour à une version précédente"),
     onPluginsChanged: () => Promise.resolve(() => {}),
     onInstallProgress: () => Promise.resolve(() => {}),
 

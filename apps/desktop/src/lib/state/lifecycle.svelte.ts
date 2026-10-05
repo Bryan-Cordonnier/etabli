@@ -25,7 +25,7 @@ export type Dialog =
       /** Case « Installer aussi les extensions facultatives », cochée par défaut. */
       withOptional: boolean;
       /** Ce que le plugin demande à pouvoir faire ; `nouvelles` : permissions que la version installée n'avait pas. */
-      permissions: { demandees: string[]; nouvelles: string[]; ancienContrat: boolean };
+      permissions: { demandees: string[]; nouvelles: string[]; ancienContrat: boolean; arret: string };
     }
   | {
       kind: "remove";
@@ -49,6 +49,12 @@ class Lifecycle {
 
   /** Installe ou met à jour un plugin du catalogue : direct s'il n'a rien de particulier, sinon après confirmation. */
   askInstall(entry: CatalogueEntry): void {
+    // Contrat arrêté (docs/19 §4) : refusé net, avec la phrase du catalogue ; le moteur le refuserait aussi.
+    const contrat = catalogue.contractStatus(entry);
+    if (contrat.statut === "refuse") {
+      ui.notify(`${entry.name} : ${contrat.phrase}`);
+      return;
+    }
     const plan = planInstall(entry, catalogue.entries, installedNodes());
     const required = plan.order.filter((e) => e.id !== entry.id);
     const installe = getPlugin(entry.id);
@@ -58,9 +64,10 @@ class Lifecycle {
       demandees,
       nouvelles: installe ? demandees.filter((p) => !deja.has(p)) : demandees,
       ancienContrat: !estStrict(entry.apiVersion),
+      arret: contrat.statut === "avertir" ? contrat.phrase : "",
     };
     // Une confirmation est demandée dès que le plugin réclame une permission qu'il n'avait pas (ou n'a jamais eue).
-    const aConfirmer = permissions.nouvelles.length > 0 || (!installe && permissions.ancienContrat);
+    const aConfirmer = permissions.nouvelles.length > 0 || (!installe && permissions.ancienContrat) || !!permissions.arret;
     if (!required.length && !plan.optional.length && !plan.missing.length && !aConfirmer) {
       void catalogue.install(entry);
       return;

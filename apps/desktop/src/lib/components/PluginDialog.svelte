@@ -63,6 +63,9 @@
         {:else if !dialog.permissions.ancienContrat}
           <p class="muted">Ce plugin ne demande aucune autorisation : il calcule et affiche, rien d'autre.</p>
         {/if}
+        {#if dialog.permissions.arret}
+          <p class="problem">{dialog.permissions.arret}</p>
+        {/if}
         {#if dialog.permissions.ancienContrat}
           <p class="problem">Ce plugin suit un ancien contrat : le moteur ne contrôle pas ce qu'il demande de faire. Installez-le seulement si vous lui faites confiance.</p>
         {/if}
