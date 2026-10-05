@@ -20,6 +20,13 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
   compte ; une mini-app ne peut plus enregistrer qu'un fichier de données (CSV, DXF, JSON, texte, SVG…), jamais un programme.
   Les documents et réglages ont une taille maximale.
 
+### Ajouté (suite)
+
+- **Retour à la version précédente d'un plugin** : après une mise à jour, la page Plugins propose « Revenir à la … » (un second clic
+  revient en avant). Les mises à jour automatiques sont alors suspendues pour ce plugin jusqu'à un clic sur « Mettre à jour ».
+- **Plugin révoqué** : si l'éditeur retire une version (faille, données corrompues), Établi la désactive et affiche la raison dans
+  la page Plugins, avec la mise à jour à faire. Une version révoquée ne peut plus être installée.
+
 ### Modifié
 
 - **Catalogue de plugins plus sûr** : l'application sait lire un catalogue signé (signature, date de fin, numéro de séquence qui ne

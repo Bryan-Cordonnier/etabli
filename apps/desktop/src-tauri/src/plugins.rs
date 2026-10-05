@@ -49,6 +49,12 @@ pub struct PluginInfo {
     manifest: Value,
     official: bool,
     source: Source,
+    /// Raison pour laquelle la version installée est révoquée (docs/20) ; absent si elle ne l'est pas.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    revoque: Option<String>,
+    /// Version précédente gardée pour un retour en arrière (plugins du catalogue seulement).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    precedente: Option<String>,
 }
 
 /// Identifiant de plugin ou de mini-app : minuscules, chiffres et tirets.
@@ -116,13 +122,26 @@ pub fn read_manifest(root: &Path) -> Result<(String, Value), String> {
 
 #[tauri::command]
 pub fn plugins_list(state: tauri::State<'_, crate::AppState>) -> Vec<PluginInfo> {
+    let etat = crate::catalogue::lire_etat(&state.paths.config);
     state
         .plugins()
         .iter()
-        .map(|p| PluginInfo {
-            manifest: p.manifest.clone(),
-            official: p.source != Source::Utilisateur,
-            source: p.source,
+        .map(|p| {
+            let du_catalogue = p.source == Source::Catalogue;
+            let version = p.manifest.get("version").and_then(Value::as_str);
+            PluginInfo {
+                manifest: p.manifest.clone(),
+                official: p.source != Source::Utilisateur,
+                source: p.source,
+                revoque: du_catalogue
+                    .then(|| {
+                        version.and_then(|v| crate::catalogue::raison_revocation(&etat, &p.id, v))
+                    })
+                    .flatten(),
+                precedente: du_catalogue
+                    .then(|| crate::catalogue::version_precedente(&state.paths.catalogue, &p.id))
+                    .flatten(),
+            }
         })
         .collect()
 }

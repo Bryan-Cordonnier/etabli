@@ -119,6 +119,7 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
     pluginInstall: indisponible("L'installation de plugins"),
     pluginInstallFile: indisponible("L'installation de plugins"),
     pluginUninstall: indisponible("La désinstallation de plugins"),
+    pluginRevert: indisponible("Le retour à une version précédente"),
     onPluginsChanged: () => Promise.resolve(() => {}),
     onInstallProgress: () => Promise.resolve(() => {}),
 

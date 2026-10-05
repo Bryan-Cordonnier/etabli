@@ -106,4 +106,8 @@ export interface PluginManifest {
   /** Livré avec l'application, installé depuis le catalogue (désinstallable), ou déposé à la main. */
   source: "integre" | "catalogue" | "utilisateur";
   miniApps: MiniAppManifest[];
+  /** Raison de la révocation de la version installée (docs/20) ; le plugin est alors désactivé. */
+  revoked?: string;
+  /** Version précédente gardée pour un retour en arrière. */
+  previousVersion?: string;
 }
