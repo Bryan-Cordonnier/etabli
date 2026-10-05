@@ -98,6 +98,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - **Outils communs `money` et `civil` dans `@etabli/ui`** (docs/24, M10) : argent en centimes entiers (arrondi explicite, pourcentages en points de base, répartition sans
   perte, formatage et lecture à la française) ; jours civils, jours ouvrés et fériés français, ajout de mois avec fin de mois, conversion UTC ↔ Europe/Paris
   aux changements d'heure, durées en minutes. Utilisables aussi depuis une page sans interface (`@etabli/ui/money`, `@etabli/ui/civil`). Voir `packages/ui/README.md`.
+- **Plugin Finances (version préliminaire, hors catalogue)** : tableau de bord de l'argent réel (soldes, courbe, dépenses du mois, dernières écritures, saisie rapide),
+  registre qui ne s'efface jamais (une erreur s'annule par une écriture inverse) et service `finances` que d'autres plugins pourront appeler. Montants en centimes, limite de
+  3,5 Mo gérée par un message clair. Nouvelle icône « wallet » et graphiques `LineChart` / `DonutChart` dans `@etabli/ui`. Voir `plugins/finances/CHANGELOG.md`.
 - Le catalogue des plugins est signé à chaque modification (`scripts/catalogue-signe.mjs`) et renouvelé chaque mois par le workflow
   « Catalogue (renouvellement) » ; les entrées portent l'empreinte `sha256` du paquet. Voir [docs/14](docs/14-publier-une-version.md).
 - `etabli-noyau` : vérification d'un catalogue signé (séquence, expiration, révocation, refus des retours en arrière), pas encore

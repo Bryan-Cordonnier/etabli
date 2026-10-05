@@ -34,7 +34,11 @@ const PLUGINS = {
   "fournisseur-essai": "service/index.html",
   "appelant-essai": "essai/index.html",
   "appelant-lecture": "essai/index.html",
+  "appelant-finances": "essai/index.html",
 };
+
+/** Vrais plugins du dépôt joués en plus des fixtures (leur dossier dist/, voir « npm run build:plugins »). */
+const PLUGINS_REELS = ["finances"];
 
 // ——— Compte rendu ———
 
@@ -114,6 +118,13 @@ async function construireFixtures() {
     writeFileSync(join(sortie, "manifest.json"), json(manifeste));
     index.push({ manifest: manifeste, official: true });
     console.log(`  ${id} : ${listerFichiers(sortie).length} fichiers`);
+  }
+  for (const id of PLUGINS_REELS) {
+    const dist = join(racine, "plugins", id, "dist");
+    if (!existsSync(join(dist, "manifest.json"))) throw new Error(`plugins/${id}/dist est absent : lancez « npm run build:plugins ».`);
+    cpSync(dist, join(tmp, "plugins", id), { recursive: true });
+    index.push({ manifest: JSON.parse(readFileSync(join(dist, "manifest.json"), "utf-8")), official: true });
+    console.log(`  ${id} (plugin du dépôt) : ${listerFichiers(join(dist)).length} fichiers`);
   }
   writeFileSync(join(tmp, "plugins", "index.json"), json(index));
   return index;
@@ -365,6 +376,58 @@ async function jouer(playwright, origineA, indexComplet) {
   // Un plugin ne peut pas lire les données d'un autre : stockage séparé (le mode d'essai garde « allow-same-origin »).
   essai("aucune erreur JavaScript non attendue dans l'interface", !journal.some((l) => l.startsWith("erreur page")), journal.filter((l) => l.startsWith("erreur page")).join(" | "));
   await contexte.close();
+
+  // ——— Le vrai plugin Finances ———
+  etape("Plugin Finances : service finances@1 et tableau de bord");
+  const f = await nouvellePage(indexComplet);
+  try {
+    const c = await ouvrirAppelant(f.page, "Appelant de Finances", "appelant-finances");
+    const fin = (fn, args = null, t = 8000) => appeler(c, "finances", fn, args, t);
+    const maintenant = Date.now();
+    const vide = await fin("comptes.liste");
+    essai("registre neuf : aucun compte, sans erreur", vide.ok && vide.valeur.length === 0, json(vide));
+    const compte = await fin("comptes.creer", { nom: "Compte courant", type: "courant", soldeInitialCents: 125000, ouvertLe: "2026-01-01", cle: "essai-compte" });
+    essai("création d'un compte", compte.ok && compte.valeur.id === "c1" && compte.valeur.rejoue === false, json(compte));
+    const rejeu = await fin("comptes.creer", { nom: "Compte courant", type: "courant", soldeInitialCents: 125000, ouvertLe: "2026-01-01", cle: "essai-compte" });
+    essai("rejeu de la même clé : même compte, aucun doublon", rejeu.ok && rejeu.valeur.id === "c1" && rejeu.valeur.rejoue === true, json(rejeu));
+    const cat = await fin("categories.creer", { nom: "Courses", sens: "sortie", cle: "essai-cat" });
+    essai("création d'une catégorie", cat.ok && cat.valeur.id === "k2", json(cat));
+    const e1 = await fin("ecritures.ajouter", { compteId: "c1", montantCents: -4520, quand: maintenant, libelle: "Supermarché", categorieId: "k2", cle: "essai-e1" });
+    const e2 = await fin("ecritures.ajouter", { compteId: "c1", montantCents: -1999, quand: maintenant - 1000, libelle: "Erreur de saisie", categorieId: "k2", cle: "essai-e2" });
+    essai("écritures ajoutées", e1.ok && e2.ok, json([e1, e2]));
+    const jourJ = new Date(maintenant).toISOString().slice(0, 10);
+    const solde = await fin("soldes.aLaDate", { jour: jourJ });
+    essai("solde = 1 250,00 − 45,20 − 19,99 = 1 184,81 €", solde.ok && solde.valeur.c1 === 118481, json(solde));
+    const annul = await fin("ecritures.annuler", { id: "e4", motif: "double saisie", cle: "essai-an" });
+    const solde2 = await fin("soldes.aLaDate", { jour: jourJ });
+    essai("annulation par écriture inverse : le solde remonte de 19,99 €", annul.ok && solde2.ok && solde2.valeur.c1 === 120480, json({ annul, solde2 }));
+    const total = await fin("totaux.parCategorie", { du: "2026-01-01", au: jourJ, sens: "sortie" });
+    essai("total des dépenses par catégorie sans l'écriture annulée", total.ok && total.valeur.length === 1 && total.valeur[0].cents === -4520, json(total));
+    const mauvais = await fin("ecritures.ajouter", { compteId: "c1", montantCents: 12.5, quand: maintenant, libelle: "x", cle: "essai-mauvais" });
+    essai("montant non entier : argument_invalide", !mauvais.ok && mauvais.code === "argument_invalide", json(mauvais));
+    const usurpe = await fin("ecritures.ajouter", { compteId: "c1", montantCents: -1, quand: maintenant, libelle: "x", cle: "essai-us", source: "banque" });
+    essai("source imposée par le moteur : un champ « source » est refusé", !usurpe.ok && usurpe.code === "argument_invalide", json(usurpe));
+    const liste = await fin("ecritures.liste", {});
+    essai("liste des écritures (trois, dont l'annulation), sans clé interne", liste.ok && liste.valeur.ecritures.length === 3 && !json(liste).includes('"cle"'), json(liste).slice(0, 200));
+
+    // Le tableau de bord, ouvert comme le ferait l'utilisateur.
+    await f.page.getByRole("button", { name: /^Finances/ }).first().click();
+    await f.page.getByRole("button", { name: "Nouveau", exact: true }).click();
+    const tableau = await attendreCadre(f.page, "finances");
+    await tableau.waitForFunction(() => document.body.innerText.includes("Solde total"), null, { timeout: 15_000 });
+    const texte = await tableau.evaluate(() => document.body.innerText.replace(/[\u00a0\u202f]/g, " "));
+    essai("tableau de bord : solde total affiché", texte.includes("1 204,80 €"), texte.slice(0, 300));
+    essai("tableau de bord : compte, dernières écritures et annulation visibles", texte.includes("Compte courant") && texte.includes("Supermarché") && texte.includes("annulée"), texte.slice(0, 300));
+    essai("tableau de bord : dépenses du mois par catégorie", texte.includes("Courses") && texte.includes("45,20 €"), texte.slice(0, 600));
+    if (process.env.ESSAI_CAPTURE) {
+      await f.page.setViewportSize({ width: 1280, height: 1500 });
+      await f.page.waitForTimeout(800);
+      await f.page.screenshot({ path: process.env.ESSAI_CAPTURE });
+    }
+  } catch (e) {
+    essai("plugin Finances", false, `${e.message}\n${f.journal.slice(-10).join("\n")}`);
+  }
+  await f.contexte.close();
 
   // ——— Fournisseur absent ———
   etape("Fournisseur absent");

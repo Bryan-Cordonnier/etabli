@@ -2,7 +2,9 @@
 export { default as Card } from "./Card.svelte";
 export { default as Check } from "./Check.svelte";
 export { default as Field } from "./Field.svelte";
+export { default as DonutChart } from "./DonutChart.svelte";
 export { default as Icon } from "./Icon.svelte";
+export { default as LineChart } from "./LineChart.svelte";
 export { default as Result } from "./Result.svelte";
 export { default as Segmented } from "./Segmented.svelte";
 export { default as SelectField } from "./SelectField.svelte";
@@ -13,6 +15,7 @@ export { box, esc, facts, fmt, hatch, mark, section, signature, table, tint, typ
 export { toDxf, type DxfDrawing, type DxfLayer } from "./dxf";
 export { gabaritPages, type GabaritLabel, type GabaritShape } from "./gabarit";
 export { COLORS, colorOf } from "./colors";
+export { cheminAire, cheminLigne, echelle, graduations, plusProche, regrouper, secteurs } from "./charts";
 // Argent (centimes entiers) et dates civiles : `money.formatEuros(...)`, `civil.ajouterMois(...)`. Pour une page sans interface (un
 // fournisseur de service) : `import { formatEuros } from "@etabli/ui/money"` évite de charger les composants Svelte.
 export * as money from "./money";
