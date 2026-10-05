@@ -212,3 +212,22 @@ Le temps : événements, calendrier, heures à rebours, repos légal. Spécifica
 Limites : 500 événements par appel, 2 000 par plugin, 5 000 occurrences par lecture, fenêtre de 5 ans, carnet de 3,5 Mo. Un événement dont la fin est avant ou égale au début passe minuit ; début = fin est refusé.
 Choix de conception (à valider) : types `travail`, `retux`, `rdv`, `autre` ; seuls `travail` et `retux` comptent pour le repos légal ; icône `clock` (le moteur n'a pas d'icône calendrier).
 **Pas vérifié à l'écran** : l'écran Calendrier n'a été ni ouvert ni vu (types, tests et construction seulement).
+
+## Paie (`plugins/paie`)
+
+Programmer sa paie de **particulier** : missions d'intérim, réserve, CDI et CDD. Spécification : [docs/24](24-spec-plugins-budget.md). Ne fournit aucun service (personne n'en a besoin) ; Budget, Finances et l'Agenda sont des dépendances **facultatives**.
+**Les montants sont des estimations** : aucun taux n'est en dur, tout est un réglage (`Reglages`), et les valeurs par défaut (cotisations 22 %, indemnité hors base 38 €…) sont des hypothèses à confirmer sur un bulletin.
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/types.ts` | `Mission`, `PeriodeReserve`, `Contrat`, `Reglages`, `Bulletin`, `Donnees` (dont `transmis`, le suivi de ce qui est parti) |
+| `src/donnees.ts` | lecture stricte (**vides si rien n'est enregistré, erreur `illisible` si abîmées**), saisies validées, opérations |
+| `src/calculs.ts` | **intérim** (semaines lundi → dimanche, heures supplémentaires à deux majorations, brut de base → IFM → congés payés → net), **réserve**, **CDI/CDD** (prorata en jours ouvrés, fin de contrat), date de paie |
+| `src/projection.ts` | ce que Paie transmet : une prévision de net par mission, période ou paie de contrat (Budget) ; un événement par jour de mission (Agenda) ; empreinte du contenu |
+| `src/transmission.ts` | `transmettre` (renvoie ce qui a changé, retire ce qui n'existe plus, tolère l'absence d'un plugin) et `saisirNetRecu` (Finances → Budget → bulletin) ; appelant injecté, testé sans moteur |
+| `src/session.svelte.ts`, `apps/paie/` | état et écran à quatre rubriques : Intérim, Réserve, Contrats, Taux |
+
+Vecteur d'or (`paie.rs`) : 5 jours de 7 h à 13 € → brut 455 €, IFM 45,50 €, congés 50,05 €, net **429,43 €**.
+Écarts avec docs/24 : les heures supplémentaires ont **deux majorations légales** (+25 % jusqu'à 8 h par semaine, +50 % au-delà) au lieu d'un `taux_sup` par mission ; IFM, congés et net se calculent sur le total de la mission, pas semaine par semaine ; une saisie de net reçu retire l'attendu de Budget pour cette mission.
+**Pas fait** : comparaison de deux missions, compteur annuel de la réserve et conflit mission/réserve, événements de réserve dans l'Agenda (horaires inconnus), rappel du jour de paie (étape 5), modification d'une mission existante (supprimer puis recréer).
+**Pas vérifié à l'écran** : l'écran n'a été ni ouvert ni vu (types, tests et construction), ni les appels réels vers Budget, Finances et l'Agenda depuis un cadre du moteur.
