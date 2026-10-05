@@ -127,6 +127,8 @@ export function connect<T>(): Promise<Etabli<T>> {
   connection ??= new Promise((resolve) => {
     const onMessage = (event: MessageEvent) => {
       const port = event.ports[0];
+      // Seul le moteur (la fenêtre parente) peut établir la liaison : une mini-app voisine ne s'interpose pas.
+      if (event.source !== window.parent) return;
       if (event.data?.type !== CONNECT || !port) return;
       window.removeEventListener("message", onMessage);
       start(port, resolve);

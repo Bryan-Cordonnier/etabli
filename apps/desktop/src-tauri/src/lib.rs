@@ -205,6 +205,7 @@ pub fn run() {
             catalogue::plugin_installer,
             catalogue::plugin_installer_fichier,
             catalogue::plugin_desinstaller,
+            catalogue::plugin_revenir,
             documents::documents_list,
             documents::document_read,
             documents::document_save,
