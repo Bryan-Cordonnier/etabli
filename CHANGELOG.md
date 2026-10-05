@@ -13,6 +13,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Ajouté
 
+- **Export de calendriers (.ics)** : une mini-app peut maintenant enregistrer un fichier `.ics` (calendrier lisible par un téléphone),
+  en plus des CSV, DXF, JSON, texte, SVG, Markdown et XML.
 - **Permissions des plugins** : un plugin déclare ce qu'il a besoin de faire (enregistrer des fichiers, imprimer, copier, envoyer
   à une autre mini-app, ouvrir des réglages). Le catalogue vous les montre avant l'installation, et à chaque mise à jour qui en
   demande de nouvelles. Les sept plugins officiels passent au nouveau contrat.

@@ -1,0 +1,35 @@
+{
+  "id": "agenda",
+  "name": "Agenda",
+  "version": "0.1.0",
+  "apiVersion": "^2",
+  "author": "Bryan Cordonnier",
+  "description": "Votre temps : calendrier, événements qui se répètent, heures de départ, réveil et coucher calculées à rebours, alertes de repos légal, export .ics.",
+  "color": "#7c3aed",
+  "icon": "clock",
+  "permissions": ["fichiers"],
+  "provides": {
+    "agenda": "1"
+  },
+  "serviceEntry": "service/index.html",
+  "functions": {
+    "agenda": {
+      "evenements.liste": { "acces": "lecture" },
+      "plages.occupees": { "acces": "lecture" },
+      "evenements.remplacer": { "acces": "ecriture" },
+      "evenements.supprimer": { "acces": "ecriture" }
+    }
+  },
+  "miniApps": [
+    {
+      "id": "calendrier",
+      "name": "Calendrier",
+      "description": "Mois, événements, chronologie du jour à rebours, alertes de repos, export .ics",
+      "icon": "clock",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/calendrier/index.html",
+      "accepts": []
+    }
+  ]
+}

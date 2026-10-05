@@ -194,3 +194,21 @@ pour « rien d'enregistré » ; une écriture arrivant ensuite créerait un regi
 
 **Tests** : `src/service.test.ts` (36 : manifeste = service, validation, idempotence, annulation, soldes, série, totaux, pages de 1 000, limite de taille, registre
 illisible), `src/tableau.test.ts` (10 : vue, formulaire) ; essai réel dans Chromium : `node scripts/essai-appels.mjs` (appel complet du vrai plugin et ouverture du tableau).
+
+## Agenda (`plugins/agenda`)
+
+Le temps : événements, calendrier, heures à rebours, repos légal. Spécification : [docs/24](24-spec-plugins-budget.md). **Pas de rappels** (étape 5 de docs/24).
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/types.ts` | `Evenement`, `Occurrence`, `Carnet`, `Reglages`, codes d'erreur ; `UTILISATEUR` |
+| `src/carnet.ts` | lecture du carnet (réglages du plugin) : **vide si rien n'est enregistré, erreur `illisible` si les données sont abîmées** (jamais un carnet vide à la place) ; validation d'un événement |
+| `src/operations.ts` | ajouter, modifier, supprimer, `remplacer` (idempotent par `cle`), `supprimerGroupe` ; espace propre : un plugin ne touche qu'à ce qu'il a posé |
+| `src/calculs.ts` | répétitions (jour, semaine, mois depuis l'origine : le 31 revient en mars), plages absolues, **repos légal** (11 h, 10 h, 48 h) et **chronologie à rebours** : ports de `horaires.rs` et `repos.rs` de gestion-budget-perso, avec leurs tests comme vecteurs d'or |
+| `src/ics.ts` | export iCalendar, heures flottantes, lignes pliées à 75 octets |
+| `src/service.ts`, `service/main.ts` | service `agenda@1` : `evenements.liste`, `plages.occupees` (lecture), `evenements.remplacer`, `evenements.supprimer` (écriture) |
+| `src/vue.ts`, `apps/calendrier/` | grille du mois, jour, écran Calendrier |
+
+Limites : 500 événements par appel, 2 000 par plugin, 5 000 occurrences par lecture, fenêtre de 5 ans, carnet de 3,5 Mo. Un événement dont la fin est avant ou égale au début passe minuit ; début = fin est refusé.
+Choix de conception (à valider) : types `travail`, `retux`, `rdv`, `autre` ; seuls `travail` et `retux` comptent pour le repos légal ; icône `clock` (le moteur n'a pas d'icône calendrier).
+**Pas vérifié à l'écran** : l'écran Calendrier n'a été ni ouvert ni vu (types, tests et construction seulement).
