@@ -1,14 +1,13 @@
 {
-  "id": "appelant-essai",
-  "name": "Appelant d'essai",
+  "id": "appelant-lecture",
+  "name": "Appelant en lecture seule",
   "version": "1.0.0",
   "apiVersion": "^2",
   "author": "Établi (essai, non distribué)",
-  "description": "Fixture de test des appels entre plugins : appelle les fonctions du fournisseur d'essai.",
+  "description": "Fixture de test : n'a que la permission de lecture sur le registre (l'écriture doit être refusée).",
   "color": "#6b7280",
   "icon": "puzzle",
   "permissions": [
-    "appelle:registre:ecriture",
     "appelle:registre:lecture"
   ],
   "optionalDependencies": {
@@ -20,7 +19,7 @@
   "miniApps": [
     {
       "id": "essai",
-      "name": "Essai d'appels",
+      "name": "Essai d'appels (lecture)",
       "description": "Page d'essai sans interface",
       "icon": "puzzle",
       "entry": "essai/index.html",
