@@ -46,7 +46,11 @@ impl Base {
         connexion.pragma_update(None, "foreign_keys", "ON")?;
         connexion.pragma_update(None, "journal_mode", "WAL")?;
         connexion.pragma_update(None, "busy_timeout", 5000)?;
-        let actuelle: usize = connexion.query_row("PRAGMA user_version", [], |l| l.get(0))?;
+        // rusqlite 0.40 n'accepte plus `usize` (taille variable) : la version de schéma se lit et s'écrit en `i64`.
+        let actuelle = usize::try_from(
+            connexion.query_row("PRAGMA user_version", [], |l| l.get::<_, i64>(0))?,
+        )
+        .map_err(|_| Erreur::Interne("version de schéma négative".into()))?;
         if actuelle > MIGRATIONS.len() {
             return Err(Erreur::Interne(format!(
                 "la base est plus récente que ce serveur (version {actuelle})"
@@ -55,7 +59,7 @@ impl Base {
         for (indice, sql) in MIGRATIONS.iter().enumerate().skip(actuelle) {
             let tx = connexion.transaction()?;
             tx.execute_batch(sql)?;
-            tx.pragma_update(None, "user_version", indice + 1)?;
+            tx.pragma_update(None, "user_version", (indice + 1) as i64)?;
             tx.commit()?;
         }
         Ok(())
@@ -102,10 +106,10 @@ mod tests {
     fn schema_cree_et_version_notee() {
         let base = Base::en_memoire().unwrap();
         let connexion = base.connexion.lock().unwrap();
-        let version: usize = connexion
+        let version: i64 = connexion
             .query_row("PRAGMA user_version", [], |l| l.get(0))
             .unwrap();
-        assert_eq!(version, MIGRATIONS.len());
+        assert_eq!(version, MIGRATIONS.len() as i64);
         for table in [
             "utilisateurs",
             "sessions",

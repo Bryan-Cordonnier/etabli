@@ -14,12 +14,12 @@ path = "src/main.rs"
 etabli-noyau = { path = "../noyau" }
 axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time"] }
-tower-http = { version = "0.6", features = ["cors", "limit", "set-header", "fs"] }
-rusqlite = { version = "0.37", features = ["bundled"] }
+tower-http = { version = "0.7", features = ["cors", "limit", "set-header", "fs"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
 argon2 = { version = "0.5", features = ["std"] }
-password-hash = { version = "0.5", features = ["getrandom"] }
-rand = "0.9"
-sha2 = "0.10"
+password-hash = { version = "0.6", features = ["getrandom"] }
+rand = "0.10"
+sha2 = "0.11"
 base64 = "0.23"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
