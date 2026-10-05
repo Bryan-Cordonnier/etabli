@@ -33,6 +33,9 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Corrigé
 
+- **Réglages de plugin abîmés ou illisibles** : si le fichier de réglages d'un plugin ne peut pas être lu (disque, JSON abîmé), Établi
+  vous prévient et n'enregistre plus rien pour ce plugin, au lieu de repartir de zéro et d'écraser vos données. Le fichier n'est jamais
+  modifié. Un fichier simplement absent reste normal.
 - **Android : chaque mini-app dans son propre espace** : dans l'application Android, une mini-app est maintenant servie sur sa propre
   adresse interne (`https://<plugin>.plugins.localhost`), comme sur PC et avec un serveur : elle ne voit ni vos calculs, ni
   les données des autres mini-apps, et n'a aucun accès au réseau. Le pont vers les fonctions du téléphone (alarmes, notifications)
