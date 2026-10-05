@@ -3,30 +3,19 @@
 Journal du projet pour Bryan : où on en est, ce qui est décidé, ce qui reste à faire **à la main** (ce qu'un agent ne peut pas faire à ta place), et ce qui reste à faire côté code.
 À tenir à jour à chaque étape. Les cases cochées sont faites.
 
-Dernière mise à jour : 4 octobre 2026.
+Dernière mise à jour : 5 octobre 2026.
 
 **Règle de lecture :** « poussé » = sur GitHub dans une branche, sans demande de fusion (PR). « Non vérifié » = jamais essayé sur un vrai appareil ou dans l'application ; seule la CI ou tes essais le diront.
 
 ## 1. À faire à la main (Bryan)
 
-### 1.1 Fusions sur GitHub — ordre conseillé
-Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : demande-moi de les ouvrir (je résous les conflits sur `CHANGELOG.md` et les docs).
+### 1.1 Fusions sur GitHub
+**Fait le 5 octobre 2026** : toutes les demandes de fusion ont été fusionnées en squash (PR #23 à #38, #40, plus les mises à jour Dependabot #39, #8, #19, #22, #9). Aucune PR n'est ouverte. La CI Windows est verte sur `main`.
 
-| Ordre | Branche | État |
-| --- | --- | --- |
-| 1 | `retour-arriere-revocation` — [PR #23](https://github.com/Bryan-Cordonnier/etabli/pull/23) | CI verte |
-| 2 | `docs-etat` — [PR #24](https://github.com/Bryan-Cordonnier/etabli/pull/24) | CI verte |
-| 3 | `essai-isolation` — [PR #25](https://github.com/Bryan-Cordonnier/etabli/pull/25) | CI verte (62 essais) |
-| 4 | `cahier` (ce document) | sans PR |
-| 5 | `sdk-source` | sans PR, testé en local |
-| 6 | `cle-rotation` → `sources-configurables` → `contrat-v1-arret` (empilées, dans cet ordre) | sans PR ; **Rust Tauri jamais compilé** |
-| 7 | `web-origines-locales` puis `android-origine-par-plugin` | sans PR ; Java jamais compilé |
-| 8 | `spec-distributions`, `spec-budget` | documentation seulement |
-| 9 | `appels-entre-plugins` → `essai-appels-navigateur` → `outils-money-civil` → `plugin-finances` (empilées, dépendent de `spec-budget`) | sans PR ; voir §6 |
-
-- [ ] Fusionner dans cet ordre (squash uniquement, c'est le réglage du dépôt).
-- [ ] Fermer la PR #13 (Capacitor 8, Dependabot) : à reprendre avec le mobile.
-- [ ] Regarder l'alerte Dependabot « modérée » sur `main` (Sécurité › Dependabot, alerte n° 1).
+- [x] Fusionner les branches dans l'ordre (squash uniquement, c'est le réglage du dépôt).
+- [x] Fermer la PR #13 (Capacitor 8, Dependabot) : à reprendre avec le mobile.
+- [x] Regarder l'alerte Dependabot n° 1 (`glib` 0.18, gravité moyenne) : elle vient de `tauri` → `tray-icon` → `gtk` (icône de zone de notification sous **Linux**), sans effet sur Windows ; la correction demande une version de Tauri qui quitte GTK 3. **Décision : ne rien faire** pour l'instant.
+- Note : les fusions ont utilisé `--admin` (le ruleset de `main` exige une relecture qu'un auteur seul ne peut pas donner). Penser à ramener le nombre de relectures à 0 dans le ruleset si tu travailles seul, pour ne plus contourner la règle.
 
 ### 1.2 Publication
 - [ ] Lancer **une fois** le workflow « Catalogue (renouvellement) » (Actions) pour passer au catalogue signé.
@@ -97,7 +86,7 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 - Essai d'alarme Android natif (vérifié par Bryan).
 - Spécifications : docs 18 à 21.
 
-### 4.2 Poussé, en attente de fusion (voir §1.1)
+### 4.2 Fusionné le 5 octobre 2026 (voir §1.1)
 - **PR #23** retour arrière d'un plugin, plugins révoqués. **PR #25** essai d'isolation en CI (62 vérifications dans Chromium). **PR #24** documentation d'état.
 - **`sdk-source`** : le SDK n'accepte la liaison avec le moteur que depuis la fenêtre parente (une mini-app voisine ne peut plus s'interposer). Testé : essai d'isolation 62/62.
 - **`cle-rotation`** : liste de clés de publication signée par une clé racine, plusieurs racines possibles, clé retirée refusée ; script `scripts/cles-rotation.mjs` ; procédure dans docs/14. Comportement inchangé tant que la racine n'est pas créée.
@@ -109,10 +98,14 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 - **`appels-entre-plugins`** : un plugin appelle la fonction d'un autre (manifeste `functions`/`serviceEntry`, permission `appelle:<service>:<accès>`, SDK `services.call`, routeur dans le moteur, cadre invisible, identité de l'appelant imposée, file par fournisseur, délais et plafonds). 186 tests Vitest ; les 7 plugins officiels restent compatibles. **Cadre invisible jamais essayé dans un vrai moteur.**
 - **`essai-appels-navigateur`**, **`outils-money-civil`**, **`plugin-finances`** : voir §6.
 
+- **Après fusion (5 octobre)** : CodeQL a trouvé deux expressions régulières à risque de ralentissement dans civil.ts (corrigées) ; le verrou npm de plugin-finances était désynchronisé (régénéré) ; le Rust des clés et le Java d'Android compilent sur la CI.
+- **Piège du moteur corrigé (PR #40)** : un fichier de réglages illisible ou abîmé n'est plus pris pour « rien d'enregistré » (le Rust renvoie une erreur, l'interface prévient et n'écrit plus pour ce plugin). Cela règle le point 6 des choix de inances.
+- **Dependabot** : montées de Tauri, and 0.10 et usqlite 0.40 (code du serveur adapté) fusionnées, main reste vert.
+
 ### 4.3 Modifications de l'application de base
-- Fenêtre d'installation d'un plugin : permissions demandées (et, sur `appels-entre-plugins`, une phrase par permission d'appel).
+- Fenêtre d'installation d'un plugin : permissions demandées (et une phrase par permission d'appel).
 - Page Catalogue : pastille « Révoqué », bouton « Revenir à la … ».
-- Réglages : plugins épinglés, plugin révoqué toujours désactivé ; (en attente) boîte « Source du catalogue ».
+- Réglages : plugins épinglés, plugin révoqué toujours désactivé ; boîte « Source du catalogue ».
 - Export de fichiers : 8 extensions autorisées, 20 Mo ; documents et données de plugin plafonnés à 5 Mio.
 - Scripts : `paquet-plugin.mjs`, `valider-plugin.mjs`, `nouveau-plugin.mjs`, `catalogue-signe.mjs`.
 
@@ -136,7 +129,7 @@ Les PR ouvertes ont une CI verte. Les autres branches sont poussées sans PR : d
 3. Un plugin n'annule que ses propres écritures ; l'interface de Finances peut tout annuler.
 4. Arguments stricts : un champ inconnu est refusé (un appelant plus récent que le fournisseur est refusé, pas ignoré).
 5. Les réponses d'écriture ajoutent `rejoue: true/false` (contrat à figer).
-6. **Piège du moteur à corriger avant usage réel** : si la lecture des réglages échoue, `pluginData.load` renvoie `null`, comme pour « rien d'enregistré » ; un `comptes.creer` suivant écraserait le vrai registre. Il faut distinguer l'erreur de l'absence côté moteur (noté dans docs/10).
+6. **Corrigé le 5 octobre (PR #40)** : le piège du moteur. Texte d'origine : : si la lecture des réglages échoue, `pluginData.load` renvoie `null`, comme pour « rien d'enregistré » ; un `comptes.creer` suivant écraserait le vrai registre. Il faut distinguer l'erreur de l'absence côté moteur (noté dans docs/10).
 
 ### Pas fait
 Export, import, clôture d'année ; mini-apps Écritures, Comptes et catégories, Courbes ; plugins `agenda`, `paie`, `budget`.
