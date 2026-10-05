@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { controler, EXTENSIONS_FICHIER, LIMITES, nomFichierSur, type Contexte } from "./garde";
-import { connues, estStrict, libelles, majeure } from "./permissions";
+import { controler, EXTENSIONS_FICHIER, idAppel, LIMITES, nomFichierSur, type Contexte } from "./garde";
+import { connues, estStrict, libelles, majeure, permissionAppel } from "./permissions";
 
 const strict = (permissions: string[] = [], provides: string[] = []): Contexte => ({ permissions, strict: true, provides });
 const ancien: Contexte = { permissions: [], strict: false, provides: [] };
@@ -157,5 +157,154 @@ describe("permissions du manifeste", () => {
   it("ignore les permissions inconnues et les décrit en clair", () => {
     expect(connues(["fichiers", "root", "fichiers"])).toEqual(["fichiers"]);
     expect(libelles(["impression", "nimporte"])).toHaveLength(1);
+  });
+});
+
+describe("appels de service : serviceCall", () => {
+  const appelant = strict(["appelle:finances:ecriture"]);
+  const appel = { type: "serviceCall", id: "c1", service: "finances", fn: "ecritures.ajouter", args: { montant: 1250 } };
+
+  it("accepte un appel bien formé et ne garde que les champs connus", () => {
+    expect(controler(appel, appelant)).toEqual({ ok: true, message: appel });
+    const v = controler({ ...appel, caller: "banque", appelant: "banque", pluginId: "banque", timeoutMs: 2500.4 }, appelant);
+    expect(v).toEqual({ ok: true, message: { ...appel, timeoutMs: 2500 } });
+  });
+
+  it("l'identité de l'appelant n'est jamais lue dans le message (usurpation)", () => {
+    const v = controler({ ...appel, caller: "usurpe", appelant: "usurpe", from: "usurpe" }, appelant);
+    expect(v.ok && JSON.stringify(v.message)).not.toContain("usurpe");
+  });
+
+  it("refuse sans permission d'appel pour ce service, avec le code à renvoyer", () => {
+    for (const ctx of [strict(), strict(["appelle:agenda:lecture"]), strict(["fichiers"])]) {
+      expect(controler(appel, ctx)).toMatchObject({ ok: false, code: "permission_refusee" });
+    }
+  });
+
+  it("refuse l'appel d'un plugin de contrat ^1, même avec la permission écrite", () => {
+    expect(controler(appel, { ...ancien, permissions: ["appelle:finances:ecriture"] })).toMatchObject({ ok: false, code: "permission_refusee" });
+  });
+
+  it("l'accès lecture ou écriture est jugé par le routage : le garde accepte l'un comme l'autre", () => {
+    expect(controler(appel, strict(["appelle:finances:lecture"])).ok).toBe(true);
+  });
+
+  it.each([
+    [{ id: "" }],
+    [{ id: "a b" }],
+    [{ id: "x".repeat(65) }],
+    [{ id: 5 }],
+    [{ service: "Finances" }],
+    [{ service: "../autre" }],
+    [{ service: "finances ecritures" }],
+    [{ fn: "" }],
+    [{ fn: "__proto__" }],
+    [{ fn: "ecritures..ajouter" }],
+    [{ fn: "Ecritures.ajouter" }],
+    [{ fn: "ecritures.ajouter;drop" }],
+    [{ fn: "a.b.c.d.e" }],
+    [{ fn: 12 }],
+    [{ timeoutMs: "5000" }],
+    [{ timeoutMs: NaN }],
+    [{ timeoutMs: Infinity }],
+  ])("refuse un appel mal formé %j", (champs) => {
+    expect(controler({ ...appel, ...champs }, appelant).ok).toBe(false);
+  });
+
+  it("ramène le délai dans ses bornes (100 ms à 10 s)", () => {
+    expect(controler({ ...appel, timeoutMs: 1 }, appelant)).toMatchObject({ ok: true, message: { timeoutMs: 100 } });
+    expect(controler({ ...appel, timeoutMs: 1e9 }, appelant)).toMatchObject({ ok: true, message: { timeoutMs: 10_000 } });
+  });
+
+  it("borne la taille des arguments et refuse les arguments circulaires", () => {
+    expect(controler({ ...appel, args: "x".repeat(LIMITES.donnees + 1) }, appelant)).toMatchObject({ ok: false, code: "argument_invalide" });
+    const a: Record<string, unknown> = {};
+    a.a = a;
+    expect(controler({ ...appel, args: a }, appelant)).toMatchObject({ ok: false, code: "argument_invalide" });
+  });
+
+  it("sans arguments, l'appel porte null", () => {
+    const { args: _args, ...sans } = appel;
+    expect(controler(sans, appelant)).toMatchObject({ ok: true, message: { args: null } });
+  });
+
+  it("idAppel retrouve l'identifiant d'un appel refusé, sinon rien", () => {
+    expect(idAppel({ ...appel, fn: "__proto__" })).toBe("c1");
+    expect(idAppel({ ...appel, id: "a b" })).toBeNull();
+    expect(idAppel({ type: "notify", id: "c1" })).toBeNull();
+    expect(idAppel(null)).toBeNull();
+  });
+});
+
+describe("appels de service : cadre invisible du fournisseur", () => {
+  const service: Contexte = { permissions: ["fichiers", "impression", "presse-papiers", "envoi", "reglages"], strict: true, provides: ["finances"], service: true };
+
+  it("n'autorise que réglages, publication, signes de vie et réponses", () => {
+    expect(controler({ type: "pluginData", data: { a: 1 } }, service).ok).toBe(true);
+    expect(controler({ type: "provide", name: "finances", data: {} }, service).ok).toBe(true);
+    expect(controler({ type: "ready" }, service).ok).toBe(true);
+    expect(controler({ type: "height", value: 300 }, service).ok).toBe(true);
+    expect(controler({ type: "serviceReady" }, service).ok).toBe(true);
+  });
+
+  it("refuse tout ce qui toucherait l'utilisateur ou le disque, même avec les permissions", () => {
+    const interdits = [
+      { type: "notify", text: "hameçonnage" },
+      { type: "saveFile", file: fichier },
+      { type: "print", fiche },
+      { type: "copy", text: "x" },
+      { type: "send", kind: "piece-plate", data: {} },
+      { type: "openSettings", plugin: "machines" },
+      { type: "update", data: {} },
+      { type: "title", title: "t" },
+      { type: "shortcut", key: "a", ctrl: true, shift: false, alt: false },
+      { type: "serviceCall", id: "c1", service: "agenda", fn: "rappels.liste", args: null },
+    ];
+    for (const m of interdits) expect(controler(m, service).ok, m.type).toBe(false);
+  });
+
+  it("une page ordinaire ne peut pas se faire passer pour un cadre de service", () => {
+    expect(controler({ type: "serviceReady" }, strict()).ok).toBe(false);
+    expect(controler({ type: "serviceResult", id: "i1", result: { ok: true, valeur: 1 } }, strict()).ok).toBe(false);
+  });
+
+  it("valide la réponse : forme, taille, codes permis au fournisseur", () => {
+    expect(controler({ type: "serviceResult", id: "i1", result: { ok: true, valeur: { total: 5 }, extra: 1 } }, service)).toEqual({
+      ok: true,
+      message: { type: "serviceResult", id: "i1", result: { ok: true, valeur: { total: 5 } } },
+    });
+    expect(controler({ type: "serviceResult", id: "i1", result: { ok: true } }, service)).toMatchObject({ ok: true, message: { result: { ok: true, valeur: null } } });
+    expect(controler({ type: "serviceResult", id: "i1", result: { ok: false, code: "introuvable", message: "pas là" } }, service).ok).toBe(true);
+    for (const code of ["service_absent", "contrat_incompatible", "delai_depasse", "profondeur_max", "n'importe quoi", 5]) {
+      expect(controler({ type: "serviceResult", id: "i1", result: { ok: false, code, message: "x" } }, service).ok, String(code)).toBe(false);
+    }
+    expect(controler({ type: "serviceResult", id: "i1", result: { ok: false, code: "erreur", message: "x".repeat(LIMITES.messageErreur + 1) } }, service).ok).toBe(false);
+    expect(controler({ type: "serviceResult", id: "i1", result: { ok: true, valeur: "x".repeat(LIMITES.donnees + 1) } }, service).ok).toBe(false);
+    expect(controler({ type: "serviceResult", id: "i1", result: "ok" }, service).ok).toBe(false);
+    expect(controler({ type: "serviceResult", id: "i1", result: { ok: "oui" } }, service).ok).toBe(false);
+    expect(controler({ type: "serviceResult", id: "a b", result: { ok: true, valeur: 1 } }, service).ok).toBe(false);
+  });
+});
+
+describe("permissions d'appel", () => {
+  it("reconnaît appelle:<service>:<accès> et rien d'autre", () => {
+    expect(permissionAppel("appelle:finances:ecriture")).toEqual({ service: "finances", acces: "ecriture" });
+    expect(permissionAppel("appelle:agenda:lecture")).toEqual({ service: "agenda", acces: "lecture" });
+    for (const p of ["appelle:finances", "appelle:finances:tout", "appelle::lecture", "appelle:Finances:lecture", "appelle:a:b:lecture", " appelle:a:lecture", "appelle:finances:lecture\n"]) {
+      expect(permissionAppel(p), p).toBeNull();
+    }
+  });
+
+  it("garde les permissions d'appel dans `connues`, sans doublon, et écarte le reste", () => {
+    expect(connues(["fichiers", "appelle:finances:lecture", "appelle:finances:lecture", "appelle:x:admin", "inconnue"])).toEqual(["fichiers", "appelle:finances:lecture"]);
+  });
+
+  it("écrit une phrase par permission d'appel, avec le nom du fournisseur si on le connaît", () => {
+    const l = libelles(["appelle:finances:ecriture", "appelle:agenda:lecture", "impression"], (s) => (s === "agenda" ? "Agenda" : undefined));
+    expect(l).toEqual([
+      "Imprimer des fiches d'atelier",
+      "Lire des données dans le service « agenda » du plugin Agenda",
+      "Ajouter ou modifier des données dans le service « finances » d'un autre plugin",
+    ]);
   });
 });

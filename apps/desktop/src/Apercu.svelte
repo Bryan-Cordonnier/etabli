@@ -8,6 +8,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
   import Tile from "$lib/components/Tile.svelte";
+  import ServiceHost from "$lib/components/ServiceHost.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import { DocumentSession } from "$lib/documents.svelte";
   import { appKey, getMiniAppByKey, loadPlugins, pluginUrl, type MiniAppRef } from "$lib/plugins/registry.svelte";
@@ -254,6 +255,7 @@
     </div>
 </div>
 <Toast />
+<ServiceHost />
 
 <style>
   :global(html),

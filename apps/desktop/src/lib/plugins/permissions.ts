@@ -18,6 +18,17 @@ export const PERMISSIONS: PermissionInfo[] = [
 
 export const PERMISSION_IDS: ReadonlySet<string> = new Set(PERMISSIONS.map((p) => p.id));
 
+/**
+ * Permission d'appel entre plugins : `appelle:<service>:<lecture|ecriture>` (docs/24, A.1.2). Une par service et par
+ * niveau, montrée à l'installation. `ecriture` ne donne pas `lecture` : un plugin qui fait les deux déclare les deux.
+ */
+const APPEL = /^appelle:([a-z0-9][a-z0-9-]{0,63}):(lecture|ecriture)$/;
+
+export function permissionAppel(permission: string): { service: string; acces: "lecture" | "ecriture" } | null {
+  const m = APPEL.exec(permission);
+  return m ? { service: m[1]!, acces: m[2] as "lecture" | "ecriture" } : null;
+}
+
 /** Version majeure d'un contrat (`^2`, `^2.1`, `>=2`, `2`) ; 1 si le texte est illisible ou absent. */
 export function majeure(plage: string | undefined): number {
   const m = /(\d+)/.exec(plage ?? "");
@@ -30,11 +41,25 @@ export const estStrict = (apiVersion: string | undefined): boolean => majeure(ap
 
 /** Permissions connues d'une liste de manifeste (les inconnues sont ignorées, sans effet). */
 export function connues(liste: readonly string[]): string[] {
-  return [...new Set(liste.filter((p) => PERMISSION_IDS.has(p)))];
+  return [...new Set(liste.filter((p) => typeof p === "string" && (PERMISSION_IDS.has(p) || APPEL.test(p))))];
 }
 
-/** Libellés lisibles des permissions d'un plugin, pour l'écran d'installation. */
-export function libelles(liste: readonly string[]): string[] {
+/**
+ * Libellés lisibles des permissions d'un plugin, pour l'écran d'installation. `nomDuFournisseur` donne, si on le sait, le
+ * nom du plugin qui offre un service (« Agenda ») : la phrase devient « Ajouter des données dans le service « agenda »
+ * du plugin Agenda ».
+ */
+export function libelles(liste: readonly string[], nomDuFournisseur?: (service: string) => string | undefined): string[] {
   const set = new Set(connues(liste));
-  return PERMISSIONS.filter((p) => set.has(p.id)).map((p) => p.label);
+  const fixes = PERMISSIONS.filter((p) => set.has(p.id)).map((p) => p.label);
+  const appels = [...set]
+    .map((p) => ({ p, a: permissionAppel(p) }))
+    .filter((x): x is { p: string; a: NonNullable<ReturnType<typeof permissionAppel>> } => x.a !== null)
+    .sort((x, y) => x.p.localeCompare(y.p))
+    .map(({ a }) => {
+      const nom = nomDuFournisseur?.(a.service);
+      const cible = `le service « ${a.service} »${nom ? ` du plugin ${nom}` : " d'un autre plugin"}`;
+      return a.acces === "ecriture" ? `Ajouter ou modifier des données dans ${cible}` : `Lire des données dans ${cible}`;
+    });
+  return [...fixes, ...appels];
 }

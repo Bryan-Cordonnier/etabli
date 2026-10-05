@@ -157,3 +157,111 @@ test("mini-app dont l'entrée est absolue ou sort du plugin", () => {
   );
   assert.ok(contient(erreurs, /« entry » invalide/));
 });
+
+// ——— Appels entre plugins (docs/24, A.1.2) ———
+
+/** Un plugin appelant valide : permission d'appel, plage de contrat, dépendance facultative. */
+const appelant = (m) => {
+  m.permissions = [...m.permissions, "appelle:finances:ecriture"];
+  m.services = { finances: "^1" };
+  m.optionalDependencies = { finances: "^1" };
+};
+/** Un plugin fournisseur valide : service publié, fonctions déclarées, point d'entrée. */
+const fournisseur = (m) => {
+  m.provides = { finances: "1" };
+  m.functions = { finances: { "ecritures.ajouter": { acces: "ecriture" }, "soldes.aLaDate": { acces: "lecture" } } };
+  m.serviceEntry = "service/index.html";
+};
+
+test("appels : un appelant et un fournisseur bien déclarés sont valides", () => {
+  assert.deepEqual(valider(({ dossier, ecrire }) => modifierManifeste(ecrire, dossier, appelant)), { erreurs: [], avertissements: [] });
+  const { erreurs } = valider(({ dossier, ecrire }) => modifierManifeste(ecrire, dossier, fournisseur));
+  assert.deepEqual(erreurs, []);
+});
+
+test("appels : permission mal écrite, en double ou en contrat ^1", () => {
+  const { erreurs } = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.permissions = ["appelle:finances:tout", "appelle:Finances:lecture", "appelle:agenda:lecture", "appelle:agenda:lecture"];
+    }),
+  );
+  assert.ok(contient(erreurs, /« appelle:finances:tout » n'existe pas/));
+  assert.ok(contient(erreurs, /« appelle:Finances:lecture » n'existe pas/));
+  assert.ok(contient(erreurs, /« appelle:agenda:lecture » est écrite deux fois/));
+  const ancien = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      appelant(m);
+      m.apiVersion = "^1";
+    }),
+  );
+  assert.ok(contient(ancien.erreurs, /n'a d'effet que pour un plugin de contrat \^2/));
+});
+
+test("appels : la plage de contrat et la dépendance sont exigées avec la permission", () => {
+  const { erreurs } = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.permissions = ["appelle:finances:lecture"];
+    }),
+  );
+  assert.ok(contient(erreurs, /« services » doit donner la plage de contrat de « finances »/));
+  assert.ok(contient(erreurs, /déclarer le plugin fournisseur dans « dependencies » ou « optionalDependencies »/));
+  const mauvais = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      appelant(m);
+      m.services = { finances: "n'importe quoi" };
+    }),
+  );
+  assert.ok(contient(mauvais.erreurs, /services : la plage « n'importe quoi »/));
+});
+
+test("appels : services.call sans permission d'appel est une erreur, avec permission non", () => {
+  const code = 'export const go = (etabli) => etabli.services.call("finances", "soldes.aLaDate", {});\n';
+  const sans = valider(({ ecrire }) => ecrire("src/appel.ts", code));
+  assert.ok(contient(sans.erreurs, /src\/appel\.ts : appelle la fonction d'un autre plugin \(services\.call\) sans permission/));
+  const avec = valider(({ dossier, ecrire }) => {
+    modifierManifeste(ecrire, dossier, appelant);
+    ecrire("src/appel.ts", code);
+  });
+  assert.deepEqual(avec.erreurs, []);
+});
+
+test("appels : functions exige un service publié, des noms valides, un accès connu et un serviceEntry", () => {
+  const { erreurs } = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.provides = { finances: "1" };
+      m.functions = { agenda: { "a.b": { acces: "lecture" } }, finances: { "Mauvais nom": { acces: "lecture" }, "ok.fonction": { acces: "admin" } } };
+    }),
+  );
+  // « __proto__ » comme clé JSON (un littéral d'objet JavaScript ne la produirait pas).
+  const proto = valider(({ dossier, ecrire }) => {
+    modifierManifeste(ecrire, dossier, (m) => fournisseur(m));
+    const chemin = join(dossier, "public", "manifest.json");
+    ecrire("public/manifest.json", readFileSync(chemin, "utf8").replace('"ecritures.ajouter"', '"__proto__"'));
+  });
+  assert.ok(contient(proto.erreurs, /« __proto__ » n'est pas un nom de fonction valide/));
+  assert.ok(contient(erreurs, /functions : le service « agenda » doit d'abord figurer dans « provides »/));
+  assert.ok(contient(erreurs, /« Mauvais nom » n'est pas un nom de fonction valide/));
+  assert.ok(contient(erreurs, /« finances\.ok\.fonction » doit déclarer "acces"/));
+  assert.ok(contient(erreurs, /« functions » demande un « serviceEntry »/));
+});
+
+test("appels : serviceEntry doit rester dans le plugin ; sans fonctions il n'a pas d'objet", () => {
+  const sort = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      fournisseur(m);
+      m.serviceEntry = "../autre/index.html";
+    }),
+  );
+  assert.ok(contient(sort.erreurs, /« serviceEntry » invalide/));
+  const vide = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.serviceEntry = "service/index.html";
+    }),
+  );
+  assert.ok(contient(vide.avertissements, /« serviceEntry » est déclaré mais « functions » est vide/));
+});
+
+test("appels : services.handle sans functions ni serviceEntry est une erreur", () => {
+  const { erreurs } = valider(({ ecrire }) => ecrire("service/main.ts", 'export const go = (etabli) => etabli.services.handle("finances", {});\n'));
+  assert.ok(contient(erreurs, /service\/main\.ts : répond à des appels \(services\.handle\)/));
+});

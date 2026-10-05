@@ -40,6 +40,13 @@ Hors périmètre : un moteur compromis, une clé de signature volée (voir §5),
 | 14 | Données d'un fournisseur de service hostile consommées par d'autres plugins | données JSON seulement, jamais de HTML ; Svelte échappe | revue (aucun `{@html}` dans les plugins du dépôt) | ⚠️ voir §4 |
 | 15 | Boucle infinie ou calcul sans fin | hors de portée du moteur seul (le cadre est un processus du navigateur) | — | ❌ voir §4 |
 | 16 | Faux dialogues ou fausses alertes à l'intérieur de son cadre | limité à la surface du cadre | — | ⚠️ accepté |
+| 17 | **Usurpation d'identité** : se faire passer pour un autre plugin en appelant un service (`caller`, `appelant` dans le message) | le garde ne recopie que les champs connus ; l'appelant est le plugin du cadre qui a envoyé le message (connu de l'hôte) et le fournisseur reçoit `caller` écrit par le moteur | tests Vitest (garde, routeur, appel complet avec le vrai SDK) | ✅ |
+| 18 | **Appel sans autorisation** : appeler un service, une fonction ou un niveau d'accès non permis, ou en contrat ^1 | permission `appelle:<service>:<accès>` par service et par niveau, fonction déclarée par le fournisseur (`functions`), dépendance déclarée ; refus sans révéler si le fournisseur est installé | tests Vitest (routeur) | ✅ |
+| 19 | **Amplification** : A appelle B qui appelle C… (boucle, cascade) ; un appel qui en déclenche des centaines | profondeur 1 : le cadre de service d'un fournisseur ne peut émettre aucun appel (`profondeur_max`) ; plafonds de 8 appels en attente par appelant et 20 par fournisseur (`occupe`) ; 4 Mo par appel | tests Vitest | ✅ · plafonds fixes, pas encore réglables |
+| 20 | **Déni de service** : un fournisseur qui ne répond jamais, ou qui répond sans fin ; un appelant qui inonde la file | délai de 5 s par défaut (10 s au plus) file d'attente comprise, cadre détruit à l'échéance, la file avance (filet du routeur si l'exécuteur ne rend pas la main) ; réponse bornée à 4 Mo | tests Vitest (délais simulés) | ✅ · un fournisseur qui boucle fige seulement son cadre (voir §4, calcul sans fin) |
+| 21 | **Fournisseur hostile** : réponse mal formée, code d'erreur inventé (`service_absent`…), message géant, fenêtre ou notification depuis le cadre invisible | réponse revalidée par le garde (forme, taille, codes permis au fournisseur) ; cadre de service limité à `pluginData`, `provide`, `ready`, `height`, `serviceReady`, `serviceResult` ; mêmes `sandbox`, origine et CSP que les mini-apps | tests Vitest | ✅ · cadre invisible non essayé dans WebView2 ni Android |
+| 22 | **Plugin absent, désinstallé, désactivé, trop ancien** pendant un appel | réponse typée (`service_absent`, `contrat_incompatible`), jamais d'exception ; l'appelant garde sa vérité et rejoue | tests Vitest | ✅ |
+| 23 | **Écriture appliquée mais réponse perdue** (délai expiré pendant l'exécution) | idempotence par `cle` côté fournisseur (docs/24, A.1.3) | à tester dans chaque fournisseur | ⚠️ à la charge du fournisseur |
 
 ## 4. Limites connues et ce qu'il reste à faire
 
@@ -86,6 +93,12 @@ Hors périmètre : un moteur compromis, une clé de signature volée (voir §5),
   CSP propre à ce cadre (aucune ressource externe) reste à ajouter et à tester en conditions réelles.
 - **Services entre plugins** : un plugin qui publie (`provide`) peut mentir ; les consommateurs doivent traiter ces données comme
   non fiables (validation, bornes). Une validation de schéma par service est à prévoir.
+- **Appels entre plugins** (fait, docs/06) : le cadre invisible d'un fournisseur et la file par fournisseur sont codés et testés
+  (garde, routeur, appel complet avec le vrai SDK), mais **pas essayés dans WebView2 ni sur Android** (cadre sans taille, minuteries
+  et `MessageChannel` hors écran). Plafonds fixes (20 en attente par fournisseur, 8 par appelant, 5 s par défaut). Le moteur ne
+  vérifie pas les arguments : validation par schéma (`functions.*.schema`, docs/24 M12) et contrôle de propriété restent à la charge du
+  fournisseur. La révocation d'un plugin (docs/20) n'est pas encore branchée sur « fournisseur actif ». Un fournisseur lent bloque
+  seulement sa propre file.
 - **Calcul sans fin / mémoire** : le cadre peut figer sa propre mini-app. Piste : un chien de garde qui demande un signe de vie
   régulier et recharge le cadre sinon.
 - **Tests dans la CI** : l'essai `scripts/essais-isolation.mjs` (workflow `.github/workflows/isolation.yml`, Ubuntu, sur chaque
@@ -119,10 +132,15 @@ Déclarées dans `permissions` du manifeste ; un plugin de contrat `"apiVersion"
 | `presse-papiers` | copier du texte | `copy` |
 | `envoi` | envoyer des données à une autre mini-app | `send` |
 | `reglages` | ouvrir les réglages d'un autre plugin | `openSettings`, `addMachine` |
+| `appelle:<service>:lecture` | appeler les fonctions de **lecture** d'un service offert par un autre plugin | `serviceCall` |
+| `appelle:<service>:ecriture` | appeler les fonctions d'**écriture** (ajouter, modifier) de ce service ; ne donne pas la lecture | `serviceCall` |
 
 Sans permission : calculer, afficher, enregistrer ses propres calculs et réglages (`update`, `pluginData`, `title`, `summary`,
 `notify`, `height`), et publier un service **déclaré** dans `provides`.
 
+- `appelle:<service>:<accès>` : une ligne par service et par niveau, montrée à l'installation de **chaque** plugin appelant
+  (« Ajouter ou modifier des données dans le service « finances » du plugin Finances »), jamais acceptée en bloc. Le niveau d'une
+  fonction est fixé par le **fournisseur** dans `functions` ; l'appelant le subit. Réservé aux plugins de contrat ^2.
 - La liste vit dans `apps/desktop/src/lib/plugins/permissions.ts` (source unique, lue aussi par `npm run valider`).
 - `npm run valider` refuse un plugin ^2 qui utilise une fonction sans la déclarer, ou qui déclare une permission inconnue.
 - Une nouvelle permission est un changement d'API : elle se décide ici, avec sa phrase d'explication pour l'utilisateur.

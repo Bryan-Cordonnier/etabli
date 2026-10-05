@@ -63,6 +63,12 @@ export function permissionsConnues(racine = RACINE) {
   return new Set([...bloc.matchAll(/\{\s*id:\s*"([a-z0-9-]+)"/g)].map((m) => m[1]));
 }
 
+/** Permission d'appel entre plugins ; même forme que `permissionAppel` dans permissions.ts (docs/19 §6, docs/24 A.1.2). */
+const PERMISSION_APPEL = /^appelle:([a-z0-9][a-z0-9-]{0,63}):(lecture|ecriture)$/;
+/** Nom de fonction de service ; même forme que `NOM_FONCTION` dans garde.ts. */
+const NOM_FONCTION = /^[a-z][A-Za-z0-9]{0,31}(\.[a-z][A-Za-z0-9]{0,31}){0,3}$/;
+const MAX_FONCTIONS = 100;
+
 /** Adresses qui apparaissent légitimement (espaces de noms XML, documentation de Svelte, licences). */
 const ADRESSES_TOLEREES = [
   /^https?:\/\/(www\.)?w3\.org\//,
@@ -153,8 +159,11 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
   if (!Array.isArray(m.permissions)) erreur("« permissions » doit être une liste (vide : `[]`).");
   else {
     for (const permission of m.permissions) {
-      if (typeof permission !== "string" || !connues.has(permission)) {
-        erreur(`« permissions » : « ${String(permission)} » n'existe pas (permissions connues : ${[...connues].join(", ")}).`);
+      if (typeof permission === "string" && PERMISSION_APPEL.test(permission)) {
+        if (declarees.has(permission)) erreur(`« permissions » : « ${permission} » est écrite deux fois.`);
+        else declarees.add(permission);
+      } else if (typeof permission !== "string" || !connues.has(permission)) {
+        erreur(`« permissions » : « ${String(permission)} » n'existe pas (permissions connues : ${[...connues].join(", ")}, et appelle:<service>:<lecture|ecriture>).`);
       } else if (declarees.has(permission)) erreur(`« permissions » : « ${permission} » est écrite deux fois.`);
       else declarees.add(permission);
     }
@@ -207,6 +216,52 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
       }
     }
   }
+  // Appels entre plugins (docs/24, A.1.2) : plage de contrat côté appelant, fonctions et point d'entrée côté fournisseur
+  const appels = [...declarees].map((p) => PERMISSION_APPEL.exec(p)).filter(Boolean);
+  if (m.services !== undefined) {
+    if (typeof m.services !== "object" || m.services === null || Array.isArray(m.services)) erreur("« services » doit être un objet « nom du service : plage de version du contrat » (par exemple « finances »: « ^1 »).");
+    else {
+      for (const [nom, plage] of Object.entries(m.services)) {
+        if (!ID.test(nom)) erreur(`services : « ${nom} » n'est pas un nom de service valide.`);
+        if (!plageValide(plage)) erreur(`services : la plage « ${plage} » de « ${nom} » est illisible (par exemple « ^1 »).`);
+      }
+    }
+  }
+  const dependances = new Set([...Object.keys(m.dependencies ?? {}), ...Object.keys(m.optionalDependencies ?? {})]);
+  for (const [, service] of appels) {
+    if (!strict) erreur(`« permissions » : « appelle:${service}:… » n'a d'effet que pour un plugin de contrat ^2 (« apiVersion »).`);
+    if (typeof m.services?.[service] !== "string") erreur(`« services » doit donner la plage de contrat de « ${service} » (par exemple « ${service} »: « ^1 »), exigée par la permission d'appel.`);
+  }
+  if (appels.length > 0 && dependances.size === 0) {
+    erreur("une permission « appelle:… » demande de déclarer le plugin fournisseur dans « dependencies » ou « optionalDependencies » : sinon le moteur refuse l'appel.");
+  }
+  let nbFonctions = 0;
+  if (m.functions !== undefined) {
+    if (typeof m.functions !== "object" || m.functions === null || Array.isArray(m.functions)) erreur("« functions » doit être un objet « nom du service : { fonction : { acces } } ».");
+    else {
+      for (const [service, fonctions] of Object.entries(m.functions)) {
+        if (typeof m.provides !== "object" || m.provides === null || !Object.hasOwn(m.provides, service)) erreur(`functions : le service « ${service} » doit d'abord figurer dans « provides ».`);
+        if (typeof fonctions !== "object" || fonctions === null || Array.isArray(fonctions)) {
+          erreur(`functions : « ${service} » doit être un objet « nom de fonction : { "acces": "lecture" | "ecriture" } ».`);
+          continue;
+        }
+        for (const [nom, definition] of Object.entries(fonctions)) {
+          nbFonctions++;
+          if (!NOM_FONCTION.test(nom)) erreur(`functions : « ${nom} » n'est pas un nom de fonction valide (lettres et chiffres, séparés par des points : « ecritures.ajouter »).`);
+          if (!["lecture", "ecriture"].includes(definition?.acces)) erreur(`functions : « ${service}.${nom} » doit déclarer "acces" : "lecture" ou "ecriture".`);
+        }
+      }
+      if (nbFonctions > MAX_FONCTIONS) erreur(`functions : ${nbFonctions} fonctions déclarées, ${MAX_FONCTIONS} au plus.`);
+    }
+  }
+  if (m.serviceEntry !== undefined) {
+    if (typeof m.serviceEntry !== "string" || m.serviceEntry.startsWith("/") || m.serviceEntry.includes("..") || m.serviceEntry.includes("\\")) erreur("« serviceEntry » invalide (chemin relatif au plugin, sans « .. », par exemple « service/index.html »).");
+    else {
+      pages.push(["page de service", m.serviceEntry]);
+      if (nbFonctions === 0) avertir("« serviceEntry » est déclaré mais « functions » est vide : la page ne recevra jamais d'appel.");
+    }
+  } else if (nbFonctions > 0) erreur("« functions » demande un « serviceEntry » : la page sans interface qui répond aux appels (par exemple « service/index.html »).");
+
   if (m.settings !== undefined) {
     if (!Array.isArray(m.settings)) erreur("« settings » doit être une liste de pages de réglages.");
     else {
@@ -248,7 +303,7 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
   if (tests.length === 0 && (miniApps?.length ?? 0) > 0) avertir("aucun test (src/*.test.ts) : chaque formule doit avoir au moins trois cas vérifiés.");
 
   // ——— Sources : appels interdits ———
-  for (const sousDossier of ["apps", "src", "reglages"]) {
+  for (const sousDossier of ["apps", "src", "reglages", "service"]) {
     for (const f of fichiers(join(dossier, sousDossier), new Set(["node_modules", "dist"]))) {
       const extension = extname(f);
       if (![".ts", ".js", ".mjs", ".svelte", ".html"].includes(extension) || /\.test\.[cm]?[jt]s$/.test(f)) continue;
@@ -263,6 +318,12 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
             erreur(`${chemin} : utilise une fonction qui exige la permission « ${permission} », absente de « permissions » du manifeste.`);
           }
         }
+      }
+      if (strict && /\bservices\??\.call\s*\(/.test(texte) && appels.length === 0) {
+        erreur(`${chemin} : appelle la fonction d'un autre plugin (services.call) sans permission « appelle:<service>:<acces> » dans « permissions ».`);
+      }
+      if (/\bservices\??\.handle\s*\(/.test(texte) && (nbFonctions === 0 || typeof m.serviceEntry !== "string")) {
+        erreur(`${chemin} : répond à des appels (services.handle) mais le manifeste ne déclare ni « functions » ni « serviceEntry ».`);
       }
       for (const adresse of texte.match(/https?:\/\/[^\s"'`)<>]+/g) ?? []) {
         if (!ADRESSES_TOLEREES.some((ok) => ok.test(adresse))) avertir(`${chemin} : adresse externe ${adresse} (elle ne sera pas chargée : pas de réseau).`);

@@ -20,12 +20,30 @@ import {
   type MachineKind,
   type PluginToHost,
   type SavedFile,
+  type ServiceCallContext,
+  type ServiceCallOptions,
+  type ServiceErrorCode,
+  type ServiceResult,
   type ServiceSnapshot,
   type Services,
   type ThemeTokens,
 } from "./protocol";
 
-export { SAW_TYPES, STOCK_KINDS } from "./protocol";
+export { SAW_TYPES, SERVICE_ERROR_CODES, STOCK_KINDS } from "./protocol";
+
+/** Gestionnaire d'une fonction de service : reçoit les arguments et l'identité de l'appelant, renvoie la valeur (JSON). */
+export type ServiceHandler = (args: unknown, context: ServiceCallContext) => unknown | Promise<unknown>;
+
+/** À lancer depuis un gestionnaire pour répondre par une erreur typée (sinon : `erreur`). */
+export class ServiceError extends Error {
+  constructor(
+    readonly code: ServiceErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ServiceError";
+  }
+}
 export type {
   ColorScheme,
   DocumentSnapshot,
@@ -39,6 +57,11 @@ export type {
   SavedFile,
   Saw,
   SawType,
+  ServiceAccess,
+  ServiceCallContext,
+  ServiceCallOptions,
+  ServiceErrorCode,
+  ServiceResult,
   ServiceSnapshot,
   Services,
   Shear,
@@ -97,6 +120,18 @@ export interface Etabli<T> {
     onChange(listener: (services: Services) => void): () => void;
     /** Publie les données du service `name`, à déclarer dans `provides`. Réservé à leur fournisseur. */
     provide(name: string, data: unknown): void;
+    /**
+     * Appelle la fonction `fn` du service `service` d'un autre plugin (docs/24, A.1.2) et attend la réponse.
+     * Exige la permission `appelle:<service>:<lecture|ecriture>` et la plage de contrat `services` dans le manifeste.
+     * Ne jette jamais : `{ ok: true, valeur }` ou `{ ok: false, code, message }` (`service_absent` si le fournisseur
+     * n'est pas là, `delai_depasse` après `timeoutMs`, 5 s par défaut).
+     */
+    call<T = unknown>(service: string, fn: string, args?: unknown, options?: ServiceCallOptions): Promise<ServiceResult<T>>;
+    /**
+     * Fournisseur, dans la page `serviceEntry` seulement : déclare les gestionnaires des fonctions d'un service
+     * (les mêmes que dans `functions` du manifeste). Le moteur n'envoie les appels qu'après cet enregistrement.
+     */
+    handle(service: string, handlers: Record<string, ServiceHandler>): void;
   };
   /** Ouvre la page de réglages d'un autre plugin (`hash` : intention transmise à sa page, « add=scie »). */
   openSettings(plugin: string, hash?: string): void;
@@ -151,6 +186,10 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
   let pluginData: unknown = null;
   let incoming: Incoming | null = null;
   let shortcuts: string[] = [];
+  const pendingCalls = new Map<string, (result: ServiceResult) => void>();
+  const serviceHandlers = new Map<string, Map<string, ServiceHandler>>();
+  let callCounter = 0;
+  let readySignalled = false;
 
   const api: Etabli<unknown> = {
     get pluginId() {
@@ -225,6 +264,42 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         // Copie JSON : le service doit de toute façon être enregistrable, et passer entre cadres.
         send({ type: "provide", name, data: JSON.parse(JSON.stringify(data)) });
       },
+      call<T>(service: string, fn: string, args?: unknown, options?: ServiceCallOptions) {
+        return new Promise<ServiceResult<T>>((resolve) => {
+          const fail = (code: ServiceErrorCode, message: string) => resolve({ ok: false, code, message });
+          let plain: unknown;
+          try {
+            plain = args === undefined ? null : JSON.parse(JSON.stringify(args));
+          } catch {
+            return fail("argument_invalide", "Les arguments ne sont pas du JSON.");
+          }
+          const timeoutMs = options?.timeoutMs;
+          const id = `c${++callCounter}`;
+          // Filet local : si le moteur ne répond jamais, l'appelant n'attend pas indéfiniment.
+          const timer = setTimeout(
+            () => {
+              pendingCalls.delete(id);
+              fail("delai_depasse", "Pas de réponse du moteur.");
+            },
+            Math.min(10_000, Math.max(100, typeof timeoutMs === "number" && Number.isFinite(timeoutMs) ? timeoutMs : 5000)) + 1000,
+          );
+          pendingCalls.set(id, (result) => {
+            clearTimeout(timer);
+            resolve(result as ServiceResult<T>);
+          });
+          send({ type: "serviceCall", id, service, fn, args: plain, ...(timeoutMs !== undefined ? { timeoutMs } : {}) });
+        });
+      },
+      handle(service, handlers) {
+        const own = serviceHandlers.get(service) ?? new Map<string, ServiceHandler>();
+        for (const [name, handler] of Object.entries(handlers)) own.set(name, handler);
+        serviceHandlers.set(service, own);
+        // Annoncé une seule fois, après l'enregistrement : le moteur n'envoie l'appel qu'à ce moment.
+        if (!readySignalled) {
+          readySignalled = true;
+          queueMicrotask(() => send({ type: "serviceReady" }));
+        }
+      },
     },
     openSettings(plugin, hash) {
       send({ type: "openSettings", plugin, hash });
@@ -298,8 +373,30 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "shortcuts":
         shortcuts = message.shortcuts;
         break;
+      case "serviceReply": {
+        const done = pendingCalls.get(message.id);
+        pendingCalls.delete(message.id);
+        done?.(message.result);
+        break;
+      }
+      case "serviceInvoke":
+        void answerInvoke(message);
+        break;
     }
   };
+
+  async function answerInvoke(message: Extract<HostToPlugin, { type: "serviceInvoke" }>): Promise<void> {
+    const reply = (result: ServiceResult) => send({ type: "serviceResult", id: message.id, result });
+    const handler = serviceHandlers.get(message.service)?.get(message.fn);
+    if (!handler) return reply({ ok: false, code: "introuvable", message: `Fonction « ${message.fn} » inconnue.` });
+    try {
+      const value = await handler(message.args, { caller: message.caller });
+      reply({ ok: true, valeur: value === undefined ? null : JSON.parse(JSON.stringify(value)) });
+    } catch (err) {
+      if (err instanceof ServiceError) reply({ ok: false, code: err.code, message: err.message.slice(0, 500) });
+      else reply({ ok: false, code: "erreur", message: err instanceof Error ? err.message.slice(0, 500) : "Erreur." });
+    }
+  }
 
   reportHeight(send);
   forwardShortcuts(send, () => shortcuts);

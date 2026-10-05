@@ -5,6 +5,7 @@
   import SynchroBanner from "$lib/components/SynchroBanner.svelte";
   import Sidebar from "$lib/components/Sidebar.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
+  import ServiceHost from "$lib/components/ServiceHost.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import UpdateBanner from "$lib/components/UpdateBanner.svelte";
   import CataloguePage from "$lib/pages/CataloguePage.svelte";
@@ -142,6 +143,7 @@
 {/if}
 <PluginDialog />
 <Toast />
+<ServiceHost />
 
 <style>
   .shell {

@@ -4,24 +4,23 @@
   import {
     CONNECT,
     PROTOCOL_VERSION,
-    type ColorScheme,
     type DocumentSnapshot,
     type HostToPlugin,
     type Incoming,
     type PluginToHost,
-    type ThemeTokens,
   } from "@etabli/sdk/protocol";
   import { api } from "$lib/api";
   import { printFiche } from "$lib/print/print";
   import { frameShortcuts } from "$lib/shortcuts";
-  import { controler, type Contexte } from "$lib/plugins/garde";
+  import { sandboxDe, lireTheme } from "$lib/plugins/cadre";
+  import { controler, erreurService, idAppel, type Contexte } from "$lib/plugins/garde";
   import { connues, estStrict } from "$lib/plugins/permissions";
   import { getPlugin } from "$lib/plugins/registry.svelte";
+  import { routeur } from "$lib/state/appels.svelte";
   import { pluginData } from "$lib/state/pluginData.svelte";
   import { librariesFrom, services } from "$lib/state/services.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { ui } from "$lib/state/ui.svelte";
-  import { THEME_TOKENS } from "$lib/themes";
 
   // Dans l'application : origine opaque, isolation totale. Dans l'aperçu navigateur de développement
   // (plugins officiels uniquement), certains navigateurs refusent les cadres opaques : on les autorise
@@ -51,9 +50,7 @@
   // Avec une origine propre au plugin (serveur, ou Android : https://<id>.plugins.localhost servie par la partie native),
   // le cadre peut garder son origine : elle ne contient rien d'autre que
   // ce plugin. C'est ce qui permet à son service worker de le servir hors ligne.
-  const sandbox = $derived(
-    api.originePlugin?.(pluginId) || !api.capacites.isolationComplete ? "allow-scripts allow-same-origin" : "allow-scripts",
-  );
+  const sandbox = $derived(sandboxDe(pluginId));
   let incomingSent = false;
 
   /** Ce que le manifeste du plugin autorise (docs/19) ; relu à chaque message, le manifeste pouvant changer. */
@@ -77,12 +74,7 @@
   let ready = $state(false);
   let readyTimer: ReturnType<typeof setTimeout> | undefined;
 
-  function readTheme(): { theme: ThemeTokens; colorScheme: ColorScheme } {
-    const style = getComputedStyle(document.documentElement);
-    const theme: ThemeTokens = {};
-    for (const token of THEME_TOKENS) theme[token] = style.getPropertyValue(`--${token}`).trim();
-    return { theme, colorScheme: style.colorScheme.includes("dark") ? "dark" : "light" };
-  }
+  const readTheme = lireTheme;
 
   function send(message: HostToPlugin): void {
     port?.postMessage(message);
@@ -106,6 +98,9 @@
       const verdict = controler(event.data, contexte());
       if (!verdict.ok) {
         console.warn(`[Établi] message refusé de ${pluginId} : ${verdict.raison}`);
+        // Un appel de service refusé reçoit sa réponse typée : l'appelant n'attend pas en vain.
+        const appel = idAppel(event.data);
+        if (appel) send({ type: "serviceReply", id: appel, result: erreurService(verdict.code ?? "argument_invalide", verdict.raison) });
         return;
       }
       const message = verdict.message;
@@ -125,6 +120,14 @@
           // Le moteur ne garde que les services que le manifeste du plugin déclare (`provides`).
           services.publish(pluginId, message.name, message.data);
           break;
+        case "serviceCall": {
+          // L'appelant est le plugin de ce cadre, connu de l'hôte : le message ne peut pas dire autre chose.
+          const id = message.id;
+          void routeur
+            .appeler(pluginId, { service: message.service, fn: message.fn, args: message.args, timeoutMs: message.timeoutMs })
+            .then((result) => send({ type: "serviceReply", id, result }));
+          break;
+        }
         case "saveFile":
           api.saveFile(message.file).then(
             (path) => path && ui.notify(`Enregistré : ${path}`),

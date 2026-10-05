@@ -30,6 +30,15 @@ Jamais vus :
   l'échelle 1** imprimé à 100 % (mesurer la règle de 100 mm).
 - Fiche de coupe du débit v2 (ordre par angle de scie, « Tubes du stock » / « Barres à acheter »).
 
+## Appels entre plugins (fondations codées le 4 octobre 2026, branche `appels-entre-plugins`)
+
+À essayer dans la vraie application avant de bâtir `finances` dessus (docs/24 §9) :
+- **Cadre invisible dans WebView2 et sur Android** : jamais ouvert ni fermé en conditions réelles (chargement d'une page de 1 px hors
+  écran, `MessageChannel`, minuteries) ; à essayer avec les plugins de `fixtures/appels-entre-plugins/` copiés dans un dossier de plugins.
+- Pas encore fait : point d'entrée au démarrage (renouvellement des rappels), schémas de fonctions vérifiés par le moteur, `mockService`
+  pour les tests, `planInstall` / `problemsOf` sur la version du contrat, révocation branchée sur « fournisseur actif », compteur d'appels
+  visible dans les réglages, essai Chromium automatisé (dans l'esprit de `essai-isolation`).
+
 ## Économie de matière
 
 - Chutes réservées des **tôles** (même règle que les tubes : deux résultats si la réservation coûte
