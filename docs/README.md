@@ -40,6 +40,7 @@ Toute la documentation est **en français**. Choisissez selon ce que vous voulez
 | [12-a-faire.md](12-a-faire.md) · [13-specs-a-venir.md](13-specs-a-venir.md) | ce qui reste à faire, spécifications |
 | [23-spec-distributions.md](23-spec-distributions.md) | plusieurs applications (essai, ERP, budget) à partir du même moteur par configuration de build ; fork ou configuration (brouillon) |
 | [21-spec-licences-baux.md](21-spec-licences-baux.md) | service de licences : comptes, baux signés, sièges, paquets chiffrés (brouillon) |
+| [22-cahier-de-bord.md](22-cahier-de-bord.md) | cahier de bord : à faire à la main, décisions, avancées |
 | [20-spec-mises-a-jour-registre.md](20-spec-mises-a-jour-registre.md) | mises à jour et registre « en béton » : catalogue signé, révocation, clés (brouillon) |
 | [19-modele-de-menace-plugins.md](19-modele-de-menace-plugins.md) | isolation des plugins : menaces, défenses, permissions v1 |
 | [18-spec-plateforme-comptes-licences.md](18-spec-plateforme-comptes-licences.md) | plateforme : comptes, licences, baux, registre, mobile, étapes (brouillon) |

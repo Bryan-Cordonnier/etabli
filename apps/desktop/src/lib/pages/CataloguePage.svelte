@@ -123,7 +123,9 @@
           <div class="name">
             <b>{card.name}</b>
             <span class="pill mono">v{card.installed?.version ?? card.version}</span>
-            {#if card.installed}
+            {#if card.installed?.revoked}
+              <span class="pill revoked">Révoqué</span>
+            {:else if card.installed}
               <span class="pill" class:state={enabled}>{enabled ? "Installé" : "Désactivé"}</span>
             {/if}
             {#if card.entry && catalogue.hasUpdate(card.entry)}
@@ -131,6 +133,12 @@
             {/if}
           </div>
           <p>{card.description}</p>
+          {#if card.installed?.revoked}
+            <p class="revoked-note" role="alert">
+              Cette version est révoquée : {card.installed.revoked}. Le plugin est désactivé tant qu'elle est installée.
+              {#if card.entry && catalogue.hasUpdate(card.entry)}Mettez-le à jour.{/if}
+            </p>
+          {/if}
           <div class="chips">
             {#each card.apps as app (app.name)}<span class="chip">{app.name}</span>{/each}
             {#each card.settingsPages as page (page)}<span class="chip setting">Réglages : {page}</span>{/each}
@@ -166,10 +174,21 @@
             {#if card.entry && catalogue.hasUpdate(card.entry)}
               <button class="btn primary" onclick={() => card.entry && lifecycle.askInstall(card.entry)}>Mettre à jour</button>
             {/if}
-            <div class="switch">
-              <span>{enabled ? "Activé" : "Désactivé"}</span>
-              <Switch checked={enabled} label="Activer {card.name}" onchange={() => lifecycle.toggle(card.id)} />
-            </div>
+            {#if !card.installed.revoked}
+              <div class="switch">
+                <span>{enabled ? "Activé" : "Désactivé"}</span>
+                <Switch checked={enabled} label="Activer {card.name}" onchange={() => lifecycle.toggle(card.id)} />
+              </div>
+            {/if}
+            {#if card.installed.source === "catalogue" && card.installed.previousVersion}
+              <button
+                class="btn"
+                title="Remet la version {card.installed.previousVersion} ; un second clic revient à la version actuelle."
+                onclick={() => void catalogue.revert(card.id)}
+              >
+                Revenir à la {card.installed.previousVersion}
+              </button>
+            {/if}
             {#if card.installed.source === "catalogue"}
               <button class="btn danger" onclick={() => lifecycle.askUninstall(card.id)}>Désinstaller</button>
             {/if}

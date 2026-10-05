@@ -219,13 +219,100 @@ pub fn installer(zip: &[u8], racine: &Path, attendu: Option<&str>) -> Result<Str
             }
             return Err(format!("Installation impossible : {e}"));
         }
-        let _ = fs::remove_dir_all(&ancien);
+        garder_precedente(racine, &id, &ancien);
         Ok(id.clone())
     })();
     if resultat.is_err() {
         let _ = fs::remove_dir_all(&temporaire);
     }
     resultat
+}
+
+/// Dossier où la version précédente de chaque plugin est gardée (un seul exemplaire par plugin) ; il commence par un point,
+/// donc la liste des plugins l'ignore.
+const PRECEDENT: &str = ".precedent";
+
+/// Garde `ancien` comme version précédente de `id` (en remplaçant la précédente d'avant), ou le supprime si cela échoue.
+fn garder_precedente(racine: &Path, id: &str, ancien: &Path) {
+    if !ancien.is_dir() {
+        return;
+    }
+    let dossier = racine.join(PRECEDENT);
+    let cible = dossier.join(id);
+    let rangee = fs::create_dir_all(&dossier)
+        .and_then(|()| {
+            if cible.exists() {
+                fs::remove_dir_all(&cible)?;
+            }
+            fs::rename(ancien, &cible)
+        })
+        .is_ok();
+    if !rangee {
+        let _ = fs::remove_dir_all(ancien);
+    }
+}
+
+/// Version gardée comme précédente pour ce plugin, si elle existe et est lisible.
+pub fn version_precedente(racine: &Path, id: &str) -> Option<String> {
+    if !plugins::valid_id(id) {
+        return None;
+    }
+    let (_, manifeste) = plugins::read_manifest(&racine.join(PRECEDENT).join(id)).ok()?;
+    manifeste
+        .get("version")
+        .and_then(Value::as_str)
+        .map(String::from)
+}
+
+/// Raison de la révocation de la version installée d'un plugin, ou `None`.
+pub fn raison_revocation(etat: &EtatCatalogue, id: &str, version: &str) -> Option<String> {
+    let regles = Catalogue {
+        format: etabli_noyau::catalogue::FORMAT,
+        sequence: etat.sequence,
+        expire: u64::MAX,
+        plugins: Vec::new(),
+        revocations: etat.revocations.clone(),
+    };
+    regles.revocation(id, version).map(|r| {
+        if r.is_empty() {
+            "version retirée par l'éditeur".to_string()
+        } else {
+            r.to_string()
+        }
+    })
+}
+
+/// Retour à la version précédente d'un plugin : la version installée et la précédente échangent leur place (on peut donc
+/// revenir en avant de la même façon). Refusé si la version précédente est révoquée.
+pub fn revenir(racine: &Path, id: &str, etat: &EtatCatalogue) -> Result<String, String> {
+    if !plugins::valid_id(id) {
+        return Err("Identifiant de plugin invalide.".into());
+    }
+    let precedente = racine.join(PRECEDENT).join(id);
+    let courante = racine.join(id);
+    let version = version_precedente(racine, id)
+        .ok_or("Aucune version précédente n'est gardée pour ce plugin.")?;
+    if !courante.is_dir() {
+        return Err("Ce plugin n'est pas installé.".into());
+    }
+    if let Some(raison) = raison_revocation(etat, id, &version) {
+        return Err(format!(
+            "La version précédente ({version}) est révoquée : {raison}."
+        ));
+    }
+    let jeton = jeton();
+    let echange = racine.join(format!(".echange-{jeton}"));
+    fs::rename(&courante, &echange).map_err(|e| format!("Retour impossible : {e}"))?;
+    if let Err(e) = fs::rename(&precedente, &courante) {
+        let _ = fs::rename(&echange, &courante);
+        return Err(format!("Retour impossible : {e}"));
+    }
+    if let Err(e) = fs::rename(&echange, &precedente) {
+        // La version précédente est en place ; l'ancienne courante est perdue sans gravité.
+        log::warn!("Version remplacée non conservée : {e}");
+        let _ = fs::remove_dir_all(&echange);
+    }
+    Ok(version)
 }
 
 /// Désinstalle un plugin du catalogue : son dossier disparaît, pas les calculs faits avec
@@ -241,16 +328,19 @@ pub fn desinstaller(racine: &Path, id: &str) -> Result<(), String> {
     let corbeille = racine.join(format!(".desinstalle-{}", jeton()));
     fs::rename(&dossier, &corbeille).map_err(|e| format!("Désinstallation impossible : {e}"))?;
     let _ = fs::remove_dir_all(&corbeille);
+    let _ = fs::remove_dir_all(racine.join(PRECEDENT).join(id));
     Ok(())
 }
 
-/// Supprime les dossiers laissés par une installation interrompue (au démarrage).
+/// Supprime les dossiers laissés par une installation interrompue (au démarrage), sauf les versions précédentes.
 pub fn nettoyer(racine: &Path) {
     let Ok(entrees) = fs::read_dir(racine) else {
         return;
     };
     for entree in entrees.filter_map(Result::ok) {
-        if entree.file_name().to_string_lossy().starts_with('.') && entree.path().is_dir() {
+        let nom = entree.file_name();
+        let nom = nom.to_string_lossy();
+        if nom.starts_with('.') && nom != PRECEDENT && entree.path().is_dir() {
             let _ = fs::remove_dir_all(entree.path());
         }
     }
@@ -405,6 +495,19 @@ pub async fn plugin_installer_fichier(app: AppHandle) -> Result<Option<String>, 
     Ok(Some(id))
 }
 
+/// Revient à la version précédente d'un plugin installé depuis le catalogue (rien n'est perdu : un second appel revient
+/// à la version qu'on vient de quitter). Renvoie la version maintenant en place.
+#[tauri::command]
+pub async fn plugin_revenir(app: AppHandle, id: String) -> Result<String, String> {
+    let racine = app.state::<AppState>().paths.catalogue.clone();
+    let etat = lire_etat(&app.state::<AppState>().paths.config);
+    let version = tauri::async_runtime::spawn_blocking(move || revenir(&racine, &id, &etat))
+        .await
+        .map_err(|e| e.to_string())??;
+    plugins_changes(&app);
+    Ok(version)
+}
+
 /// Désinstalle un plugin installé depuis le catalogue (les calculs restent).
 #[tauri::command]
 pub fn plugin_desinstaller(app: AppHandle, id: String) -> Result<(), String> {
@@ -505,6 +608,138 @@ mod tests {
         assert!(!racine.join("outil").exists());
         assert!(desinstaller(&racine, "outil").is_err());
         assert!(desinstaller(&racine, "../x").is_err());
+    }
+
+    #[test]
+    fn la_version_precedente_est_gardee_et_on_peut_y_revenir() {
+        let racine = scratch("catalogue-precedente");
+        let etat = EtatCatalogue::default();
+        installer(&plugin("outil", "1.0.0"), &racine, None).unwrap();
+        assert_eq!(version_precedente(&racine, "outil"), None);
+        installer(&plugin("outil", "2.0.0"), &racine, Some("outil")).unwrap();
+        assert_eq!(
+            version_precedente(&racine, "outil").as_deref(),
+            Some("1.0.0")
+        );
+        // La liste des plugins ne voit pas le dossier des précédentes (il commence par un point).
+        assert!(racine.join(".precedent/outil/manifest.json").is_file());
+
+        // Retour : 1.0.0 est en place, 2.0.0 devient la précédente.
+        assert_eq!(revenir(&racine, "outil", &etat).unwrap(), "1.0.0");
+        assert_eq!(
+            version_installee(&racine, "outil").as_deref(),
+            Some("1.0.0")
+        );
+        assert_eq!(
+            version_precedente(&racine, "outil").as_deref(),
+            Some("2.0.0")
+        );
+        // Et retour « en avant » de la même façon.
+        assert_eq!(revenir(&racine, "outil", &etat).unwrap(), "2.0.0");
+        assert_eq!(
+            version_installee(&racine, "outil").as_deref(),
+            Some("2.0.0")
+        );
+        // Aucun dossier temporaire ne reste.
+        let restes: Vec<_> = fs::read_dir(&racine)
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        assert!(
+            restes.iter().all(|n| n == "outil" || n == ".precedent"),
+            "{restes:?}"
+        );
+    }
+
+    #[test]
+    fn une_troisieme_version_remplace_la_precedente() {
+        let racine = scratch("catalogue-precedente-trois");
+        installer(&plugin("outil", "1.0.0"), &racine, None).unwrap();
+        installer(&plugin("outil", "2.0.0"), &racine, None).unwrap();
+        installer(&plugin("outil", "3.0.0"), &racine, None).unwrap();
+        // Une seule version précédente : la 2.0.0 ; la 1.0.0 n'est plus gardée.
+        assert_eq!(
+            version_precedente(&racine, "outil").as_deref(),
+            Some("2.0.0")
+        );
+    }
+
+    #[test]
+    fn retour_refuse_sans_precedente_ou_si_elle_est_revoquee() {
+        let racine = scratch("catalogue-precedente-refus");
+        let config = scratch("catalogue-precedente-config");
+        analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config,
+        )
+        .unwrap();
+        let etat = lire_etat(&config);
+        // Rien à restaurer.
+        installer(&plugin("maths", "1.0.0"), &racine, None).unwrap();
+        assert!(revenir(&racine, "maths", &etat).is_err());
+        assert!(revenir(&racine, "../x", &etat).is_err());
+        // « tracage » avant 1.2.0 est révoqué : on ne peut pas y revenir.
+        installer(&plugin("tracage", "1.1.1"), &racine.join("autre"), None).unwrap();
+        installer(&plugin("tracage", "1.2.0"), &racine.join("autre"), None).unwrap();
+        let e = revenir(&racine.join("autre"), "tracage", &etat).unwrap_err();
+        assert!(e.contains("révoquée"), "{e}");
+        assert_eq!(
+            version_installee(&racine.join("autre"), "tracage").as_deref(),
+            Some("1.2.0")
+        );
+    }
+
+    #[test]
+    fn revocation_de_la_version_installee() {
+        let config = scratch("catalogue-revocation-config");
+        analyser_catalogue(
+            CATALOGUE,
+            Some(SIGNATURE),
+            CLE_CATALOGUE,
+            MAINTENANT,
+            &config,
+        )
+        .unwrap();
+        let etat = lire_etat(&config);
+        assert!(raison_revocation(&etat, "tracage", "1.1.1")
+            .unwrap()
+            .contains("faille"));
+        assert!(raison_revocation(&etat, "tracage", "1.2.0").is_none());
+        assert!(raison_revocation(&etat, "maths", "0.0.1").is_none());
+        // Raison vide : message par défaut.
+        let sans_raison = EtatCatalogue {
+            sequence: 1,
+            revocations: vec![Revocation {
+                id: "x".into(),
+                avant: Some("2.0.0".into()),
+                versions: Vec::new(),
+                raison: String::new(),
+            }],
+        };
+        assert!(raison_revocation(&sans_raison, "x", "1.0.0")
+            .unwrap()
+            .contains("retirée"));
+    }
+
+    #[test]
+    fn desinstaller_supprime_aussi_la_precedente_et_le_nettoyage_la_respecte() {
+        let racine = scratch("catalogue-precedente-nettoyage");
+        installer(&plugin("outil", "1.0.0"), &racine, None).unwrap();
+        installer(&plugin("outil", "2.0.0"), &racine, None).unwrap();
+        fs::create_dir_all(racine.join(".installation-reste")).unwrap();
+        nettoyer(&racine);
+        assert!(!racine.join(".installation-reste").exists());
+        assert!(
+            racine.join(".precedent/outil").is_dir(),
+            "le nettoyage garde les précédentes"
+        );
+        desinstaller(&racine, "outil").unwrap();
+        assert!(!racine.join("outil").exists());
+        assert!(!racine.join(".precedent/outil").exists());
     }
 
     #[test]
