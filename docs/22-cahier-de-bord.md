@@ -106,7 +106,7 @@ Dernière mise à jour : 5 octobre 2026.
 - Fenêtre d'installation d'un plugin : permissions demandées (et une phrase par permission d'appel).
 - Page Catalogue : pastille « Révoqué », bouton « Revenir à la … ».
 - Réglages : plugins épinglés, plugin révoqué toujours désactivé ; boîte « Source du catalogue ».
-- Export de fichiers : 8 extensions autorisées, 20 Mo ; documents et données de plugin plafonnés à 5 Mio.
+- Export de fichiers : 9 extensions autorisées (dont `ics`), 20 Mo ; documents et données de plugin plafonnés à 5 Mio.
 - Scripts : `paquet-plugin.mjs`, `valider-plugin.mjs`, `nouveau-plugin.mjs`, `catalogue-signe.mjs`.
 
 ## 5. Reste à faire côté code (agent)

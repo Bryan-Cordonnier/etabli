@@ -66,6 +66,7 @@ plugins/fournisseurs/     réglages : fournisseurs de matière (publie le servic
 plugins/machines/         réglages : scies et cisailles (publie le service « machines »)
 plugins/finances/        l'argent réel : registre, service finances@1, tableau de bord (docs/24)
 plugins/agenda/          le temps : calendrier, heures à rebours, repos légal, service agenda@1 (docs/24)
+plugins/budget/          le prévu : courbe du mois, virements, abonnements, plafonds, service budget@1 (docs/24)
 plugins/finances/         l'argent réel : comptes, registre en ajout seulement, tableau de bord, service « finances » (hors catalogue)
 fixtures/                 plugins de test (appels entre plugins), jamais distribués
 docs/                     cette documentation
