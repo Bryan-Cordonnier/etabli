@@ -4,7 +4,7 @@
 //   node scripts/essais-isolation.mjs --pause      laisse le serveur tourner après l'installation (pour explorer à la main)
 //
 // Ce que fait le script :
-//   1. clé de signature temporaire, paquets signés des plugins `maths` et `tolerie` ;
+//   1. clé de signature temporaire, paquets signés des plugins `agenda` et `finances` ;
 //   2. lancement du binaire `etabli-serveur` (origine dédiée aux plugins : http://<id>.localhost:4321) ;
 //   3. création de l'administrateur et installation des deux plugins par l'API, comme le ferait un administrateur ;
 //   4. essais dans Chromium (Playwright) : cadre isolé, CSP, stockage séparé, hôtes étrangers, messages hostiles.
@@ -24,7 +24,7 @@ const PORT_APP = 4320;
 const PORT_PLUGINS = 4321;
 const ORIGINE_APP = `http://127.0.0.1:${PORT_APP}`;
 const MOT_DE_PASSE = "essai-isolation-2026";
-const PLUGINS = ["maths", "tolerie"];
+const PLUGINS = ["agenda", "finances"];
 const npx = process.platform === "win32" ? "npx.cmd" : "npx";
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 
@@ -164,32 +164,32 @@ function requeteHote(hote, chemin) {
 
 async function essaisHotes() {
   etape("Origine des plugins : l'en-tête Host décide de tout");
-  const bon = await requeteHote(`maths.localhost:${PORT_PLUGINS}`, "/manifest.json");
-  essai("un hôte de plugin sert les fichiers de CE plugin", bon.statut === 200 && JSON.parse(bon.corps).id === "maths", `${bon.statut}`);
+  const bon = await requeteHote(`agenda.localhost:${PORT_PLUGINS}`, "/manifest.json");
+  essai("un hôte de plugin sert les fichiers de CE plugin", bon.statut === 200 && JSON.parse(bon.corps).id === "agenda", `${bon.statut}`);
   const csp = String(bon.en_tetes["content-security-policy"] ?? "");
   essai(
     "les fichiers d'un plugin portent une CSP sans réseau",
     csp.includes("default-src 'none'") && csp.includes("connect-src 'none'") && csp.includes("form-action 'none'"),
     csp,
   );
-  const croise = await requeteHote(`tolerie.localhost:${PORT_PLUGINS}`, "/apps/pythagore/index.html");
+  const croise = await requeteHote(`finances.localhost:${PORT_PLUGINS}`, "/apps/calendrier/index.html");
   essai("un plugin ne sert pas les fichiers d'un autre", croise.statut === 404, `${croise.statut}`);
   const etrangers = [
     "evil.com",
     `evil.com:${PORT_PLUGINS}`,
-    "maths.autre.test",
-    `maths.localhost.evil.com:${PORT_PLUGINS}`,
+    "agenda.autre.test",
+    `agenda.localhost.evil.com:${PORT_PLUGINS}`,
     `localhost:${PORT_PLUGINS}`,
     `127.0.0.1:${PORT_PLUGINS}`,
     `a.b.localhost:${PORT_PLUGINS}`,
-    `MA_THS.localhost:${PORT_PLUGINS}`,
+    `AGE_NDA.localhost:${PORT_PLUGINS}`,
   ];
   for (const hote of etrangers) {
     const r = await requeteHote(hote, "/manifest.json");
     essai(`hôte étranger « ${hote} » → 404`, r.statut === 404, `${r.statut}`);
   }
   for (const chemin of ["/../../etc/passwd", "/%2e%2e/%2e%2e/etc/passwd", "/apps/%2e%2e/%2e%2e/manifest.json", "/sw-plugins.js/../manifest.json"]) {
-    const r = await requeteHote(`maths.localhost:${PORT_PLUGINS}`, chemin);
+    const r = await requeteHote(`agenda.localhost:${PORT_PLUGINS}`, chemin);
     essai(`évasion de chemin « ${chemin} » refusée`, r.statut === 404 || r.statut === 400, `${r.statut}`);
   }
   const sw = await requeteHote("evil.com", "/sw-plugins.js");
@@ -216,13 +216,13 @@ async function ouvrirDansLApplication(page, ouvrir, hoteAttendu) {
   return cadre;
 }
 
-/** Recharge l'application : elle rouvre ses onglets ; si le cadre de maths n'en fait pas partie, on ouvre sa première mini-app. */
-async function rouvrirMaths(page) {
+/** Recharge l'application : elle rouvre ses onglets ; si le cadre de agenda n'en fait pas partie, on ouvre sa première mini-app. */
+async function rouvrirAgenda(page) {
   await page.reload();
-  await page.locator('button[data-plugin="maths"]').waitFor({ timeout: 15_000 });
-  const dejaOuvert = await attendre(() => page.frames().some((f) => estCadreApp(f, "maths.localhost")), 4000);
+  await page.locator('button[data-plugin="agenda"]').waitFor({ timeout: 15_000 });
+  const dejaOuvert = await attendre(() => page.frames().some((f) => estCadreApp(f, "agenda.localhost")), 4000);
   if (!dejaOuvert) {
-    await page.locator('button[data-plugin="maths"]').click();
+    await page.locator('button[data-plugin="agenda"]').click();
     await page.locator("button.open").first().click();
   }
 }
@@ -299,13 +299,13 @@ async function essaisDansLApplication(navigateurPlaywright) {
   await page.locator("input[type=text]").fill("essai");
   await page.locator("input[type=password]").fill(MOT_DE_PASSE);
   await page.getByRole("button", { name: "Se connecter" }).click();
-  await page.locator('button[data-plugin="tolerie"]').waitFor({ timeout: 15_000 });
+  await page.locator('button[data-plugin="finances"]').waitFor({ timeout: 15_000 });
   const jetonApp = await page.evaluate(() => JSON.stringify({ ...localStorage }));
   essai("l'application garde bien une session dans son propre stockage (cible à protéger)", jetonApp.length > 10, jetonApp);
 
-  etape("Plugin « maths » dans son cadre");
-  const maths = await ouvrirDansLApplication(page, () => page.locator("button.open").first().click(), "maths.localhost");
-  essai("le cadre vit sur l'origine propre du plugin (maths.localhost)", new URL(maths.url()).origin === `http://maths.localhost:${PORT_PLUGINS}`, maths.url());
+  etape("Plugin « agenda » dans son cadre");
+  const agenda = await ouvrirDansLApplication(page, () => page.locator("button.open").first().click(), "agenda.localhost");
+  essai("le cadre vit sur l'origine propre du plugin (agenda.localhost)", new URL(agenda.url()).origin === `http://agenda.localhost:${PORT_PLUGINS}`, agenda.url());
   const sandbox = await page.locator('iframe[src*="/apps/"]').first().getAttribute("sandbox");
   essai(
     "l'attribut sandbox du cadre n'ouvre ni fenêtre, ni navigation du sommet, ni formulaire",
@@ -315,14 +315,14 @@ async function essaisDansLApplication(navigateurPlaywright) {
 
   // 1. Pas d'accès à l'application.
   for (const [nom, fonction] of Object.entries(TENTATIVES)) {
-    const r = await maths.evaluate(fonction);
+    const r = await agenda.evaluate(fonction);
     essai(`le plugin ne peut pas ${nom} : SecurityError`, r === "refusé: SecurityError", r);
   }
-  const stockageVu = await maths.evaluate(() => ({ local: localStorage.length, cookie: document.cookie, origine: location.origin }));
+  const stockageVu = await agenda.evaluate(() => ({ local: localStorage.length, cookie: document.cookie, origine: location.origin }));
   essai("le stockage vu par le plugin est vide (rien de la session de l'application)", stockageVu.local === 0 && stockageVu.cookie === "", JSON.stringify(stockageVu));
 
   // 3. Réseau, images, WebSocket, formulaire, navigation, fenêtres.
-  const reseau = await maths.evaluate(async (appOrigine) => {
+  const reseau = await agenda.evaluate(async (appOrigine) => {
     const sortie = {};
     const tenter = async (nom, fonction) => {
       try {
@@ -401,64 +401,64 @@ async function essaisDansLApplication(navigateurPlaywright) {
     essai(`bloqué pour le plugin : ${nom}`, reseau[nom] === "refusé", String(reseau[nom]));
   }
   await new Promise((r) => setTimeout(r, 800));
-  const violations = await maths.evaluate(() => window.__violations).catch(() => []);
+  const violations = await agenda.evaluate(() => window.__violations).catch(() => []);
   essai("la CSP du plugin a signalé les violations (connect-src, img-src)", ["connect-src", "img-src"].every((d) => violations.includes(d)), violations.join(", "));
   essai("le sommet n'a pas été redirigé par le plugin", new URL(page.url()).origin === ORIGINE_APP, page.url());
   essai("aucun nouvel onglet ou fenêtre n'a été ouvert", popups.length === 0, popups.join(", "));
   // Navigation du cadre lui-même vers l'extérieur : la CSP de l'application (frame-src) doit la refuser.
-  await maths.evaluate(() => {
+  await agenda.evaluate(() => {
     location.href = "http://example.com/essai";
   }).catch(() => {});
   await new Promise((r) => setTimeout(r, 1000));
   essai("le cadre ne peut pas naviguer vers un site extérieur", page.frames().every((f) => { try { return new URL(f.url()).hostname !== "example.com"; } catch { return true; } }), page.frames().map((f) => f.url()).join(", "));
   essai("aucune requête n'est partie vers l'extérieur", sorties.length === 0, sorties.join(", "));
 
-  // 2. Un plugin ne voit pas le stockage d'un autre. (Le cadre de maths peut avoir été rechargé par l'essai précédent.)
-  etape("Stockage séparé entre « maths » et « tolerie »");
-  const mathsAgain = await ouvrirDansLApplication(
+  // 2. Un plugin ne voit pas le stockage d'un autre. (Le cadre de agenda peut avoir été rechargé par l'essai précédent.)
+  etape("Stockage séparé entre « agenda » et « finances »");
+  const agendaAgain = await ouvrirDansLApplication(
     page,
-    () => rouvrirMaths(page),
-    "maths.localhost",
+    () => rouvrirAgenda(page),
+    "agenda.localhost",
   );
-  await mathsAgain.evaluate(() => {
-    localStorage.setItem("secret-maths", "valeur-maths");
-    document.cookie = "secret-maths=1; path=/; Secure; SameSite=Strict";
-    return caches.open("secret-maths");
+  await agendaAgain.evaluate(() => {
+    localStorage.setItem("secret-agenda", "valeur-agenda");
+    document.cookie = "secret-agenda=1; path=/; Secure; SameSite=Strict";
+    return caches.open("secret-agenda");
   });
-  const tolerie = await ouvrirDansLApplication(
+  const finances = await ouvrirDansLApplication(
     page,
     async () => {
-      await page.locator('button[data-plugin="tolerie"]').click();
+      await page.locator('button[data-plugin="finances"]').click();
       await page.locator("button.open").first().click();
     },
-    "tolerie.localhost",
+    "finances.localhost",
   );
-  const vuDeTolerie = await tolerie.evaluate(async () => ({
-    local: localStorage.getItem("secret-maths"),
+  const vuDeFinances = await finances.evaluate(async () => ({
+    local: localStorage.getItem("secret-agenda"),
     cookie: document.cookie,
     caches: await caches.keys(),
   }));
-  essai("le localStorage de « maths » est invisible depuis « tolerie »", vuDeTolerie.local === null, JSON.stringify(vuDeTolerie));
-  essai("le cookie de « maths » est invisible depuis « tolerie »", !vuDeTolerie.cookie.includes("secret-maths"), vuDeTolerie.cookie);
-  essai("le cache de « maths » est invisible depuis « tolerie »", !vuDeTolerie.caches.includes("secret-maths"), vuDeTolerie.caches.join(", "));
-  const toleriePrivee = await tolerie.evaluate(() => {
-    localStorage.setItem("secret-tolerie", "valeur-tolerie");
+  essai("le localStorage de « agenda » est invisible depuis « finances »", vuDeFinances.local === null, JSON.stringify(vuDeFinances));
+  essai("le cookie de « agenda » est invisible depuis « finances »", !vuDeFinances.cookie.includes("secret-agenda"), vuDeFinances.cookie);
+  essai("le cache de « agenda » est invisible depuis « finances »", !vuDeFinances.caches.includes("secret-agenda"), vuDeFinances.caches.join(", "));
+  const financesPrivee = await finances.evaluate(() => {
+    localStorage.setItem("secret-finances", "valeur-finances");
     return location.origin;
   });
-  const frameMaths = page.frames().find((f) => estCadreApp(f, "maths.localhost"));
-  const retourMaths = frameMaths ? await frameMaths.evaluate(() => ({ local: localStorage.getItem("secret-maths"), autre: localStorage.getItem("secret-tolerie") })) : null;
+  const frameAgenda = page.frames().find((f) => estCadreApp(f, "agenda.localhost"));
+  const retourAgenda = frameAgenda ? await frameAgenda.evaluate(() => ({ local: localStorage.getItem("secret-agenda"), autre: localStorage.getItem("secret-finances") })) : null;
   essai(
-    "et réciproquement : « tolerie » n'écrit pas dans le stockage de « maths »",
-    !retourMaths || retourMaths.autre === null,
-    `${toleriePrivee} ${JSON.stringify(retourMaths)}`,
+    "et réciproquement : « finances » n'écrit pas dans le stockage de « agenda »",
+    !retourAgenda || retourAgenda.autre === null,
+    `${financesPrivee} ${JSON.stringify(retourAgenda)}`,
   );
 
   // 5. Messages hostiles vers le garde de l'hôte.
   etape("Messages hostiles vers le garde de l'hôte");
   const cadre = await ouvrirDansLApplication(
     page,
-    () => rouvrirMaths(page),
-    "maths.localhost",
+    () => rouvrirAgenda(page),
+    "agenda.localhost",
   );
   const HOSTILES = [
     ["valeur nulle", "nul"],

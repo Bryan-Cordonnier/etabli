@@ -163,3 +163,25 @@ Tous fusionnés dans `main`, CI verte (CodeQL compris). **Aucun écran n'a été
 5. Un défaut trouvé par un test avant la fusion : un identifiant de rappel commençant par « @ » aurait fait refuser toute la liste par le moteur.
 
 **À faire par toi** : ouvrir les écrans, autoriser les notifications (Paramètres › Téléphone) et essayer « Essai dans 1 minute » ; comparer `paie` à un vrai bulletin et corriger les taux dans la rubrique « Taux ».
+
+## 9. New plan (6 October 2026)
+
+Decided with Bryan on 6 October 2026. It replaces the old plan (community plugin catalogue and SaaS around it).
+
+| Product | What it is | Visibility |
+| --- | --- | --- |
+| **Etable** | The engine: Windows and Android interfaces, sandboxed plugin system, minimal server (users, login, storage). No catalogue, no store, no licence check, **no bundled plugin**. | Public, open source |
+| **Etablink** | The SaaS: catalogue, account and licence verification, store with commission, own logo and servers, company panels. Plugins from third parties, one repository each. | Private |
+| **Quotidien** | Personal app (agenda, finances, budget, payroll). Priority number 1. Server at home (homelab). | Private |
+| **ERP** | Set aside for now. | Private |
+
+Decisions:
+- **Android: Tauri mobile**, not Capacitor, to share one Rust core with Windows. Validated by a spike ([26](26-tauri-android-spike.md)); a Kotlin fix is mandatory (native bridge).
+- **Sandbox always on**, no option. Measure its cost on Quotidien before reconsidering.
+- **Only Windows and Android.** No web version, no PWA, no iPhone.
+- **Server**: minimal command-line server, **PostgreSQL only**, **organisations from the start**, stateless so it can scale, documented deployment, **no panel**. Etablink, Quotidien and the ERP reuse it.
+- **Repositories**: Etable = engine + SDK + UI kit (published as versioned packages) + plugin tooling + a plugin template. One repository per third-party plugin. **Quotidien = one private repository** holding its four plugins in self-contained folders; Etable is embedded as a submodule (no diverging fork).
+- **Language**: repositories, code, commands, commits and documentation in English; the interface stays in French for now, written so it can be translated.
+- The seven metalworking plugins left the repository on 6 October 2026 (tag `legacy/etabli-0.5-chaudronnerie`); the people using Etabli 0.5 are not served any more.
+
+Order of work: (1) cut what does not belong to Etable: metalworking plugins (done), domain code in the engine (Libraries, DXF, workshop sheets), store (catalogue, licences, updates from a catalogue), (2) port Android to Tauri then delete the web build and Capacitor, (3) translate to English, (4) minimal server with PostgreSQL and organisations, (5) Quotidien as a private repository, (6) rename the repository to Etable (changes installer identifiers: existing installations stop updating).

@@ -1,5 +1,7 @@
 # 12 — Reste à faire et limites connues
 
+> **Out of date (6 October 2026).** The project is changing direction: this repository becomes **Etable**, an open-source engine with no bundled plugins; the metalworking plugins described below were removed (tag `legacy/etabli-0.5-chaudronnerie`). Current plan: [22-cahier-de-bord.md](22-cahier-de-bord.md), section 9. This document will be rewritten in English.
+
 Les spécifications détaillées (formules, cas de test) sont recopiées dans
 [13-specs-a-venir.md](13-specs-a-venir.md). Rappel : **faire valider la spécification par Bryan avant de coder**.
 

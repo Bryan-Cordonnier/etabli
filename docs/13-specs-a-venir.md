@@ -1,5 +1,7 @@
 # 13 — Spécifications de ce qui reste à coder
 
+> **Out of date (6 October 2026).** The project is changing direction: this repository becomes **Etable**, an open-source engine with no bundled plugins; the metalworking plugins described below were removed (tag `legacy/etabli-0.5-chaudronnerie`). Current plan: [22-cahier-de-bord.md](22-cahier-de-bord.md), section 9. This document will be rewritten in English.
+
 Extrait du cahier des charges des plugins (page claude.ai privée), pour un agent qui n'y a pas
 accès. Ces spécifications ont été **rédigées mais pas toutes validées en détail** par Bryan :
 reposer les questions ouvertes avant de coder. Règles communes : [07-creer-un-plugin.md](07-creer-un-plugin.md).
