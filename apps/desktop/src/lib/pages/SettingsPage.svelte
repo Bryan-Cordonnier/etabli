@@ -127,7 +127,7 @@
   }
 
   const noDocument = { id: null, title: "", data: null };
-  const REPO = "https://github.com/Bryan-Cordonnier/etabli";
+  const REPO = "https://github.com/etable-project/etable";
 
   let info = $state<AppInfo | null>(null);
   let autostart = $state(false);

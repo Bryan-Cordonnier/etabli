@@ -34,7 +34,7 @@ test("config.yml : tickets vides désactivés et liens de contact complets", () 
   assert.ok(config.contact_links.length >= 2);
   for (const lien of config.contact_links) {
     assert.ok(lien.name && lien.about, `lien incomplet : ${JSON.stringify(lien)}`);
-    assert.match(lien.url, /^https:\/\/github\.com\/Bryan-Cordonnier\/etabli\//);
+    assert.match(lien.url, /^https:\/\/github\.com\/etable-project\/etable\//);
   }
 });
 

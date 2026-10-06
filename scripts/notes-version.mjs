@@ -72,7 +72,7 @@ export function enTexte(markdown) {
 
 /**
  * Notes complètes d'une Release GitHub : la section du journal, puis un lien vers le journal entier.
- * `depot` : « Bryan-Cordonnier/etabli ».
+ * `depot` : « etable-project/etable ».
  */
 export function notesDeRelease(journal, version, depot) {
   const section = extraireSection(journal, version);
@@ -99,7 +99,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       process.exit(1);
     }
     if (option === "--texte") console.log(enTexte(section));
-    else if (option === "--release") console.log(notesDeRelease(journal, version, process.env.GITHUB_REPOSITORY ?? "Bryan-Cordonnier/etabli"));
+    else if (option === "--release") console.log(notesDeRelease(journal, version, process.env.GITHUB_REPOSITORY ?? "etable-project/etable"));
     else console.log(section);
   }
 }

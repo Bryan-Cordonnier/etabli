@@ -1,7 +1,7 @@
 # Spécification — Établi : mode serveur facultatif, utilisateurs, mobile
 
 Statut : **réponses de Bryan intégrées (3 oct. 2026), en attente de sa validation finale avant E1** (règle d'`AGENTS.md` : pas de gros développement sans spécification validée).
-Cible : le dépôt `Bryan-Cordonnier/etabli` (moteur). 
+Cible : le dépôt `etable-project/etable` (moteur). 
 
 ---
 

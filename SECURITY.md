@@ -4,7 +4,7 @@
 
 **Ne publiez pas une faille dans un ticket public.** Utilisez le signalement privé de GitHub :
 
-[Signaler une faille de sécurité](https://github.com/Bryan-Cordonnier/etabli/security/advisories/new)
+[Signaler une faille de sécurité](https://github.com/etable-project/etable/security/advisories/new)
 (onglet *Security* → *Report a vulnerability*).
 
 Décrivez ce que vous avez trouvé, comment le reproduire, la version d'Établi et de Windows, et l'effet

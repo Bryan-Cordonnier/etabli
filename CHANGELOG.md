@@ -11,6 +11,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Changed
+
+- **The repository moved** from `Bryan-Cordonnier/etabli` to `etable-project/etable` (the old address redirects, so installed copies keep finding their updates). README and ROADMAP are rewritten for the new plan (Etable, a plugin engine) and CONTRIBUTING no longer mentions a catalogue.
+
 ### Removed
 
 - **The seven metalworking plugins** (Maths, Economy, Sheet metal, Layout, Materials, Suppliers, Machines) are no longer in this repository: the project is moving to a plugin-free open-source engine (Etable). The last state is kept under the Git tag `legacy/etabli-0.5-chaudronnerie`.

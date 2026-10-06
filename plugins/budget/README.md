@@ -1,6 +1,6 @@
 # Budget
 
-Plugin pour [Établi](https://github.com/Bryan-Cordonnier/etabli) : le **prévu** (virements, abonnements, paies attendues, plafonds). L'argent réel vit dans le plugin **Finances**, obligatoire.
+Plugin pour [Établi](https://github.com/etable-project/etable) : le **prévu** (virements, abonnements, paies attendues, plafonds). L'argent réel vit dans le plugin **Finances**, obligatoire.
 Spécification : [docs/24](../../docs/24-spec-plugins-budget.md) ; description du code : [docs/10](../../docs/10-plugins-existants.md).
 
 ```bash

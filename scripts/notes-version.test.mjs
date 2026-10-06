@@ -74,8 +74,8 @@ test("enTexte : titres en majuscules, plus de Markdown", () => {
 });
 
 test("notesDeRelease : date en français et lien vers le journal", () => {
-  const notes = notesDeRelease(JOURNAL, "0.3.0", "Bryan-Cordonnier/etabli");
+  const notes = notesDeRelease(JOURNAL, "0.3.0", "etable-project/etable");
   assert.match(notes, /^\*Publiée le 30\/09\/2026\.\*/);
-  assert.match(notes, /Journal complet des changements\]\(https:\/\/github\.com\/Bryan-Cordonnier\/etabli\/blob\/main\/CHANGELOG\.md\)$/);
+  assert.match(notes, /Journal complet des changements\]\(https:\/\/github\.com\/etable-project\/etable\/blob\/main\/CHANGELOG\.md\)$/);
   assert.equal(notesDeRelease(JOURNAL, "9.9.9", "a/b"), null);
 });
