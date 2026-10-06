@@ -10,6 +10,7 @@
     type PluginToHost,
   } from "@etabli/sdk/protocol";
   import { api } from "$lib/api";
+  import { traiterRappels } from "$lib/mobile/rappelsHote";
   import { printFiche } from "$lib/print/print";
   import { frameShortcuts } from "$lib/shortcuts";
   import { sandboxDe, lireTheme } from "$lib/plugins/cadre";
@@ -126,6 +127,12 @@
           void routeur
             .appeler(pluginId, { service: message.service, fn: message.fn, args: message.args, timeoutMs: message.timeoutMs })
             .then((result) => send({ type: "serviceReply", id, result }));
+          break;
+        }
+        case "reminders": {
+          // Permission `notifications` déjà contrôlée par la garde ; seul l'hôte parle aux notifications natives.
+          const id = message.id;
+          void traiterRappels(pluginId, message).then((result) => send({ type: "remindersResult", id, result }));
           break;
         }
         case "saveFile":

@@ -19,6 +19,8 @@ import {
   type Libraries,
   type MachineKind,
   type PluginToHost,
+  type Reminder,
+  type RemindersResult,
   type SavedFile,
   type ServiceCallContext,
   type ServiceCallOptions,
@@ -29,7 +31,7 @@ import {
   type ThemeTokens,
 } from "./protocol";
 
-export { SAW_TYPES, SERVICE_ERROR_CODES, STOCK_KINDS } from "./protocol";
+export { REMINDERS_HORIZON_MS, REMINDERS_MAX, SAW_TYPES, SERVICE_ERROR_CODES, STOCK_KINDS } from "./protocol";
 
 /** Gestionnaire d'une fonction de service : reçoit les arguments et l'identité de l'appelant, renvoie la valeur (JSON). */
 export type ServiceHandler = (args: unknown, context: ServiceCallContext) => unknown | Promise<unknown>;
@@ -54,6 +56,10 @@ export type {
   Machine,
   MachineKind,
   MachinesData,
+  Reminder,
+  RemindersErrorCode,
+  RemindersResult,
+  RemindersState,
   SavedFile,
   Saw,
   SawType,
@@ -149,6 +155,16 @@ export interface Etabli<T> {
   send(kind: string, data: unknown): void;
   /** Enregistre un fichier (DXF, CSV…) : boîte « Enregistrer sous » de Windows, puis écriture. */
   saveFile(file: SavedFile): void;
+  /**
+   * Rappels sur le téléphone (permission `notifications`). Une notification à un instant précis, jamais une alarme ; rien sur PC.
+   * `set` REMPLACE tous les rappels de ce plugin (la liste complète à chaque fois) ; `state` lit les autorisations et ce qui est programmé.
+   * Ne jette jamais : `{ ok: true, autorise, alarmeExacte, programmes, jusquau }` ou `{ ok: false, code, message }`.
+   */
+  readonly reminders: {
+    set(items: Reminder[]): Promise<RemindersResult>;
+    clear(): Promise<RemindersResult>;
+    state(): Promise<RemindersResult>;
+  };
   /** Données reçues d'une autre mini-app à l'ouverture, ou `null`. */
   readonly incoming: Incoming | null;
   /** Appelé quand l'utilisateur change de thème. Renvoie une fonction pour se désabonner. */
@@ -190,6 +206,22 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
   const serviceHandlers = new Map<string, Map<string, ServiceHandler>>();
   let callCounter = 0;
   let readySignalled = false;
+  const pendingReminders = new Map<string, (result: RemindersResult) => void>();
+  let reminderCounter = 0;
+  /** Envoie une demande de rappels et attend la réponse du moteur (jamais d'exception, jamais d'attente infinie). */
+  const askReminders = (request: { op: "set"; items: Reminder[] } | { op: "state" }): Promise<RemindersResult> =>
+    new Promise((resolve) => {
+      const id = `r${++reminderCounter}`;
+      const timer = setTimeout(() => {
+        pendingReminders.delete(id);
+        resolve({ ok: false, code: "erreur", message: "Pas de réponse du moteur." });
+      }, 15_000);
+      pendingReminders.set(id, (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      });
+      send({ type: "reminders", id, ...request } as PluginToHost);
+    });
 
   const api: Etabli<unknown> = {
     get pluginId() {
@@ -326,6 +358,11 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
     saveFile(file) {
       send({ type: "saveFile", file: { ...file } });
     },
+    reminders: {
+      set: (items) => askReminders({ op: "set", items: JSON.parse(JSON.stringify(items)) }),
+      clear: () => askReminders({ op: "set", items: [] }),
+      state: () => askReminders({ op: "state" }),
+    },
     get incoming() {
       return incoming;
     },
@@ -382,6 +419,12 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "serviceInvoke":
         void answerInvoke(message);
         break;
+      case "remindersResult": {
+        const done = pendingReminders.get(message.id);
+        pendingReminders.delete(message.id);
+        done?.(message.result);
+        break;
+      }
     }
   };
 

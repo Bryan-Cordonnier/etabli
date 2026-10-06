@@ -16,6 +16,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         calendrier: page("apps/calendrier"),
+        rappels: page("apps/rappels"),
         service: page("service"),
       },
     },

@@ -10,6 +10,7 @@ import {
   type Carnet,
   type Evenement,
   type Repetition,
+  type RappelsParAppelant,
   type Reglages,
   type ReponseMemorisee,
 } from "./types";
@@ -21,7 +22,7 @@ export const AVERTISSEMENT_OCTETS = 2_800_000;
 export const EVENEMENTS_MAX_PAR_PLUGIN = 2000;
 export const CLES_GARDEES = 50;
 
-export const carnetVide = (): Carnet => ({ schema: 1, evenements: [], reglages: { ...REGLAGES_DEFAUT }, dernierNumero: 0, cles: {} });
+export const carnetVide = (): Carnet => ({ schema: 1, evenements: [], reglages: { ...REGLAGES_DEFAUT }, dernierNumero: 0, cles: {}, rappels: {}, rappelsHoraires: true });
 
 export const octetsDe = (c: Carnet): number => JSON.stringify(c).length;
 
@@ -32,17 +33,43 @@ const BORNES_REGLAGES: Record<keyof Reglages, [number, number]> = {
   sommeilMin: [0, 960],
   endormissementMin: [0, 240],
   majorationTrajetBp: [0, 20_000],
+  preAlerteMin: [0, 120],
+  rappelCoucherMin: [0, 240],
 };
+
+/** Réglages ajoutés après la première version : absents d'un carnet plus ancien, on prend alors la valeur de départ (rien d'illisible). */
+const AJOUTES_PLUS_TARD: readonly (keyof Reglages)[] = ["preAlerteMin", "rappelCoucherMin"];
 
 export function lireReglages(brut: unknown): Reglages {
   const cles = Object.keys(BORNES_REGLAGES);
-  const o = objet(brut, cles);
+  const o = objet(
+    brut,
+    cles.filter((k) => !AJOUTES_PLUS_TARD.includes(k as keyof Reglages)),
+    AJOUTES_PLUS_TARD,
+  );
   const r = {} as Reglages;
   for (const k of Object.keys(BORNES_REGLAGES) as (keyof Reglages)[]) {
     const [min, max] = BORNES_REGLAGES[k];
-    r[k] = entier(o[k], k, min, max);
+    r[k] = o[k] === undefined && AJOUTES_PLUS_TARD.includes(k) ? REGLAGES_DEFAUT[k] : entier(o[k], k, min, max);
   }
   return r;
+}
+
+function lireRappelsStockes(brut: unknown): RappelsParAppelant {
+  if (brut === null || typeof brut !== "object" || Array.isArray(brut)) throw new ErreurAgenda("illisible", "Rappels illisibles.");
+  const sortie: RappelsParAppelant = {};
+  for (const [plugin, groupes] of Object.entries(brut)) {
+    if (groupes === null || typeof groupes !== "object" || Array.isArray(groupes)) throw new ErreurAgenda("illisible", "Rappels illisibles.");
+    sortie[plugin] = {};
+    for (const [groupe, liste] of Object.entries(groupes)) {
+      if (!Array.isArray(liste)) throw new ErreurAgenda("illisible", "Rappels illisibles.");
+      sortie[plugin]![groupe] = liste.map((x) => {
+        const o = objet(x, ["id", "at", "titre", "texte"]);
+        return { id: texte(o.id, "rappel.id", 100), at: entier(o.at, "rappel.at", 0, 8.64e15), titre: texte(o.titre, "rappel.titre", 120), texte: texteFacultatif(o.texte, "rappel.texte", 300) };
+      });
+    }
+  }
+  return sortie;
 }
 
 export function lireRepetition(brut: unknown, premier: Jour): Repetition {
@@ -111,13 +138,22 @@ function lireCles(brut: unknown): Record<string, ReponseMemorisee[]> {
 export function lireCarnet(enregistre: unknown): Carnet {
   if (enregistre === null || enregistre === undefined) return carnetVide();
   try {
-    const o = objet(enregistre, ["schema", "evenements", "reglages", "dernierNumero", "cles"]);
+    const o = objet(enregistre, ["schema", "evenements", "reglages", "dernierNumero", "cles"], ["rappels", "rappelsHoraires"]);
     if (o.schema !== 1) throw new ErreurAgenda("illisible", `Version de carnet inconnue : ${String(o.schema)} (cet agenda lit la version 1).`);
     if (!Array.isArray(o.evenements)) throw new ErreurAgenda("illisible", "Liste d'événements illisible.");
     const evenements = o.evenements.map(lireEvenement);
     const dernierNumero = entier(o.dernierNumero, "dernierNumero", 0, 2_000_000_000);
     if (evenements.some((e) => Number(e.id.slice(1)) > dernierNumero)) throw new ErreurAgenda("illisible", "Numérotation des événements incohérente.");
-    return { schema: 1, evenements, reglages: lireReglages(o.reglages), dernierNumero, cles: lireCles(o.cles) };
+    if (o.rappelsHoraires !== undefined && typeof o.rappelsHoraires !== "boolean") throw new ErreurAgenda("illisible", "Réglage des rappels illisible.");
+    return {
+      schema: 1,
+      evenements,
+      reglages: lireReglages(o.reglages),
+      dernierNumero,
+      cles: lireCles(o.cles),
+      rappels: o.rappels === undefined ? {} : lireRappelsStockes(o.rappels),
+      rappelsHoraires: o.rappelsHoraires ?? true,
+    };
   } catch (e) {
     if (e instanceof ErreurAgenda && e.code === "illisible") throw e;
     throw new ErreurAgenda("illisible", `Le carnet de l'agenda est illisible (${e instanceof Error ? e.message : "erreur inconnue"}). Rien n'a été modifié.`);

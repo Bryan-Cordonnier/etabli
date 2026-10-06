@@ -6,6 +6,7 @@
   import { Card, Field, Segmented, SelectField } from "@etabli/ui";
   import { ajouterJours, ajouterMois, instantVersLocal, parseHeure, premierDuMois, type Jour } from "@etabli/ui/civil";
   import { occurrences } from "../../src/calculs";
+  import { rappelsPourLeMoteur } from "../../src/rappels";
   import { AVERTISSEMENT_OCTETS, lireBrouillon, lireCarnet, octetsDe } from "../../src/carnet";
   import { genererIcs } from "../../src/ics";
   import { ajouter, modifier, reglerHoraires, supprimer, type Contexte } from "../../src/operations";
@@ -36,6 +37,8 @@
     host = h;
     recevoir(h.settings.data);
     h.settings.onChange(recevoir);
+    // À chaque ouverture, on renouvelle l'horizon de 60 jours des rappels (le moteur ne programme pas plus loin).
+    if (carnet) void h.reminders.set(rappelsPourLeMoteur(carnet, Date.now()));
   });
 
   const mois = $derived(carnet ? vueMois(carnet, reference) : null);
@@ -46,6 +49,8 @@
     if (!host) return false;
     host.settings.update(suivant);
     carnet = suivant;
+    // Un événement avec trajet change « pars maintenant » et le coucher : la liste complète repart au téléphone (sans effet sur PC).
+    void host.reminders.set(rappelsPourLeMoteur(suivant, Date.now()));
     return true;
   }
 
@@ -153,6 +158,8 @@
   function enregistrerReglages() {
     appliquer((c) =>
       reglerHoraires(c, {
+        // Les réglages des rappels (écran « Rappels ») sont conservés tels quels.
+        ...c.reglages,
         margeArriveeMin: Number(r.margeArriveeMin),
         miseEnRouteMin: Number(r.miseEnRouteMin),
         preparationMin: Number(r.preparationMin),
