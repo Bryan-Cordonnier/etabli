@@ -70,7 +70,7 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
   plugin n'a qu'un nom d'icône et une couleur à fournir, l'application dessine le reste.
 - `apiVersion` : `"^2"` pour un plugin neuf. Le moteur contrôle alors **strictement** ce que fait le plugin ; un plugin `"^1"`
   garde ses anciens droits mais est signalé à l'installation, et `npm run valider` le signale.
-- `permissions` : ce que le plugin a besoin de faire (`fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages`, `notifications`).
+- `permissions` : ce que le plugin a besoin de faire (`fichiers`, `presse-papiers`, `envoi`, `reglages`, `notifications`).
   L'utilisateur les voit avant d'installer. Déclarez le strict nécessaire ; `npm run valider` refuse l'usage d'une
   fonction sans sa permission. Détail et justification : [19](19-modele-de-menace-plugins.md).
 - `entry` absent : la mini-app s'affiche « à venir » (placeholder).
@@ -186,7 +186,7 @@ contrat (forme des données) doit être documenté ; il ne change pas sans chang
 Contrats officiels : `fournisseurs@1`, `machines@1` (docs/09).
 
 **Lire les données d'un autre plugin.** Déclarez la dépendance, puis `etabli.services.get("nom")`
-(lecture seule, `null` si absent) ou la classe `Libraries` pour fournisseurs et machines.
+(lecture seule, `null` si absent).
 - `dependencies` : sans ce plugin, le vôtre ne marche pas. Le moteur affiche « Il faut installer X »
   avec un bouton à la place de vos mini-apps ; installer votre plugin installe aussi X (après confirmation).
 - `optionalDependencies` : votre plugin marche sans, en mieux avec. Le catalogue propose de les installer

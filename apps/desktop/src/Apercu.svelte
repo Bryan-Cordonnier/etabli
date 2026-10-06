@@ -161,7 +161,6 @@
     if (session?.handle(message)) return;
     if (message.type === "shortcut" && message.key === "Escape") onEscape();
     else if (message.type === "openSettings") void openSettings(message.plugin, message.hash);
-    else if (message.type === "addMachine") void openSettings("machines", `add=${message.kind}`);
     else if (message.type === "send") void send(message);
   }
 
@@ -209,7 +208,6 @@
               pluginId={current.plugin.id}
               appId={current.app.id}
               initial={session.initial}
-              docTitle={session.title}
               forward={false}
               {onmessage}
             />

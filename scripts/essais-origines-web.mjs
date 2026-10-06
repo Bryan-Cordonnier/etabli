@@ -233,13 +233,13 @@ async function jouer(navigateur, { nom, cors, opaque }) {
     else if (vuDeB.startsWith("réussi: VU")) limite("la sonde B voit le stockage de la sonde A", vuDeB);
 
     // Un vrai plugin du dépôt reste utilisable dans ce mode (modules, styles, polices, politique de sécurité).
-    await page.locator('button[data-plugin="maths"]').click();
+    await page.locator('button[data-plugin="agenda"]').click();
     await page.locator("button.open").first().click();
-    const maths = await attendreCadre(page, "maths");
-    const rendu = await maths
+    const agenda = await attendreCadre(page, "agenda");
+    const rendu = await agenda
       .waitForFunction(() => (document.querySelector("#app")?.children.length ?? 0) > 0, null, { timeout: 8000 })
       .then(() => true, () => false);
-    essai("un vrai plugin (maths) affiche sa mini-app dans ce mode", rendu);
+    essai("un vrai plugin (agenda) affiche sa mini-app dans ce mode", rendu);
   } finally {
     await contexte.close();
     serveur.close();

@@ -19,7 +19,7 @@ l'onglet actif.
 | `lib/state/tabs.svelte.ts` | onglets (`tabs`) : ouverture, navigation, historique par onglet, onglets fermés, persistance de la session |
 | `lib/state/ui.svelte.ts` | palette ouverte, notification (toast 4 s), focus de la recherche |
 | `lib/state/pluginData.svelte.ts` | réglages de chaque plugin (`pluginData`), fichier `plugin.<id>.json` |
-| `lib/state/services.svelte.ts` | services : données publiées par les plugins (`services`), `snapshotFor(plugin)` (ce qu'un plugin a le droit de lire), `librariesFrom` (ancien format) |
+| `lib/state/services.svelte.ts` | services : données publiées par les plugins (`services`), `snapshotFor(plugin)` (ce qu'un plugin a le droit de lire) |
 | `lib/state/lifecycle.svelte.ts` | installer, désinstaller, activer et désactiver un plugin avec ses dépendances (`lifecycle`), fenêtre `PluginDialog` |
 | `lib/dataFiles.ts` | écritures différées des fichiers de données (400 ms), noms valides |
 | `lib/documents.svelte.ts` | `DocumentSession` : un calcul ouvert (chargement, enregistrement différé, historique, duplication, corbeille) |
@@ -30,7 +30,6 @@ l'onglet actif.
 | `lib/shortcuts.ts` | raccourcis clavier de l'application : liste des actions (`ACTIONS`), `handleShortcut` (aussi appelé pour les touches renvoyées par les mini-apps), `frameShortcuts`, `shortcutHint` (infobulles), `actionUsing` (doublons) |
 | `lib/themes.ts`, `lib/appearance.ts` | thèmes et application de l'apparence (thème, animations réduites, zoom) |
 | `lib/icons.ts` | liste fermée des icônes Lucide utilisables par les manifestes |
-| `lib/print/print.ts`, `lib/print/fiche.css` | impression des fiches d'atelier |
 | `lib/pluginSettings.ts`, `lib/send.ts` | ouvrir la page de réglages d'un plugin (« + Ajouter une machine… ») et envoi entre mini-apps (fenêtre principale) |
 | `lib/components/*` | composants (voir plus bas) |
 | `lib/pages/*` | `Home` (bienvenue et bouton du catalogue quand aucun plugin n'est installé), `PluginPage`, `MiniAppPage`, `SettingsPage`, `CataloguePage` |
@@ -103,9 +102,3 @@ redimensionnable, bande Paramètres/Replier en bas), `TabBar` (onglets de **180 
 - Fermeture en fondu (150 ms) **avant** de cacher la fenêtre, pour qu'elle réapparaisse vide.
 - Voile sombre simple (`rgba(10,14,20,0.42)`), sans flou ni zoom : décision de Bryan après essais.
 - « Ouvrir dans l'Établi » : le calcul passe dans un onglet de la fenêtre principale.
-
-## Impression des fiches
-
-`lib/print/print.ts` : `printFiche(fiche, { author, date })` construit un document HTML (feuille
-`fiche.css`, en-tête avec cartouche, pied de page numéroté par `@page`), le met dans un cadre caché
-sans script et appelle `print()`. Voir [09-bibliotheques-fiches-envoi.md](09-bibliotheques-fiches-envoi.md).

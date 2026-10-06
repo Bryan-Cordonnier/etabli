@@ -1,5 +1,7 @@
 # 09 — Fournisseurs, machines, services, fiches d'atelier, envoi entre mini-apps
 
+> **Retiré du moteur le 6 octobre 2026** (nouveau plan, voir [22](22-cahier-de-bord.md) §9) : le moteur ne contient plus les plugins Fournisseurs et Machines, le message `libraries`, les fiches d'atelier (`print`, permission `impression`), l'export DXF ni les gabarits. Le code reste dans l'étiquette Git `legacy/etabli-0.5-chaudronnerie`. Seuls les **services** et l'**envoi entre mini-apps** de ce document sont encore valables.
+
 Briques communes. Un plugin s'en sert s'il veut ; il fonctionne sans.
 
 ## Services : des données qu'un plugin publie pour les autres

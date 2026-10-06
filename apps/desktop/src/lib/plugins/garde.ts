@@ -23,10 +23,6 @@ export const LIMITES = {
   nomFichier: 120,
   hauteurMin: 160,
   hauteurMax: 20000,
-  pagesFiche: 60,
-  pageFiche: 600_000,
-  cssFiche: 100_000,
-  lignesCartouche: 40,
   /** Longueur d'un message d'erreur de service. */
   messageErreur: 500,
 } as const;
@@ -59,7 +55,7 @@ export interface Contexte {
   provides: readonly string[];
   /**
    * Vrai pour le cadre invisible `serviceEntry` d'un fournisseur (docs/24, A.1.2) : il ne peut qu'enregistrer ses
-   * réglages, publier ses services et répondre aux appels. Ni notification, ni fichier, ni impression, ni appel.
+   * réglages, publier ses services et répondre aux appels. Ni notification, ni fichier, ni appel.
    */
   service?: boolean;
 }
@@ -109,16 +105,6 @@ function fichierValide(f: unknown): f is SavedFile {
   return estTexte(f.description, 80);
 }
 
-function ficheValide(f: unknown): boolean {
-  if (!estObjet(f)) return false;
-  if (!estTexte(f.kind, 120) || !estTexte(f.title, 200) || !estTexte(f.subtitle, 300)) return false;
-  if (f.css !== undefined && !estTexte(f.css, LIMITES.cssFiche)) return false;
-  if (!Array.isArray(f.pages) || f.pages.length > LIMITES.pagesFiche) return false;
-  if (!f.pages.every((p) => estTexte(p, LIMITES.pageFiche))) return false;
-  if (!Array.isArray(f.ident) || f.ident.length > LIMITES.lignesCartouche) return false;
-  return f.ident.every((l) => Array.isArray(l) && l.length === 2 && estTexte(l[0], 120) && estTexte(l[1], 300));
-}
-
 /** Permission nécessaire à un type de message ; `null` : message toujours permis. */
 const PERMISSION_REQUISE: Record<string, string | null> = {
   update: null,
@@ -131,11 +117,9 @@ const PERMISSION_REQUISE: Record<string, string | null> = {
   pluginData: null,
   provide: null,
   copy: "presse-papiers",
-  print: "impression",
   saveFile: "fichiers",
   send: "envoi",
   openSettings: "reglages",
-  addMachine: "reglages",
   reminders: "notifications",
   // La permission `appelle:<service>:<accès>` dépend du service : contrôlée plus bas, puis par le routage.
   serviceCall: null,
@@ -191,8 +175,6 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
           shift: brut.shift === true,
           alt: brut.alt === true,
         });
-      case "print":
-        return ficheValide(brut.fiche) ? bon({ type, fiche: brut.fiche as never }) : refus("fiche invalide");
       case "provide":
         if (!estTexte(brut.name, 64) || !/^[a-z0-9-]+$/.test(brut.name)) return refus("nom de service invalide");
         if (!ctx.provides.includes(brut.name)) return refus("service non déclaré dans le manifeste");
@@ -201,8 +183,6 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
         if (!estTexte(brut.plugin, 64) || !/^[a-z0-9-]+$/.test(brut.plugin)) return refus("plugin invalide");
         if (brut.hash !== undefined && !estTexte(brut.hash, 200)) return refus("ancre invalide");
         return bon({ type, plugin: brut.plugin, ...(brut.hash !== undefined ? { hash: brut.hash as string } : {}) });
-      case "addMachine":
-        return estTexte(brut.kind, 40) ? bon({ type, kind: brut.kind as never }) : refus("type de machine invalide");
       case "send":
         if (!estTexte(brut.kind, 64) || !/^[a-z0-9-]+$/.test(brut.kind)) return refus("type d'envoi invalide");
         return donneesValides(brut.data) ? bon({ type, kind: brut.kind, data: brut.data }) : refus("données trop volumineuses ou illisibles");

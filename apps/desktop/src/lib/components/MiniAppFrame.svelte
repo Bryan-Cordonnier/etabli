@@ -11,7 +11,6 @@
   } from "@etabli/sdk/protocol";
   import { api } from "$lib/api";
   import { traiterRappels } from "$lib/mobile/rappelsHote";
-  import { printFiche } from "$lib/print/print";
   import { frameShortcuts } from "$lib/shortcuts";
   import { sandboxDe, lireTheme } from "$lib/plugins/cadre";
   import { controler, erreurService, idAppel, type Contexte } from "$lib/plugins/garde";
@@ -19,7 +18,7 @@
   import { getPlugin } from "$lib/plugins/registry.svelte";
   import { routeur } from "$lib/state/appels.svelte";
   import { pluginData } from "$lib/state/pluginData.svelte";
-  import { librariesFrom, services } from "$lib/state/services.svelte";
+  import { services } from "$lib/state/services.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { ui } from "$lib/state/ui.svelte";
 
@@ -34,8 +33,6 @@
     appId: string;
     /** Document transmis à l'ouverture ; la mini-app gère ensuite ses données elle-même. */
     initial: DocumentSnapshot;
-    /** Titre actuel du calcul, pour les fiches imprimées. */
-    docTitle?: string;
     /** Données envoyées par une autre mini-app, transmises à la première ouverture seulement. */
     incoming?: Incoming | null;
     /**
@@ -46,7 +43,7 @@
     onmessage: (message: PluginToHost) => void;
   }
 
-  let { src, title, pluginId, appId, initial, docTitle = "", incoming = null, forward = true, onmessage }: Props = $props();
+  let { src, title, pluginId, appId, initial, incoming = null, forward = true, onmessage }: Props = $props();
 
   // Avec une origine propre au plugin (serveur, ou Android : https://<id>.plugins.localhost servie par la partie native),
   // le cadre peut garder son origine : elle ne contient rien d'autre que
@@ -143,12 +140,6 @@
             (err) => ui.notify(`Enregistrement impossible : ${err}`),
           );
           break;
-        case "print":
-          printFiche(
-            { ...message.fiche, title: message.fiche.title.trim() || docTitle.trim() || title },
-            { author: settings.author, date: new Date() },
-          );
-          break;
         default:
           onmessage(message);
       }
@@ -165,7 +156,6 @@
       appId,
       document: JSON.parse(JSON.stringify(initial)),
       ...readTheme(),
-      libraries: librariesFrom(visible),
       services: visible,
       pluginData: JSON.parse(sentPluginData),
       // Si le cadre se recharge, les données reçues ne sont pas appliquées une seconde fois.
@@ -181,7 +171,7 @@
     if (port) send({ type: "shortcuts", shortcuts: list });
   });
 
-  // Un service que ce plugin lit a changé (fournisseurs modifiés…), ou un plugin dont il dépend a été
+  // Un service que ce plugin lit a changé (données d'un fournisseur modifiées…), ou un plugin dont il dépend a été
   // installé, désinstallé, activé ou désactivé.
   $effect(() => {
     const visible = services.snapshotFor(pluginId);
@@ -189,7 +179,6 @@
     if (!port || json === sentServices) return;
     sentServices = json;
     send({ type: "services", services: visible });
-    send({ type: "libraries", libraries: librariesFrom(visible) });
   });
 
   // Réglages du plugin changés par une autre mini-app.

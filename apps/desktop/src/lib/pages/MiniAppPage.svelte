@@ -58,7 +58,6 @@
       if (message.code) handleShortcut({ code: message.code, ctrl: message.ctrl, shift: message.shift, alt: message.alt });
     }
     else if (message.type === "openSettings") openPluginSettings(message.plugin, message.hash);
-    else if (message.type === "addMachine") openPluginSettings("machines", `add=${message.kind}`);
     else if (message.type === "send") sendToApp(message.kind, message.data, found?.app.name ?? "");
   }
 
@@ -153,7 +152,6 @@
           {pluginId}
           {appId}
           initial={session.initial}
-          docTitle={session.title}
           {incoming}
           {onmessage}
         />

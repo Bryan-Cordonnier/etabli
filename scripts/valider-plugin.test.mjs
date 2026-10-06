@@ -61,7 +61,7 @@ test("manifeste : identifiant, version, couleur, icône, permissions", () => {
 });
 
 test("permissions : doublon refusé, appel non déclaré refusé, déclaré accepté", () => {
-  const source = 'import { saveFile, printFiche } from "@etabli/ui"; saveFile({}); printFiche({});\n';
+  const source = 'import { saveFile, sendTo } from "@etabli/ui"; saveFile({}); sendTo("x", {});\n';
   const sans = valider(({ dossier, ecrire }) => {
     modifierManifeste(ecrire, dossier, (m) => {
       m.permissions = ["fichiers", "fichiers"];
@@ -69,10 +69,10 @@ test("permissions : doublon refusé, appel non déclaré refusé, déclaré acce
     ecrire("src/export.ts", source);
   });
   assert.ok(contient(sans.erreurs, /« fichiers » est écrite deux fois/));
-  assert.ok(contient(sans.erreurs, /exige la permission « impression »/));
+  assert.ok(contient(sans.erreurs, /exige la permission « envoi »/));
   const avec = valider(({ dossier, ecrire }) => {
     modifierManifeste(ecrire, dossier, (m) => {
-      m.permissions = ["fichiers", "impression", "presse-papiers"];
+      m.permissions = ["fichiers", "envoi", "presse-papiers"];
     });
     ecrire("src/export.ts", source);
   });

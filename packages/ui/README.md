@@ -1,7 +1,7 @@
 # @etabli/ui
 
 Kit des mini-apps Établi : composants Svelte (`Card`, `Field`, `Result`, `Segmented`, `SelectField`, `Check`), état partagé
-(`MiniAppDocument`, `PluginSettings`, `Libraries`) et outils sans interface (calcul saisi, fiches imprimées, DXF, gabarits).
+(`MiniAppDocument`, `PluginSettings`) et outils sans interface (calcul saisi, argent, dates civiles).
 Les composants et l'état sont décrits dans [docs/06](../../docs/06-protocole-sdk.md#etabliui-à-utiliser) ; ce fichier décrit les deux
 modules **sans interface** ajoutés pour les plugins d'argent et de temps (`finances`, `paie`, `budget`, `agenda`, et plus tard l'ERP).
 

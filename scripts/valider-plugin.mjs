@@ -1,9 +1,9 @@
 // Vérifie un plugin avant de le proposer (docs/07 et CONTRIBUTING.md) : manifeste, arborescence, journal
 // des changements, tests, et contenu (appels sortants, fichiers étranges, adresses externes).
 //
-//   node scripts/valider-plugin.mjs maths           un plugin du dossier plugins/
+//   node scripts/valider-plugin.mjs agenda           un plugin du dossier plugins/
 //   node scripts/valider-plugin.mjs --tous          tous les plugins (après npm run build:plugins)
-//   node scripts/valider-plugin.mjs maths --sans-dist   sans regarder le plugin compilé
+//   node scripts/valider-plugin.mjs agenda --sans-dist   sans regarder le plugin compilé
 //
 // Le vrai rempart reste le cadre isolé et sa politique de sécurité (aucun réseau, aucun disque) : ces
 // vérifications servent à repérer tôt les erreurs et les choses suspectes, elles n'y suppléent pas.
@@ -51,9 +51,8 @@ const INTERDITS = [
 const APPELS_PERMISSION = [
   [/\bclipboard\s*\??\.\s*copy\b|\boncopy\b|\bdoc\??\.copy\b/, "presse-papiers"],
   [/\bsaveFile\b/, "fichiers"],
-  [/\bprintFiche\b|\betabli\??\.print\s*\(/, "impression"],
   [/\bsendTo\b|\betabli\??\.send\s*\(/, "envoi"],
-  [/\baddMachine\b|\bopenSettings\b/, "reglages"],
+  [/\bopenSettings\b/, "reglages"],
   [/\breminders\s*\??\.\s*(set|clear|state)\b/, "notifications"],
 ];
 

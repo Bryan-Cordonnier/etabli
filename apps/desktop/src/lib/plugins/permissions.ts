@@ -9,8 +9,7 @@ export interface PermissionInfo {
 }
 
 export const PERMISSIONS: PermissionInfo[] = [
-  { id: "fichiers", label: "Enregistrer des fichiers (CSV, DXF…) à l'endroit que vous choisissez" },
-  { id: "impression", label: "Imprimer des fiches d'atelier" },
+  { id: "fichiers", label: "Enregistrer des fichiers (CSV, ICS…) à l'endroit que vous choisissez" },
   { id: "presse-papiers", label: "Copier du texte dans le presse-papiers" },
   { id: "envoi", label: "Envoyer des données à une autre mini-app" },
   { id: "reglages", label: "Ouvrir les réglages d'un autre plugin" },

@@ -65,7 +65,6 @@ barre d'onglets.
   **Nouveau** ouvre un calcul vierge ; **Dupliquer** en fait une copie ; la corbeille déplace le calcul dans `.corbeille`
   (rien n'est détruit d'un coup).
 - **Anciens calculs** : en bas de chaque mini-app, avec une recherche. Un clic rouvre le calcul.
-- **Fiches d'atelier** : le bouton d'impression ouvre la fenêtre d'impression de Windows (A4, lisible en noir et blanc).
   Choisissez « Enregistrer au format PDF » pour un fichier. Votre nom, s'il est renseigné dans les Paramètres, figure sur la fiche.
 - **Exports** : DXF pour la CAO et gabarits à l'échelle 1 (imprimez à 100 %, sans « ajuster à la page » : mesurez la règle de 100 mm).
 - **Envoyer à…** : une mini-app peut envoyer son résultat à une autre (par exemple un développé de pliage vers le

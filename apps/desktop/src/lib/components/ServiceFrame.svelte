@@ -11,7 +11,7 @@
   import { getPlugin } from "$lib/plugins/registry.svelte";
   import { hote, type CadreService } from "$lib/state/appels.svelte";
   import { pluginData } from "$lib/state/pluginData.svelte";
-  import { librariesFrom, services } from "$lib/state/services.svelte";
+  import { services } from "$lib/state/services.svelte";
 
   let { cadre }: { cadre: CadreService } = $props();
 
@@ -103,7 +103,6 @@
       appId: "service",
       document: { id: null, title: "", data: null },
       ...lireTheme(),
-      libraries: librariesFrom(visible),
       services: visible,
       pluginData: JSON.parse(JSON.stringify($state.snapshot(saved) ?? null)),
       incoming: null,
