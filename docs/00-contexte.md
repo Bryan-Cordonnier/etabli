@@ -37,16 +37,7 @@ avant le mobile**, Linux et iPhone viennent plus tard. Le nom commercial n'est p
 
 ## Documents de référence
 
-Les cahiers des charges et maquettes sont des pages privées sur claude.ai (compte de Bryan). Un autre
-agent n'y aura peut-être pas accès : **l'essentiel est résumé dans ce dossier `docs/`**.
-
-| Document | Lien |
-| --- | --- |
-| Cahier des charges principal (moteur, interface) | https://claude.ai/code/artifact/1acbdf43-5049-458c-aa98-50eb3db46189 |
-| Cahiers des charges des plugins (lots, formules, cas de test) | https://claude.ai/code/artifact/e1131f9c-1f78-4f9c-b27e-449a2c55025e |
-| Maquette de l'application | https://claude.ai/artifact/XKfkQz5R9UMnVNsW4AtTmq |
-| Maquette validée de la fiche de coupe (tubes) | https://claude.ai/artifact/HRdrvgaowa5hDKUw15f72v |
-| Maquette validée de la fiche de calepinage (cisaille) | https://claude.ai/artifact/GFGEuW5SZ6eK9Q1326h5ft |
+Les cahiers des charges et les maquettes d'origine ne sont pas dans le dépôt : **l'essentiel est résumé dans ce dossier `docs/`**, qui fait foi.
 
 Dépôt : https://github.com/etable-project/etable (public, branche `main`, CI « Vérification »).
 

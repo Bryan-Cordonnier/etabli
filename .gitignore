@@ -26,6 +26,7 @@ Thumbs.db
 
 # Réglages locaux de l'assistant
 .claude/
+CLAUDE.md
 dist-web/
 # Throwaway Tauri Android spike: generated project and icons
 tools/spike-tauri-android/src-tauri/gen/
