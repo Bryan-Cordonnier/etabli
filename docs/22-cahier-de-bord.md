@@ -3,7 +3,7 @@
 Journal du projet pour Bryan : où on en est, ce qui est décidé, ce qui reste à faire **à la main** (ce qu'un agent ne peut pas faire à ta place), et ce qui reste à faire côté code.
 À tenir à jour à chaque étape. Les cases cochées sont faites.
 
-Dernière mise à jour : 5 octobre 2026.
+Dernière mise à jour : 6 octobre 2026.
 
 **Règle de lecture :** « poussé » = sur GitHub dans une branche, sans demande de fusion (PR). « Non vérifié » = jamais essayé sur un vrai appareil ou dans l'application ; seule la CI ou tes essais le diront.
 
@@ -112,7 +112,8 @@ Dernière mise à jour : 5 octobre 2026.
 ## 5. Reste à faire côté code (agent)
 - Service de licences ([docs/21](21-spec-licences-baux.md)) — **après** ta validation.
 - Distributions (`docs/23`) — après tes réponses (étape 1 de la migration : config générée identique à l'actuelle).
-- Plugins `agenda` (avec permission `notifications`, rappels téléphone), `paie`, `budget` ; import de fichier, extension `.ics` à l'export, point d'entrée au démarrage, schémas de fonctions vérifiés par le moteur, simulateur de service pour les tests (`docs/24` annexe, manques M5 à M16).
+- **Fait le 5 et 6 octobre (PR #42 à #45)** : plugins `agenda`, `budget`, `paie`, rappels sur le téléphone (étape 5, M6), extension `.ics` (M8). Voir §8.
+- Pas fait de `docs/24` : import de fichier (M7), point d'entrée au démarrage, schémas de fonctions vérifiés par le moteur (M12), simulateur de service pour les tests (M13), rappel du jour de paie, modification d'une mission de `paie`, simulateur de déménagement et runway de `budget`, événements de réserve dans l'agenda.
 - Application mobile complète (en dernier).
 - Plugin hostile dans l'essai d'isolation (voir §1.4).
 
@@ -132,7 +133,7 @@ Dernière mise à jour : 5 octobre 2026.
 6. **Corrigé le 5 octobre (PR #40)** : le piège du moteur. Texte d'origine : : si la lecture des réglages échoue, `pluginData.load` renvoie `null`, comme pour « rien d'enregistré » ; un `comptes.creer` suivant écraserait le vrai registre. Il faut distinguer l'erreur de l'absence côté moteur (noté dans docs/10).
 
 ### Pas fait
-Export, import, clôture d'année ; mini-apps Écritures, Comptes et catégories, Courbes ; plugins `agenda`, `paie`, `budget`.
+Export, import, clôture d'année ; mini-apps Écritures, Comptes et catégories, Courbes.
 
 ## 7. Ce qui n'a pas été vérifié
 - Rien sous WebView2 ni dans l'application Tauri : les essais automatiques tournent sur Chromium (Linux).
@@ -142,3 +143,23 @@ Export, import, clôture d'année ; mini-apps Écritures, Comptes et catégories
 - Le cadre invisible des appels entre plugins n'a tourné que dans Chromium (59 essais) : jamais sous WebView2 ni Android.
 - Le tableau de bord de `finances` n'a été vu que sur une capture Chromium à 1280 px (pas le thème sombre, pas le mobile, pas la saisie à la souris) ; couleurs du donut non validées pour le contraste.
 - `npm ci` du lockfile avec `plugins/finances` non rejoué en CI (entrées ajoutées à la main).
+
+## 8. Quotidien : plugins livrés le 5 et 6 octobre 2026
+
+Tous fusionnés dans `main`, CI verte (CodeQL compris). **Aucun écran n'a été vu et aucun rappel n'a sonné sur un téléphone** : ce que je dis « fait » est écrit, testé et construit, pas essayé.
+
+| Plugin | Contenu | Détail |
+| --- | --- | --- |
+| `agenda` (PR #42) | calendrier, répétitions, chronologie à rebours, repos légal 11 h / 10 h / 48 h, export `.ics`, service `agenda@1` | [docs/10](10-plugins-existants.md) |
+| `budget` (PR #43) | courbe du mois, prévisions, virements, abonnements, plafonds, service `budget@1` ; **Finances obligatoire** | idem |
+| `paie` (PR #44) | intérim, réserve, CDI/CDD, net reçu, transmission rejouable vers Budget et Agenda ; **taux = hypothèses** | idem |
+| rappels (PR #45) | permission `notifications`, `etabli.reminders`, programmation par l'hôte, `rappels@1` dans l'agenda, écran « Rappels » | [docs/06](06-protocole-sdk.md) |
+
+**Mes choix, à valider ou refuser** (la règle « prends les décisions toi-même » du 5 octobre) :
+1. `agenda` : types `travail`, `retux`, `rdv`, `autre` ; seuls `travail` et `retux` comptent pour le repos légal ; icône « horloge » (le moteur n'a pas d'icône calendrier) ; source de l'utilisateur `@utilisateur` (comme Finances).
+2. `budget` : une prévision attendue d'aujourd'hui compte dans la courbe, une attendue passée est « en retard » et jamais réalisée automatiquement ; `previsions.realiser` accepte un `jour` ; une prévision peut n'avoir pas de compte.
+3. `paie` : **deux majorations légales** d'heures supplémentaires (+25 % jusqu'à 8 h par semaine, +50 % au-delà) au lieu d'un `taux_sup` par mission ; IFM, congés et net sur le total de la mission ; cotisations 22 %, indemnité hors base 38 €, tarif de réserve non réglé (0) ; une mission se modifie en la supprimant puis en la recréant.
+4. Rappels : notifications seulement (importance 4, jamais d'alarme), pas de `niveau: alarme`, pas de `ouvre`, horizon de 60 jours renouvelé à chaque ouverture, une demande invalide fait refuser toute la liste.
+5. Un défaut trouvé par un test avant la fusion : un identifiant de rappel commençant par « @ » aurait fait refuser toute la liste par le moteur.
+
+**À faire par toi** : ouvrir les écrans, autoriser les notifications (Paramètres › Téléphone) et essayer « Essai dans 1 minute » ; comparer `paie` à un vrai bulletin et corriger les taux dans la rubrique « Taux ».
