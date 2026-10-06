@@ -40,22 +40,13 @@ describe("fond Tauri : commandes du cœur Rust", () => {
     expect(invoke).toHaveBeenLastCalledWith("donnees_ecrire", { nom: "plugin.economie", valeur: { a: 1 } });
   });
 
-  it("plugins et catalogue", async () => {
+  it("plugins", async () => {
     await fondTauri.pluginsList();
     expect(invoke).toHaveBeenLastCalledWith("plugins_list");
-    await fondTauri.catalogueRead();
-    expect(invoke).toHaveBeenLastCalledWith("catalogue_lire", { source: null, canal: "stable" });
-    const source = { url: "https://registre.exemple.fr/c.json", key: "cle" };
-    await fondTauri.catalogueRead(source, "beta");
-    expect(invoke).toHaveBeenLastCalledWith("catalogue_lire", { source, canal: "beta" });
-    await fondTauri.pluginInstall("maths", "https://exemple/maths.etabli-plugin");
-    expect(invoke).toHaveBeenLastCalledWith("plugin_installer", { id: "maths", url: "https://exemple/maths.etabli-plugin", source: null });
-    await fondTauri.pluginInstall("maths", "https://registre.exemple.fr/m.etabli-plugin", source);
-    expect(invoke).toHaveBeenLastCalledWith("plugin_installer", { id: "maths", url: "https://registre.exemple.fr/m.etabli-plugin", source });
     await fondTauri.pluginInstallFile();
     expect(invoke).toHaveBeenLastCalledWith("plugin_installer_fichier");
-    await fondTauri.pluginUninstall("maths");
-    expect(invoke).toHaveBeenLastCalledWith("plugin_desinstaller", { id: "maths" });
+    await fondTauri.pluginUninstall("agenda");
+    expect(invoke).toHaveBeenLastCalledWith("plugin_desinstaller", { id: "agenda" });
   });
 
   it("enregistrement de fichier : arguments en français pour Rust", async () => {
@@ -75,12 +66,6 @@ describe("fond Tauri : commandes du cœur Rust", () => {
     const rappel = listen.mock.calls[0]?.[1] as () => void;
     rappel();
     expect(handler).toHaveBeenCalledTimes(1);
-
-    const progression = vi.fn();
-    await fondTauri.onInstallProgress(progression);
-    expect(listen).toHaveBeenLastCalledWith("etabli:installation", expect.any(Function));
-    (listen.mock.calls[1]?.[1] as (e: { payload: unknown }) => void)({ payload: { id: "maths", pourcent: 40 } });
-    expect(progression).toHaveBeenCalledWith({ id: "maths", pourcent: 40 });
   });
 
   it("capacités : toutes vraies", () => {

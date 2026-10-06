@@ -1,5 +1,7 @@
 # 23 — Spécification : distributions (plusieurs applications, un seul moteur) — brouillon
 
+> **Note du 6 octobre 2026.** `catalogue.rs`, `CLES_RACINES` et le registre ont été retirés du moteur (étiquette Git `legacy/store-before-cut`) ; l'installation est dans `installation.rs`, avec la seule clé de `tauri.conf.json`. Le reste de ce brouillon est à relire avec le nouveau plan (docs/22, section 9).
+
 > **Statut : brouillon, documentation seulement.** Aucun code n'est écrit. Ce document détaille l'étape 4 de
 > [18](18-spec-plateforme-comptes-licences.md) (« Distributions »). Il propose une architecture ; les choix qui engagent Bryan
 > sont en **questions ouvertes** (section 12). Aucune étape de code ne démarre avant sa validation.

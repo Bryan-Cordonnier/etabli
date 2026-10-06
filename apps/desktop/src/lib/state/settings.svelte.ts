@@ -1,5 +1,3 @@
-import { revoques } from "$lib/plugins/revoques.svelte";
-import { DEFAULT_CHANNEL, OFFICIAL_SOURCE, readChannel, readSource, type CatalogueSource, type Channel } from "$lib/catalogue-source";
 import { load, save } from "$lib/storage";
 import { SYSTEM_THEME, type Theme } from "$lib/themes";
 
@@ -30,8 +28,6 @@ interface Persisted {
   /** Mini-apps favorites, sous la forme « plugin/mini-app ». */
   favorites: string[];
   disabledPlugins: string[];
-  /** Plugins ramenés à une version précédente à la main : pas de mise à jour automatique avant un clic sur « Mettre à jour ». */
-  pinnedPlugins: string[];
   /** Ordre des plugins dans la colonne, choisi par glisser-déposer. */
   pluginOrder: string[];
   /** Raccourci global de l'aperçu rapide (le seul réglé par défaut). */
@@ -41,15 +37,6 @@ interface Persisted {
   closeToTray: boolean;
   /** Chercher une nouvelle version sur GitHub au démarrage. */
   checkUpdates: boolean;
-  /**
-   * Passage au catalogue fait : les plugins livrés avec les versions 0.1.x ont été réinstallés
-   * depuis le catalogue (ou il n'y avait rien à réinstaller).
-   */
-  catalogueMigrated: boolean;
-  /** Source du catalogue de plugins : adresse vide = la source officielle (docs/20 §3.2). */
-  catalogueSource: CatalogueSource;
-  /** Canal du catalogue (docs/20 §3.3) ; seul « stable » est publié pour l'instant. */
-  catalogueChannel: Channel;
 }
 
 const DEFAULTS: Persisted = {
@@ -61,15 +48,11 @@ const DEFAULTS: Persisted = {
   sidebarWidth: 232,
   favorites: [],
   disabledPlugins: [],
-  pinnedPlugins: [],
   pluginOrder: [],
   quickShortcut: DEFAULT_SHORTCUT,
   shortcuts: {},
   closeToTray: true,
   checkUpdates: true,
-  catalogueMigrated: false,
-  catalogueSource: OFFICIAL_SOURCE,
-  catalogueChannel: DEFAULT_CHANNEL,
 };
 
 class Settings {
@@ -81,15 +64,11 @@ class Settings {
   sidebarWidth = $state(DEFAULTS.sidebarWidth);
   favorites = $state<string[]>([]);
   disabledPlugins = $state<string[]>([]);
-  pinnedPlugins = $state<string[]>([]);
   pluginOrder = $state<string[]>([]);
   quickShortcut = $state<Shortcut>(DEFAULTS.quickShortcut);
   shortcuts = $state<Record<string, Shortcut>>({});
   closeToTray = $state(DEFAULTS.closeToTray);
   checkUpdates = $state(DEFAULTS.checkUpdates);
-  catalogueMigrated = $state(DEFAULTS.catalogueMigrated);
-  catalogueSource = $state<CatalogueSource>(OFFICIAL_SOURCE);
-  catalogueChannel = $state<Channel>(DEFAULT_CHANNEL);
 
   constructor() {
     this.reload();
@@ -106,15 +85,11 @@ class Settings {
     this.sidebarWidth = saved.sidebarWidth;
     this.favorites = saved.favorites;
     this.disabledPlugins = saved.disabledPlugins;
-    this.pinnedPlugins = Array.isArray(saved.pinnedPlugins) ? saved.pinnedPlugins : [];
     this.pluginOrder = saved.pluginOrder;
     this.quickShortcut = saved.quickShortcut;
     this.shortcuts = saved.shortcuts;
     this.closeToTray = saved.closeToTray;
     this.checkUpdates = saved.checkUpdates;
-    this.catalogueMigrated = saved.catalogueMigrated;
-    this.catalogueSource = readSource(saved.catalogueSource);
-    this.catalogueChannel = readChannel(saved.catalogueChannel);
   }
 
   #save(): void {
@@ -127,35 +102,20 @@ class Settings {
       sidebarWidth: this.sidebarWidth,
       favorites: $state.snapshot(this.favorites),
       disabledPlugins: $state.snapshot(this.disabledPlugins),
-      pinnedPlugins: $state.snapshot(this.pinnedPlugins),
       pluginOrder: $state.snapshot(this.pluginOrder),
       quickShortcut: $state.snapshot(this.quickShortcut),
       shortcuts: $state.snapshot(this.shortcuts),
       closeToTray: this.closeToTray,
       checkUpdates: this.checkUpdates,
-      catalogueMigrated: this.catalogueMigrated,
-      catalogueSource: $state.snapshot(this.catalogueSource),
-      catalogueChannel: this.catalogueChannel,
     } satisfies Persisted);
   }
 
   /** Modifie un réglage simple et l'enregistre. */
-  set<K extends "theme" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "checkUpdates" | "catalogueMigrated">(
+  set<K extends "theme" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "checkUpdates">(
     key: K,
     value: Settings[K],
   ): void {
     (this as Settings)[key] = value;
-    this.#save();
-  }
-
-  /** Choisit la source du catalogue (adresse vide : retour à la source officielle). */
-  setCatalogueSource(source: CatalogueSource): void {
-    this.catalogueSource = { url: source.url.trim(), key: source.key.trim() };
-    this.#save();
-  }
-
-  setCatalogueChannel(channel: Channel): void {
-    this.catalogueChannel = channel;
     this.#save();
   }
 
@@ -199,25 +159,15 @@ class Settings {
     this.#save();
   }
 
-  /** Activé par l'utilisateur et non révoqué : un plugin révoqué (docs/20) est traité comme désactivé. */
+  /** Activé par l'utilisateur. */
   isPluginEnabled(id: string): boolean {
-    return !this.disabledPlugins.includes(id) && !(id in revoques);
+    return !this.disabledPlugins.includes(id);
   }
 
   togglePlugin(id: string): void {
     this.disabledPlugins = this.disabledPlugins.includes(id)
       ? this.disabledPlugins.filter((p) => p !== id)
       : [...this.disabledPlugins, id];
-    this.#save();
-  }
-
-  isPinned(id: string): boolean {
-    return this.pinnedPlugins.includes(id);
-  }
-
-  setPinned(id: string, pinned: boolean): void {
-    if (this.isPinned(id) === pinned) return;
-    this.pinnedPlugins = pinned ? [...this.pinnedPlugins, id] : this.pinnedPlugins.filter((p) => p !== id);
     this.#save();
   }
 

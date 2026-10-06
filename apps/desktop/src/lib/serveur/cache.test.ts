@@ -29,19 +29,15 @@ class FauxServeur {
     const s = this;
     return {
       id: "serveur",
-      capacites: { catalogue: false, miseAJour: false, fenetresNatives: false, isolationComplete: true, journal: false },
+      capacites: { plugins: false, miseAJour: false, fenetresNatives: false, isolationComplete: true, journal: false },
       urlPlugins: "/plugins",
       async pluginsList() {
         await s.acces();
         return s.plugins;
       },
-      catalogueRead: () => Promise.reject(new Error("non")),
-      pluginInstall: () => Promise.reject(new Error("non")),
       pluginInstallFile: () => Promise.reject(new Error("non")),
       pluginUninstall: () => Promise.reject(new Error("non")),
-      pluginRevert: () => Promise.reject(new Error("non")),
       onPluginsChanged: () => Promise.resolve(() => {}),
-      onInstallProgress: () => Promise.resolve(() => {}),
       async documentsList(f = {}) {
         await s.acces();
         return [...s.docs.values()]

@@ -101,7 +101,7 @@ pub async fn lister(State(etat): State<Etat>, session: Session) -> Resultat<Json
         .map(|manifest| {
             let id = manifest.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
             let fichiers = fichiers_du_plugin(&racine.join(&id));
-            json!({ "manifest": manifest, "official": true, "source": "catalogue", "fichiers": fichiers })
+            json!({ "manifest": manifest, "official": true, "source": "installe", "fichiers": fichiers })
         })
         .collect();
     Ok(Json(liste))

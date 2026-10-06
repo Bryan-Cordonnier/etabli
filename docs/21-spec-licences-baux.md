@@ -1,5 +1,7 @@
 # 21 — Spécification : service de comptes et de licences, baux, sièges (brouillon)
 
+> **Déplacé vers Etablink (6 octobre 2026).** Le moteur Etable n'a plus ni catalogue, ni licences, ni magasin ; ce document décrit la future distribution fermée Etablink. Le code existant (catalogue signé, rotation de clés, révocation, retour arrière) est sous l'étiquette Git `legacy/store-before-cut`.
+
 > **Statut : brouillon, rien n'est codé.** Il détaille l'étape « licences » de [18](18-spec-plateforme-comptes-licences.md) avec les
 > décisions déjà prises : bail de **48 h** (réglable par offre), sièges **nominatifs d'abord**, logique des plugins toujours
 > locale, données jamais supprimées, heure du poste jamais fiable, vente en France seulement.

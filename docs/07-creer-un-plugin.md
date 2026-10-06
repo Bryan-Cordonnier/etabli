@@ -91,7 +91,7 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
 - Ordre dans la colonne : pour un plugin officiel, ajoutez son id à `OFFICIAL_ORDER` dans
   `apps/desktop/src/lib/plugins/registry.ts`.
 - Distribution : le plugin n'est pas dans l'installateur ; on le publie dans le catalogue avec
-  l'étiquette `plugin-<id>-v<version>` (voir [14](14-publier-une-version.md#publier-un-plugin-pas-à-pas)).
+  l'étiquette `plugin-<id>-v<version>` (voir [14](14-publier-une-version.md#paquet-de-plugin-signé-et-installation)).
   En développement, les plugins du dépôt sont chargés directement (« intégrés »).
 
 ## 3. Modèle de mini-app

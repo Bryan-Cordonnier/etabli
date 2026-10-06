@@ -1,7 +1,6 @@
-// Fabrique le paquet signé d'un plugin pour le catalogue (docs/13 et docs/14) :
-//   node scripts/paquet-plugin.mjs maths
-//     → paquets/maths-1.0.0.etabli-plugin, et paquets/catalogue.json mis à jour (s'il existe, il est
-//       complété : c'est celui téléchargé depuis la Release « catalogue » par le workflow)
+// Fabrique le paquet signé d'un plugin (docs/14) :
+//   node scripts/paquet-plugin.mjs agenda
+//     → paquets/agenda-1.0.0.etabli-plugin, à installer depuis un fichier dans Établi
 //   node scripts/paquet-plugin.mjs --dossier chemin/vers/dist --sortie dossier   (paquet d'essai)
 //
 // Un paquet `.etabli-plugin` est un zip qui contient :
@@ -14,12 +13,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, wri
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
-import { createHash } from "node:crypto";
-import { ecrireEtSigner, preparerCatalogue } from "./catalogue-signe.mjs";
-import { notesDuPlugin } from "./notes-catalogue.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const RELEASE = "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue";
 
 const args = process.argv.slice(2);
 const option = (name) => {
@@ -70,47 +65,3 @@ const fichier = `${base}.etabli-plugin`;
 writeFileSync(join(sortie, fichier), paquet);
 console.log(`Paquet : ${join(sortie, fichier)} (${Math.round(paquet.length / 1024)} Ko, ${Object.keys(files).length} fichiers)`);
 
-// Catalogue : l'entrée de ce plugin, reprise de son manifeste (l'application l'affiche sans rien télécharger).
-if (id) {
-  const catalogueFile = join(sortie, "catalogue.json");
-  const catalogue = existsSync(catalogueFile)
-    ? JSON.parse(readFileSync(catalogueFile, "utf8"))
-    : { format: 1, plugins: [] };
-  const entry = {
-    id: manifest.id,
-    name: manifest.name,
-    description: manifest.description ?? "",
-    version: manifest.version,
-    author: manifest.author ?? "",
-    color: manifest.color ?? "#6b7280",
-    icon: manifest.icon ?? "puzzle",
-    apiVersion: manifest.apiVersion ?? "^1",
-    // Ce que le plugin demande à pouvoir faire (docs/19) : l'application l'affiche avant l'installation.
-    permissions: manifest.permissions ?? [],
-    // Dépendances entre plugins : le catalogue s'en sert pour installer ce qui manque (docs/13).
-    dependencies: manifest.dependencies ?? {},
-    optionalDependencies: manifest.optionalDependencies ?? {},
-    provides: manifest.provides ?? {},
-    settings: (manifest.settings ?? []).map((s) => ({ id: s.id, title: s.title ?? s.id })),
-    miniApps: (manifest.miniApps ?? []).map((a) => ({
-      id: a.id,
-      name: a.name,
-      description: a.description ?? "",
-      icon: a.icon ?? "puzzle",
-    })),
-    // Nouveautés de cette version, tirées du CHANGELOG.md du plugin (texte brut, affiché dans la page Catalogue).
-    ...(() => {
-      const { notes, date } = notesDuPlugin(manifest.id, manifest.version, join(root, "plugins"));
-      return { notes, notesDate: date };
-    })(),
-    size: paquet.length,
-    // Empreinte du paquet : défense en profondeur, vérifiable avant même la signature (docs/20).
-    sha256: createHash("sha256").update(paquet).digest("hex"),
-    url: `${RELEASE}/${encodeURIComponent(fichier)}`,
-    published: new Date().toISOString(),
-  };
-  catalogue.plugins = [...catalogue.plugins.filter((p) => p.id !== entry.id), entry].sort((a, b) => a.id.localeCompare(b.id));
-  // Format 2 signé (docs/20) : séquence augmentée, date de fin, révocations gardées ; catalogue.json.minisig à côté.
-  ecrireEtSigner(catalogueFile, preparerCatalogue(catalogue, Date.now() / 1000));
-  console.log(`Catalogue signé : ${catalogueFile} (${catalogue.plugins.length} plugin(s))`);
-}

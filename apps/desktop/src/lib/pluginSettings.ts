@@ -7,16 +7,16 @@ import { ui } from "./state/ui.svelte";
 export const pluginSection = (pluginId: string, pageId: string) => `plugin:${pluginId}:${pageId}` as const;
 
 /**
- * Ouvre la page de réglages d'un plugin (« + Ajouter une machine… » dans une mini-app, par exemple),
- * avec une intention facultative (`hash`, « add=scie ») que la page lit. Si le plugin n'est pas
- * installé, activé ou n'a pas de page de réglages, le catalogue s'ouvre à la place.
+ * Ouvre la page de réglages d'un plugin (un bouton « Réglages » dans une mini-app, par exemple),
+ * avec une intention facultative (`hash`) que la page lit. Si le plugin n'est pas
+ * installé, activé ou n'a pas de page de réglages, la page des plugins s'ouvre à la place.
  */
 export function openPluginSettings(pluginId: string, hash?: string): void {
   const plugin = getPlugin(pluginId);
   const page = plugin?.settings[0];
   if (!plugin || !page || !settings.isPluginEnabled(pluginId)) {
-    ui.notify(`Le plugin « ${pluginId} » n'est pas installé ou pas activé : il se règle depuis le catalogue.`);
-    tabs.navigate({ kind: "catalogue" });
+    ui.notify(`Le plugin « ${pluginId} » n'est pas installé ou pas activé : il se règle depuis la page des plugins.`);
+    tabs.navigate({ kind: "plugins" });
     return;
   }
   tabs.navigate({ kind: "settings", section: pluginSection(plugin.id, page.id), hash });

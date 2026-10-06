@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Un plugin regroupe des mini-apps autour d'un métier ou d'un sujet (voir les plugins existants dans le
-        catalogue). Ce formulaire sert à en discuter **avant** de l'écrire. Pour déposer un plugin déjà
+        dépôt). Ce formulaire sert à en discuter **avant** de l'écrire. Pour déposer un plugin déjà
         écrit, ouvrez une demande de fusion (modèle « plugin ») : voir [CONTRIBUTING.md](https://github.com/Bryan-Cordonnier/etabli/blob/main/CONTRIBUTING.md).
   - type: input
     id: nom
@@ -37,7 +37,7 @@ body:
     id: formules
     attributes:
       label: Formules et sources
-      description: Normes, catalogues, ouvrages. Indiquez leur licence si vous voulez en reprendre des tables.
+      description: Normes, ouvrages. Indiquez leur licence si vous voulez en reprendre des tables.
     validations:
       required: true
   - type: dropdown

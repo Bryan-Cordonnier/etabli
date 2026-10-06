@@ -1,4 +1,3 @@
-import { majRevoques } from "./revoques.svelte";
 import { api, type PluginSource } from "$lib/api";
 import { ICONS, type IconName } from "$lib/icons";
 import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
@@ -24,25 +23,11 @@ export interface MiniAppRef {
 export async function loadPlugins(): Promise<void> {
   const raw = await api.pluginsList().catch(() => []);
   const plugins = raw
-    .map(({ manifest, official, source, revoque, precedente }) => {
-      const plugin = normalize(manifest, official, source ?? (official ? "integre" : "utilisateur"));
-      if (!plugin) return null;
-      if (typeof revoque === "string") plugin.revoked = revoque;
-      if (typeof precedente === "string") plugin.previousVersion = precedente;
-      return plugin;
-    })
+    .map(({ manifest, official, source }) => normalize(manifest, official, source ?? (official ? "integre" : "utilisateur")))
     .filter((p) => p !== null);
-  majRevoques(plugins.flatMap((p) => (p.revoked ? [{ id: p.id, raison: p.revoked }] : [])));
-  plugins.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "fr"));
+  plugins.sort((a, b) => a.name.localeCompare(b.name, "fr"));
   PLUGINS.splice(0, PLUGINS.length, ...plugins);
 }
-
-/** Ordre par défaut de la colonne : les plugins officiels dans l'ordre du cahier des charges, puis les autres. */
-const OFFICIAL_ORDER = ["maths", "economie", "tolerie", "tracage", "materiaux"];
-const rank = (plugin: PluginManifest) => {
-  const index = OFFICIAL_ORDER.indexOf(plugin.id);
-  return plugin.official && index >= 0 ? index : OFFICIAL_ORDER.length;
-};
 
 const text = (value: unknown, fallback = ""): string => (typeof value === "string" ? value : fallback);
 const icon = (value: unknown): IconName => (typeof value === "string" && value in ICONS ? (value as IconName) : "puzzle");
@@ -144,7 +129,7 @@ export function allMiniApps(): MiniAppRef[] {
 
 /**
  * Plugins qui ont des mini-apps : les seuls qui apparaissent dans la colonne, l'accueil et la
- * palette. Un plugin qui n'apporte que des réglages (Fournisseurs, Machines) n'y figure pas.
+ * palette. Un plugin qui n'apporte que des réglages ou un service (Finances) n'y figure pas.
  */
 export function pluginsWithApps(): PluginManifest[] {
   return PLUGINS.filter((p) => p.miniApps.length > 0);

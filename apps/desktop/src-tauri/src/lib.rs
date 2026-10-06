@@ -1,8 +1,8 @@
 mod apercu;
-mod catalogue;
 mod documents;
 mod donnees;
 mod files;
+mod installation;
 mod paths;
 mod plugins;
 mod raccourci;
@@ -29,7 +29,7 @@ const DEMARRAGE: &str = "--demarrage";
 /// État partagé par les commandes et le service des fichiers de plugins.
 pub struct AppState {
     pub paths: AppPaths,
-    /// Relue après chaque installation ou désinstallation depuis le catalogue (sans redémarrer).
+    /// Relue après chaque installation ou désinstallation depuis un fichier (sans redémarrer).
     plugins: RwLock<Vec<LoadedPlugin>>,
     /// Fermer la fenêtre principale la réduit dans la zone de notification (réglage « Général »).
     pub fermeture_zone: AtomicBool,
@@ -131,7 +131,7 @@ pub fn run() {
             }
 
             let paths = AppPaths::resolve(app.handle())?;
-            catalogue::nettoyer(&paths.catalogue);
+            installation::nettoyer(&paths.installes);
             let plugins = plugins::scan(&paths.plugin_roots);
             let reglages = store::read(&paths.config);
             let reglage = |cle: &str| reglages.get("settings").and_then(|s| s.get(cle)).cloned();
@@ -201,11 +201,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             plugins::plugins_list,
-            catalogue::catalogue_lire,
-            catalogue::plugin_installer,
-            catalogue::plugin_installer_fichier,
-            catalogue::plugin_desinstaller,
-            catalogue::plugin_revenir,
+            installation::plugin_installer_fichier,
+            installation::plugin_desinstaller,
             documents::documents_list,
             documents::document_read,
             documents::document_save,

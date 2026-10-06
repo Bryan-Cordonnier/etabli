@@ -15,7 +15,7 @@ Toute la documentation est **en français**. Choisissez selon ce que vous voulez
 3. [Services, fournisseurs et machines](09-bibliotheques-fiches-envoi.md) : publier ou lire les données d'un autre plugin,
    fiches d'atelier imprimées, envoi entre mini-apps.
 4. [Plugins existants](10-plugins-existants.md) : des exemples complets, avec leurs algorithmes et leurs tests.
-5. [Proposer le plugin au catalogue](../CONTRIBUTING.md#écrire-un-plugin) puis [publier](14-publier-une-version.md#publier-un-plugin-pas-à-pas).
+5. [Proposer le plugin au catalogue](../CONTRIBUTING.md#écrire-un-plugin) puis [publier](14-publier-une-version.md#paquet-de-plugin-signé-et-installation).
 
 ## Je veux contribuer au code ou maintenir le dépôt
 

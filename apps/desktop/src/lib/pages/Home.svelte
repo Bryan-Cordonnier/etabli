@@ -5,7 +5,7 @@
   import RecentDocs from "$lib/components/RecentDocs.svelte";
   import SearchBox from "$lib/components/SearchBox.svelte";
   import { allMiniApps, appKey, getMiniAppByKey, pluginsWithApps, type MiniAppRef } from "$lib/plugins/registry.svelte";
-  import { catalogue } from "$lib/state/catalogue.svelte";
+  import { installation } from "$lib/state/installation.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -40,20 +40,20 @@
 </script>
 
 {#if !pluginsWithApps().length}
-  <!-- Premier lancement (l'installateur ne contient aucun plugin) : bienvenue et catalogue. -->
+  <!-- Premier lancement (l'installateur ne contient aucun plugin) : bienvenue et installation depuis un fichier. -->
   <div class="page">
     <div class="welcome">
       <div class="mark"><Icon name="store" size={30} /></div>
       <h1>Bienvenue dans Établi</h1>
       <p>
-        La boîte à outils de chaudronnerie : débits, développés, traçage, masses, taraudages… Chaque plugin ajoute ses
-        calculs d'atelier. Installez ceux dont vous avez besoin.
+        Établi est un moteur de plugins : chaque plugin ajoute ses mini-apps et ses réglages. Installez ceux dont vous
+        avez besoin, depuis un fichier signé.
       </p>
-      {#if api.capacites.catalogue}
-        <button class="btn primary big" onclick={() => tabs.navigate({ kind: "catalogue" })}>
-          <Icon name="store" size={18} /> Ouvrir le catalogue pour installer des plugins
+      {#if api.capacites.plugins}
+        <button class="btn primary big" onclick={() => void installation.installFile()}>
+          <Icon name="package" size={18} /> Installer un plugin depuis un fichier…
         </button>
-        <button class="link" onclick={() => void catalogue.installFile()}>Installer depuis un fichier…</button>
+        <button class="link" onclick={() => tabs.navigate({ kind: "plugins" })}>Ouvrir la page des plugins</button>
         <p class="hint">Les plugins sont signés : Établi vérifie chaque installation.</p>
       {:else if api.id === "serveur"}
         <p class="hint">Aucun plugin n'est encore disponible sur ce serveur : demandez à l'administrateur d'en installer (Paramètres → Administration).</p>

@@ -28,9 +28,8 @@ tauri-plugin-single-instance = "2.4.5"
 tauri-plugin-dialog = "2.7.3"
 tauri-plugin-updater = "2.13.0"
 tauri-plugin-process = "2.4.0"
-# Catalogue de plugins (catalogue.rs) : téléchargement avec les mêmes réglages que le module de mise
-# à jour (rien n'est compilé deux fois). Signatures, paquets et catalogue signé : règles communes avec le
-# serveur, dans etabli-noyau (docs/20).
+# Réglages TLS (rustls + fournisseur ring) partagés avec le module de mise à jour de l'application ; le moteur n'a
+# plus de client réseau propre. Signatures et paquets de plugins : règles communes avec le serveur, dans etabli-noyau.
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "system-proxy", "stream"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
 etabli-noyau = { path = "../../../crates/noyau" }

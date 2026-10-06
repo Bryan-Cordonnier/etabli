@@ -14,7 +14,7 @@
   { "name": "décision-à-prendre", "color": "c5def5", "description": "On discute avant de coder (spécification, maquette)" },
   { "name": "moteur", "color": "1d76db", "description": "Application (Rust et interface)" },
   { "name": "sdk", "color": "1d76db", "description": "@etabli/sdk, @etabli/ui, protocole des mini-apps" },
-  { "name": "catalogue", "color": "1d76db", "description": "Catalogue, installation, dépendances entre plugins" },
+  { "name": "catalogue", "color": "1d76db", "description": "Installation, dépendances entre plugins" },
   { "name": "bon-premier-ticket", "color": "7057ff", "description": "Facile pour se lancer dans le projet" },
   { "name": "aide-bienvenue", "color": "008672", "description": "Toute aide est la bienvenue" },
   { "name": "doublon", "color": "cfd3d7", "description": "Déjà signalé ailleurs" },

@@ -147,17 +147,17 @@
       <Tile color="var(--muted)" icon="home" variant="plain" />
       <span class="label">Accueil</span>
     </button>
-    {#if api.capacites.catalogue}
+    {#if api.capacites.plugins}
       <button
         class="item"
-        class:active={view?.kind === "catalogue"}
-        onclick={(e) => go({ kind: "catalogue" }, e)}
-        onauxclick={(e) => e.button === 1 && go({ kind: "catalogue" }, e)}
+        class:active={view?.kind === "plugins"}
+        onclick={(e) => go({ kind: "plugins" }, e)}
+        onauxclick={(e) => e.button === 1 && go({ kind: "plugins" }, e)}
         onmousedown={preventAutoscroll}
-        title="Catalogue des plugins"
+        title="Plugins installés"
       >
-        <Tile color="var(--muted)" icon="store" variant="plain" />
-        <span class="label">Catalogue</span>
+        <Tile color="var(--muted)" icon="puzzle" variant="plain" />
+        <span class="label">Plugins</span>
       </button>
     {/if}
 

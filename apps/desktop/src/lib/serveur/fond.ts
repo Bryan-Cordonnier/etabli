@@ -77,18 +77,14 @@ export function creerFondServeur(client: ClientApi, urlPlugins?: string): Fond {
     // Chaque plugin a son origine (nom d'hôte propre) quand le serveur en annonce le modèle : le cadre y garde son origine,
     // qui n'est ni celle de l'application ni celle d'un autre plugin, et le service worker de cette origine rend la
     // mini-app utilisable hors ligne. Sinon, cadre à origine opaque servi par le serveur (en ligne seulement).
-    capacites: { catalogue: false, miseAJour: false, fenetresNatives: false, isolationComplete: true, journal: false },
+    capacites: { plugins: false, miseAJour: false, fenetresNatives: false, isolationComplete: true, journal: false },
     urlPlugins: `${client.base}/plugins`,
     originePlugin: modele ? (id: string) => originePlugin(modele, id) : undefined,
 
     pluginsList: () => client.requete<PluginInfo[]>("GET", "/api/plugins"),
-    catalogueRead: gereParLAdmin("Le catalogue"),
-    pluginInstall: gereParLAdmin("L'installation de plugins"),
     pluginInstallFile: gereParLAdmin("L'installation de plugins"),
     pluginUninstall: gereParLAdmin("La désinstallation de plugins"),
-    pluginRevert: gereParLAdmin("Le retour à une version précédente"),
     onPluginsChanged: () => Promise.resolve(() => {}),
-    onInstallProgress: () => Promise.resolve(() => {}),
 
     documentsList: (filtre: DocumentFilter = {}) => client.requete<DocumentMeta[]>("GET", `/api/documents${parametres(filtre)}`),
     documentRead: (id) => client.requete<DocumentFile>("GET", `/api/documents/${encodeURIComponent(id)}`),

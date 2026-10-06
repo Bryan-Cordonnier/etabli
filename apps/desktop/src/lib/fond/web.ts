@@ -105,7 +105,7 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
   const indisponible = (quoi: string) => (): Promise<never> =>
     Promise.reject(new Error(`${quoi} n'est disponible que dans l'application.`));
 
-  const capacites: Capacites = { catalogue: false, miseAJour: false, fenetresNatives: false, isolationComplete: false, journal: false };
+  const capacites: Capacites = { plugins: false, miseAJour: false, fenetresNatives: false, isolationComplete: false, journal: false };
 
   return {
     id: "web",
@@ -137,13 +137,9 @@ export function creerFondWeb(options: OptionsFondWeb = {}): Fond {
       capacites.isolationComplete = opaque;
       return liste;
     },
-    catalogueRead: indisponible("Le catalogue"),
-    pluginInstall: indisponible("L'installation de plugins"),
     pluginInstallFile: indisponible("L'installation de plugins"),
     pluginUninstall: indisponible("La désinstallation de plugins"),
-    pluginRevert: indisponible("Le retour à une version précédente"),
     onPluginsChanged: () => Promise.resolve(() => {}),
-    onInstallProgress: () => Promise.resolve(() => {}),
 
     async documentsList({ pluginId, appId, limit }: DocumentFilter = {}): Promise<DocumentMeta[]> {
       const db = await base;

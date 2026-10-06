@@ -36,4 +36,4 @@
 
 <!-- Soyez honnête : « pas testé avec l'impression », « tables recopiées mais pas recoupées »… -->
 
-<!-- Pour les mainteneurs : après relecture, l'étiquette `plugin-<id>-v<version>` déclenche la publication dans le catalogue. -->
+<!-- Pour les mainteneurs : après relecture, le plugin est empaqueté avec `node scripts/paquet-plugin.mjs <id>` (fichier `.etabli-plugin` signé). -->

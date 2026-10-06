@@ -40,7 +40,7 @@ export type View =
       /** Change à chaque ouverture avec une intention : la page est recréée même si l'intention est la même. */
       nonce?: number;
     }
-  | { kind: "catalogue" };
+  | { kind: "plugins" };
 
 export type AppView = Extract<View, { kind: "app" }>;
 
@@ -112,11 +112,7 @@ export interface PluginManifest {
   /** Pages de réglages que ce plugin ajoute aux Paramètres. */
   settings: PluginSettingsPage[];
   official: boolean;
-  /** Livré avec l'application, installé depuis le catalogue (désinstallable), ou déposé à la main. */
-  source: "integre" | "catalogue" | "utilisateur";
+  /** Livré avec l'application, installé depuis un fichier signé (désinstallable), ou déposé à la main. */
+  source: "integre" | "installe" | "utilisateur";
   miniApps: MiniAppManifest[];
-  /** Raison de la révocation de la version installée (docs/20) ; le plugin est alors désactivé. */
-  revoked?: string;
-  /** Version précédente gardée pour un retour en arrière. */
-  previousVersion?: string;
 }

@@ -1,5 +1,7 @@
 # 18 — Spécification : plateforme, comptes, licences et plugins (brouillon à valider)
 
+> **Déplacé vers Etablink (6 octobre 2026).** Le moteur Etable n'a plus ni catalogue, ni licences, ni magasin ; ce document décrit la future distribution fermée Etablink. Le code existant (catalogue signé, rotation de clés, révocation, retour arrière) est sous l'étiquette Git `legacy/store-before-cut`.
+
 > **Statut : brouillon.** Rien de ce document n'est codé. Il consigne les décisions prises avec Bryan (octobre 2026) et
 > liste ce qui reste à trancher (section 13). Aucune étape de code ne démarre avant sa validation.
 
