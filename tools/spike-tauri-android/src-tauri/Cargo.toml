@@ -1,0 +1,20 @@
+# Standalone: not part of the repository workspace.
+[workspace]
+
+[package]
+name = "etable-spike"
+version = "0.0.0"
+description = "Throwaway Tauri Android spike"
+edition = "2021"
+
+[lib]
+name = "etable_spike_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-notification = "2"
+serde_json = "1"

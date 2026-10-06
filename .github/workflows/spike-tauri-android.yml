@@ -1,0 +1,74 @@
+# Throwaway spike (not part of the product): builds a Tauri 2 Android debug APK to test, on a real phone,
+# 1) an exact scheduled notification with the app closed, 2) sandboxed per-plugin pages served by a custom protocol.
+# See tools/spike-tauri-android. Runs on pushes to the spike branch, or by hand (Actions > "Spike Tauri Android").
+name: Spike Tauri Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [spike-tauri-android]
+    paths:
+      - tools/spike-tauri-android/**
+      - .github/workflows/spike-tauri-android.yml
+
+concurrency:
+  group: spike-tauri-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: Tauri Android APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/spike-tauri-android
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Rust target for Android
+        run: rustup target add aarch64-linux-android
+
+      - name: Android NDK (preinstalled on the runner image)
+        run: |
+          echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          ls "$ANDROID_NDK_LATEST_HOME" | head -3
+
+      - name: Tauri CLI
+        run: npm install
+
+      - name: Icons and Android project
+        run: |
+          npx tauri icon ../../apps/desktop/src-tauri/icons/icon.png
+          npx tauri android init --ci
+
+      # tauri-plugin-notification declares POST_NOTIFICATIONS and boot restore, but NOT the exact-alarm permissions.
+      # USE_EXACT_ALARM is granted automatically (fine for a personal APK that is not on the Play Store);
+      # SCHEDULE_EXACT_ALARM covers Android 12/13.
+      - name: Exact alarm permissions
+        run: |
+          manifest=src-tauri/gen/android/app/src/main/AndroidManifest.xml
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#&\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />#' "$manifest"
+          grep -c "EXACT_ALARM" "$manifest"
+          grep "uses-permission" "$manifest"
+
+      - name: Build debug APK
+        run: npx tauri android build --debug --apk --target aarch64 --ci
+
+      - name: Show the APK
+        run: find src-tauri/gen/android -name '*.apk' -print -exec ls -l {} \;
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: etable-spike-tauri-android.apk
+          path: tools/spike-tauri-android/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
