@@ -301,7 +301,7 @@ mount(Reglages, { target: document.getElementById("app")! });
   // Page de réglages du plugin : elle apparaît dans Paramètres → Plugins tant que le plugin est installé.
   // PluginSettings enregistre les réglages automatiquement. Pour PUBLIER des données aux autres plugins,
   // déclarez « provides » dans le manifeste et passez le nom du service en troisième argument
-  // (voir plugins/machines et docs/07-creer-un-plugin.md#dépendances-et-services).
+  // (voir plugins/finances et docs/07-creer-un-plugin.md#dépendances-et-services).
   import { Field, PluginSettings } from "@etabli/ui";
 
   const reglages = new PluginSettings({ nom: "" });

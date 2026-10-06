@@ -1,24 +1,15 @@
-// Ce que le moteur partage avec les mini-apps : les réglages propres au plugin, les bibliothèques
-// de l'application (fournisseurs, machines) et l'impression des fiches.
+// Ce que le moteur partage avec les mini-apps : les réglages propres au plugin, l'enregistrement de fichiers
+// et l'envoi de données à une autre mini-app.
 //
 //   const reglages = new PluginSettings({ keepMin: "300" });
 //   <Field bind:value={reglages.data.keepMin} />   // enregistré par le moteur
-import {
-  connect,
-  type Etabli,
-  type FichePrint,
-  type Libraries as HostLibraries,
-  type Machine,
-  type MachineKind,
-  type SavedFile,
-  type Supplier,
-} from "@etabli/sdk";
+import { connect, type Etabli, type SavedFile } from "@etabli/sdk";
 
 /**
  * Réglages du plugin, réactifs, partagés par ses mini-apps ouvertes et enregistrés automatiquement.
  *
  * Avec `service`, les réglages sont aussi **publiés** aux plugins qui dépendent de celui-ci
- * (voir `provides` dans le manifeste) : c'est ce que font les plugins Fournisseurs et Machines.
+ * (voir `provides` dans le manifeste) : c'est ce que fait le plugin Finances.
  */
 export class PluginSettings<S extends object> {
   data = $state() as S;
@@ -63,39 +54,6 @@ export class PluginSettings<S extends object> {
       });
     });
   }
-}
-
-/**
- * Fournisseurs et machines des plugins Fournisseurs et Machines (listes vides si le plugin ne les
- * déclare pas en dépendance, s'ils ne sont pas installés ou si l'utilisateur n'a rien saisi).
- */
-export class Libraries {
-  suppliers = $state<Supplier[]>([]);
-  machines = $state<Machine[]>([]);
-  #host: Etabli<unknown> | undefined;
-
-  constructor() {
-    void connect().then((host) => {
-      this.#host = host;
-      this.#receive(host.libraries.current);
-      host.libraries.onChange((libraries) => this.#receive(libraries));
-    });
-  }
-
-  #receive(libraries: HostLibraries): void {
-    this.suppliers = libraries.suppliers ?? [];
-    this.machines = libraries.machines ?? [];
-  }
-
-  /** Ouvre les réglages du plugin Machines sur une nouvelle machine ; elle arrive ensuite dans `machines`. */
-  addMachine = (kind: MachineKind): void => {
-    this.#host?.libraries.addMachine(kind);
-  };
-}
-
-/** Ouvre la fenêtre d'impression de la fiche (le moteur ajoute l'en-tête et le pied de page). */
-export function printFiche(fiche: FichePrint): void {
-  void connect().then((host) => host.print(fiche));
 }
 
 /** Enregistre un fichier (DXF, CSV…) : « Enregistrer sous » de Windows, puis écriture par le moteur. */

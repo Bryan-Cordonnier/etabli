@@ -287,7 +287,7 @@ Sources : `packages/sdk/src/protocol.ts`, `packages/sdk/src/deps.ts`, `apps/desk
 | Dépendances | `dependencies` (obligatoire) et `optionalDependencies` (facultatif) dans le manifeste, **par identifiant de plugin**, plage de versions. Installation : `planInstall` ajoute les dépendances obligatoires et propose les facultatives ; désinstaller un plugin dont d'autres dépendent (obligatoirement) est signalé par `dependentsOf` |
 | Fournisseur absent, désinstallé ou désactivé | `snapshotFor` ne renvoie rien pour lui : `services.get(nom)` donne `null`, **« comme si le plugin n'était pas là »**. Pas d'erreur, pas de notification. Les données du service restent sur disque (non vérifié : si la désinstallation les efface) |
 | Nom de service | **global**, pas préfixé par le plugin : deux plugins qui publient le même nom s'écraseraient dans `snapshotFor` (le dernier gagne). À éviter par convention (un nom = un plugin) ou à imposer |
-| Permissions | `provide` exige seulement que le nom soit dans `provides` (garde, test `#10` de docs/19) ; **aucune permission** n'est nécessaire pour publier ou lire. Liste actuelle : `fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages` |
+| Permissions | `provide` exige seulement que le nom soit dans `provides` (garde, test `#10` de docs/19) ; **aucune permission** n'est nécessaire pour publier ou lire. Liste actuelle : `fichiers`, `presse-papiers`, `envoi`, `reglages` |
 | Validation | taille ≤ 4 Mo et JSON valide seulement ; **pas de schéma par service** (docs/19 §4 : « à prévoir ») : le consommateur valide |
 | Envoi `send` | transmet des données à une mini-app d'un autre plugin, ouverte dans un nouvel onglet, une fois : c'est un **geste utilisateur**, pas un appel de programme |
 

@@ -1,10 +1,9 @@
-// Services : les données qu'un plugin publie pour les autres (docs/13). Le plugin Fournisseurs publie
-// la liste des fournisseurs, le plugin Machines celle des machines. Le moteur les garde dans un
+// Services : les données qu'un plugin publie pour les autres (docs/13). Le moteur les garde dans un
 // fichier par service (`service.<plugin>.<nom>.json`) et les relaie, en lecture seule, aux seuls
 // plugins qui déclarent une dépendance sur le fournisseur : un plugin ne lit jamais directement
 // les données d'un autre.
 import { satisfies } from "@etabli/sdk/deps";
-import type { FournisseursData, Libraries, MachinesData, Services } from "@etabli/sdk/protocol";
+import type { Services } from "@etabli/sdk/protocol";
 import { api } from "$lib/api";
 import { DataFiles, validDataName } from "$lib/dataFiles";
 import { PLUGINS, getPlugin } from "$lib/plugins/registry.svelte";
@@ -68,13 +67,3 @@ class ServiceStore {
 }
 
 export const services = new ServiceStore();
-
-/** Fournisseurs et machines, sous la forme que connaissent les SDK anciens (message `libraries`). */
-export function librariesFrom(visible: Services): Libraries {
-  const suppliers = (visible.fournisseurs?.data as FournisseursData | null)?.suppliers;
-  const machines = (visible.machines?.data as MachinesData | null)?.machines;
-  return {
-    suppliers: Array.isArray(suppliers) ? suppliers : [],
-    machines: Array.isArray(machines) ? machines : [],
-  };
-}

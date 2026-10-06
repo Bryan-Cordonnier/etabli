@@ -39,8 +39,6 @@ interface Persisted {
   /** Raccourcis dans l'application, par action (voir shortcuts.ts). Aucun par défaut. */
   shortcuts: Record<string, Shortcut>;
   closeToTray: boolean;
-  /** Nom écrit dans le cartouche des fiches d'atelier (« Préparé : … »). */
-  author: string;
   /** Chercher une nouvelle version sur GitHub au démarrage. */
   checkUpdates: boolean;
   /**
@@ -48,11 +46,6 @@ interface Persisted {
    * depuis le catalogue (ou il n'y avait rien à réinstaller).
    */
   catalogueMigrated: boolean;
-  /**
-   * Fournisseurs et machines saisis avant les plugins qui les portent : repris dans les plugins
-   * Fournisseurs et Machines (ou il n'y avait rien à reprendre).
-   */
-  librariesMigrated: boolean;
   /** Source du catalogue de plugins : adresse vide = la source officielle (docs/20 §3.2). */
   catalogueSource: CatalogueSource;
   /** Canal du catalogue (docs/20 §3.3) ; seul « stable » est publié pour l'instant. */
@@ -66,17 +59,15 @@ const DEFAULTS: Persisted = {
   textScale: 1,
   sidebarCollapsed: false,
   sidebarWidth: 232,
-  favorites: ["maths/pythagore", "economie/debit-tubes", "materiaux/masse", "materiaux/taraudage"],
+  favorites: [],
   disabledPlugins: [],
   pinnedPlugins: [],
   pluginOrder: [],
   quickShortcut: DEFAULT_SHORTCUT,
   shortcuts: {},
   closeToTray: true,
-  author: "",
   checkUpdates: true,
   catalogueMigrated: false,
-  librariesMigrated: false,
   catalogueSource: OFFICIAL_SOURCE,
   catalogueChannel: DEFAULT_CHANNEL,
 };
@@ -95,10 +86,8 @@ class Settings {
   quickShortcut = $state<Shortcut>(DEFAULTS.quickShortcut);
   shortcuts = $state<Record<string, Shortcut>>({});
   closeToTray = $state(DEFAULTS.closeToTray);
-  author = $state(DEFAULTS.author);
   checkUpdates = $state(DEFAULTS.checkUpdates);
   catalogueMigrated = $state(DEFAULTS.catalogueMigrated);
-  librariesMigrated = $state(DEFAULTS.librariesMigrated);
   catalogueSource = $state<CatalogueSource>(OFFICIAL_SOURCE);
   catalogueChannel = $state<Channel>(DEFAULT_CHANNEL);
 
@@ -122,10 +111,8 @@ class Settings {
     this.quickShortcut = saved.quickShortcut;
     this.shortcuts = saved.shortcuts;
     this.closeToTray = saved.closeToTray;
-    this.author = saved.author;
     this.checkUpdates = saved.checkUpdates;
     this.catalogueMigrated = saved.catalogueMigrated;
-    this.librariesMigrated = saved.librariesMigrated;
     this.catalogueSource = readSource(saved.catalogueSource);
     this.catalogueChannel = readChannel(saved.catalogueChannel);
   }
@@ -145,17 +132,15 @@ class Settings {
       quickShortcut: $state.snapshot(this.quickShortcut),
       shortcuts: $state.snapshot(this.shortcuts),
       closeToTray: this.closeToTray,
-      author: this.author,
       checkUpdates: this.checkUpdates,
       catalogueMigrated: this.catalogueMigrated,
-      librariesMigrated: this.librariesMigrated,
       catalogueSource: $state.snapshot(this.catalogueSource),
       catalogueChannel: this.catalogueChannel,
     } satisfies Persisted);
   }
 
   /** Modifie un réglage simple et l'enregistre. */
-  set<K extends "theme" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "author" | "checkUpdates" | "catalogueMigrated" | "librariesMigrated">(
+  set<K extends "theme" | "reduceMotion" | "textScale" | "closeToTray" | "quickShortcut" | "checkUpdates" | "catalogueMigrated">(
     key: K,
     value: Settings[K],
   ): void {

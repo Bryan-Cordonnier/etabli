@@ -14,7 +14,7 @@
 └──────────────┬──────────────────────────────────────────────────────────────────────────────────────────┘
                │ messages du protocole (packages/sdk/src/protocol.ts)
 ┌──────────────▼─────────── Mini-app d'un plugin (plugins/<id>/apps/<app>) ────────────────────────────────┐
-│  page Vite + Svelte · @etabli/sdk (connect, document, services, impression, envoi) · @etabli/ui    │
+│  page Vite + Svelte · @etabli/sdk (connect, document, services, envoi) · @etabli/ui    │
 │  aucune API Tauri, aucun accès disque ni réseau (CSP), origine opaque                                    │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -62,8 +62,7 @@ MiniAppPage (onglet)                         Apercu.svelte (aperçu rapide)
          ← update / title / summary        → DocumentSession (enregistrement 1 s après)
          ← notify / copy / shortcut        → interface hôte
          ← pluginData                      → réglages du plugin (donnees/plugin.<id>.json)
-         ← print                           → impression de la fiche (lib/print)
-         ← provide                        → services (donnees/service.<plugin>.<nom>.json)
+        ← provide                        → services (donnees/service.<plugin>.<nom>.json)
          ← openSettings / send             → page de réglages d'un plugin / nouvel onglet
          → theme / services / pluginData   (mises à jour poussées)
 ```

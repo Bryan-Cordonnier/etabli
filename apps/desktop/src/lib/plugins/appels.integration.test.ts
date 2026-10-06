@@ -60,7 +60,6 @@ const init = (pluginId: string, appId: string): HostToPlugin => ({
   document: { id: null, title: "", data: null },
   theme: {},
   colorScheme: "light",
-  libraries: { suppliers: [], machines: [] },
   services: {},
   pluginData: null,
   incoming: null,

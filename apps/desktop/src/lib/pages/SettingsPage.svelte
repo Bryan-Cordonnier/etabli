@@ -36,7 +36,7 @@
     general: {
       label: "Général",
       title: "Général",
-      lead: "Comment Établi se comporte avec Windows, et vos informations pour les fiches imprimées.",
+      lead: "Comment Établi se comporte avec Windows et où il enregistre vos données.",
     },
     apparence: {
       label: "Apparence",
@@ -360,21 +360,6 @@
               "Établi démarre réduit près de l'horloge, sans ouvrir de fenêtre, prêt pour l'aperçu rapide.",
             )}
             <Switch checked={autostart} label="Lancer Établi au démarrage de Windows" onchange={setAutostart} />
-          </div>
-        </div>
-
-        <div class="box">
-          <h3>Fiches d'atelier</h3>
-          <div class="setting">
-            {@render row("Votre nom", "Écrit dans le cartouche des fiches imprimées (« Préparé : … »). Laissez vide pour ne rien écrire.")}
-            <input
-              class="text-input"
-              value={settings.author}
-              onchange={(e) => settings.set("author", e.currentTarget.value.trim())}
-              placeholder="Prénom Nom"
-              aria-label="Votre nom"
-              spellcheck="false"
-            />
           </div>
         </div>
 

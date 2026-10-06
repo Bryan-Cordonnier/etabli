@@ -6,7 +6,6 @@ const strict = (permissions: string[] = [], provides: string[] = []): Contexte =
 const ancien: Contexte = { permissions: [], strict: false, provides: [] };
 
 const fichier = { name: "piece.dxf", content: "0\nEOF", extension: "dxf", description: "Dessin DXF" };
-const fiche = { kind: "Fiche", title: "t", subtitle: "", ident: [["Poste", "Scie"]], pages: ["<p>x</p>"] };
 
 describe("forme des messages", () => {
   it.each([null, undefined, 3, "update", [], { type: 5 }, { data: 1 }])("refuse %j", (m) => {
@@ -18,6 +17,9 @@ describe("forme des messages", () => {
     expect(controler({ type: "constructor" }, strict()).ok).toBe(false);
     expect(controler({ type: "__proto__" }, strict()).ok).toBe(false);
     expect(controler({ type: "toString" }, strict()).ok).toBe(false);
+    // Retirés du moteur : un ancien plugin qui les enverrait est refusé comme tout type inconnu.
+    expect(controler({ type: "print", fiche: {} }, strict(["impression"])).ok).toBe(false);
+    expect(controler({ type: "addMachine", kind: "scie" }, strict(["reglages"])).ok).toBe(false);
   });
 
   it("accepte les messages simples et ne garde que les champs connus", () => {
@@ -57,11 +59,9 @@ describe("données", () => {
 describe("permissions", () => {
   const exigences: [string, object, string][] = [
     ["copy", { type: "copy", text: "a" }, "presse-papiers"],
-    ["print", { type: "print", fiche }, "impression"],
     ["saveFile", { type: "saveFile", file: fichier }, "fichiers"],
     ["send", { type: "send", kind: "piece-plate", data: {} }, "envoi"],
     ["openSettings", { type: "openSettings", plugin: "machines" }, "reglages"],
-    ["addMachine", { type: "addMachine", kind: "ruban" }, "reglages"],
     ["reminders", { type: "reminders", id: "r1", op: "state" }, "notifications"],
   ];
 
@@ -120,20 +120,6 @@ describe("fichiers enregistrés", () => {
   });
 });
 
-describe("fiches imprimées", () => {
-  const imprimer = (f: object) => controler({ type: "print", fiche: f }, strict(["impression"]));
-
-  it("accepte une fiche normale et refuse les formes invalides", () => {
-    expect(imprimer(fiche).ok).toBe(true);
-    expect(imprimer({ ...fiche, pages: "x" }).ok).toBe(false);
-    expect(imprimer({ ...fiche, ident: [["a"]] }).ok).toBe(false);
-    expect(imprimer({ ...fiche, ident: [["a", 1]] }).ok).toBe(false);
-    expect(imprimer({ ...fiche, pages: new Array(LIMITES.pagesFiche + 1).fill("x") }).ok).toBe(false);
-    expect(imprimer({ ...fiche, pages: ["x".repeat(LIMITES.pageFiche + 1)] }).ok).toBe(false);
-    expect(imprimer({ ...fiche, css: "x".repeat(LIMITES.cssFiche + 1) }).ok).toBe(false);
-  });
-});
-
 describe("autres messages", () => {
   it("contrôle les raccourcis, ancres et envois", () => {
     expect(controler({ type: "shortcut", key: "t", code: "KeyT", ctrl: true, shift: false, alt: false }, strict()).ok).toBe(true);
@@ -157,7 +143,7 @@ describe("permissions du manifeste", () => {
 
   it("ignore les permissions inconnues et les décrit en clair", () => {
     expect(connues(["fichiers", "root", "fichiers"])).toEqual(["fichiers"]);
-    expect(libelles(["impression", "nimporte"])).toHaveLength(1);
+    expect(libelles(["fichiers", "nimporte"])).toHaveLength(1);
   });
 });
 
@@ -283,7 +269,7 @@ describe("rappels sur le téléphone", () => {
 });
 
 describe("appels de service : cadre invisible du fournisseur", () => {
-  const service: Contexte = { permissions: ["fichiers", "impression", "presse-papiers", "envoi", "reglages"], strict: true, provides: ["finances"], service: true };
+  const service: Contexte = { permissions: ["fichiers", "presse-papiers", "envoi", "reglages"], strict: true, provides: ["finances"], service: true };
 
   it("n'autorise que réglages, publication, signes de vie et réponses", () => {
     expect(controler({ type: "pluginData", data: { a: 1 } }, service).ok).toBe(true);
@@ -297,7 +283,6 @@ describe("appels de service : cadre invisible du fournisseur", () => {
     const interdits = [
       { type: "notify", text: "hameçonnage" },
       { type: "saveFile", file: fichier },
-      { type: "print", fiche },
       { type: "copy", text: "x" },
       { type: "send", kind: "piece-plate", data: {} },
       { type: "openSettings", plugin: "machines" },
@@ -346,9 +331,9 @@ describe("permissions d'appel", () => {
   });
 
   it("écrit une phrase par permission d'appel, avec le nom du fournisseur si on le connaît", () => {
-    const l = libelles(["appelle:finances:ecriture", "appelle:agenda:lecture", "impression"], (s) => (s === "agenda" ? "Agenda" : undefined));
+    const l = libelles(["appelle:finances:ecriture", "appelle:agenda:lecture", "fichiers"], (s) => (s === "agenda" ? "Agenda" : undefined));
     expect(l).toEqual([
-      "Imprimer des fiches d'atelier",
+      "Enregistrer des fichiers (CSV, ICS…) à l'endroit que vous choisissez",
       "Lire des données dans le service « agenda » du plugin Agenda",
       "Ajouter ou modifier des données dans le service « finances » d'un autre plugin",
     ]);

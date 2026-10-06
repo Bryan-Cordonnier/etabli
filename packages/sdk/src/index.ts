@@ -13,11 +13,8 @@ import {
   matchesShortcut,
   type ColorScheme,
   type DocumentSnapshot,
-  type FichePrint,
   type HostToPlugin,
   type Incoming,
-  type Libraries,
-  type MachineKind,
   type PluginToHost,
   type Reminder,
   type RemindersResult,
@@ -31,7 +28,7 @@ import {
   type ThemeTokens,
 } from "./protocol";
 
-export { REMINDERS_HORIZON_MS, REMINDERS_MAX, SAW_TYPES, SERVICE_ERROR_CODES, STOCK_KINDS } from "./protocol";
+export { REMINDERS_HORIZON_MS, REMINDERS_MAX, SERVICE_ERROR_CODES } from "./protocol";
 
 /** Gestionnaire d'une fonction de service : reçoit les arguments et l'identité de l'appelant, renvoie la valeur (JSON). */
 export type ServiceHandler = (args: unknown, context: ServiceCallContext) => unknown | Promise<unknown>;
@@ -49,20 +46,12 @@ export class ServiceError extends Error {
 export type {
   ColorScheme,
   DocumentSnapshot,
-  FichePrint,
-  FournisseursData,
   Incoming,
-  Libraries,
-  Machine,
-  MachineKind,
-  MachinesData,
   Reminder,
   RemindersErrorCode,
   RemindersResult,
   RemindersState,
   SavedFile,
-  Saw,
-  SawType,
   ServiceAccess,
   ServiceCallContext,
   ServiceCallOptions,
@@ -70,10 +59,6 @@ export type {
   ServiceResult,
   ServiceSnapshot,
   Services,
-  Shear,
-  StockKind,
-  Supplier,
-  SupplierItem,
   ThemeTokens,
 } from "./protocol";
 
@@ -101,17 +86,6 @@ export interface Etabli<T> {
   readonly clipboard: {
     /** Copie un texte et affiche une confirmation. */
     copy(text: string): Promise<void>;
-  };
-  /**
-   * Fournisseurs et machines, en lecture seule : ils viennent des plugins Fournisseurs et Machines et
-   * sont vides si votre plugin ne les déclare pas en dépendance, ou s'ils ne sont pas installés.
-   * Raccourci pour `services` : préférez `services` pour les autres plugins.
-   */
-  readonly libraries: {
-    readonly current: Libraries;
-    onChange(listener: (libraries: Libraries) => void): () => void;
-    /** Ouvre la page de réglages du plugin Machines sur une nouvelle machine ; elle arrive ensuite par `onChange`. */
-    addMachine(kind: MachineKind): void;
   };
   /**
    * Données publiées par les plugins dont le vôtre dépend (`dependencies`, `optionalDependencies`),
@@ -149,8 +123,6 @@ export interface Etabli<T> {
     /** Réglages modifiés par une autre mini-app du même plugin. */
     onChange(listener: (data: unknown) => void): () => void;
   };
-  /** Imprime une fiche d'atelier (A4, ou PDF avec l'imprimante « Enregistrer au format PDF »). */
-  print(fiche: FichePrint): void;
   /** Envoie des données à une autre mini-app (voir `Incoming`), ouverte dans un nouvel onglet. */
   send(kind: string, data: unknown): void;
   /** Enregistre un fichier (DXF, CSV…) : boîte « Enregistrer sous » de Windows, puis écriture. */
@@ -192,12 +164,10 @@ export function connect<T>(): Promise<Etabli<T>> {
 function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void {
   const send = (message: PluginToHost) => port.postMessage(message);
   const themeListeners = new Set<(theme: ThemeTokens, scheme: ColorScheme) => void>();
-  const libraryListeners = new Set<(libraries: Libraries) => void>();
   const serviceListeners = new Set<(services: Services) => void>();
   const settingsListeners = new Set<(data: unknown) => void>();
   let doc: DocumentSnapshot = { id: null, title: "", data: null };
   let ids = { pluginId: "", appId: "" };
-  let libraries: Libraries = { suppliers: [], machines: [] };
   let services: Services = {};
   let pluginData: unknown = null;
   let incoming: Incoming | null = null;
@@ -269,18 +239,6 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         }
       },
     },
-    libraries: {
-      get current() {
-        return libraries;
-      },
-      onChange(listener) {
-        libraryListeners.add(listener);
-        return () => libraryListeners.delete(listener);
-      },
-      addMachine(kind) {
-        send({ type: "openSettings", plugin: "machines", hash: `add=${kind}` });
-      },
-    },
     services: {
       get current() {
         return services;
@@ -349,9 +307,6 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         return () => settingsListeners.delete(listener);
       },
     },
-    print(fiche) {
-      send({ type: "print", fiche: JSON.parse(JSON.stringify(fiche)) });
-    },
     send(kind, data) {
       send({ type: "send", kind, data: JSON.parse(JSON.stringify(data)) });
     },
@@ -378,11 +333,6 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "init":
         ids = { pluginId: message.pluginId, appId: message.appId };
         doc = message.document;
-        // Un moteur plus ancien peut ne pas envoyer toutes les bibliothèques.
-        libraries = {
-          suppliers: message.libraries?.suppliers ?? [],
-          machines: message.libraries?.machines ?? [],
-        };
         services = message.services ?? {};
         pluginData = message.pluginData ?? null;
         incoming = message.incoming ?? null;
@@ -394,10 +344,6 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "theme":
         applyTheme(message.theme, message.colorScheme);
         for (const listener of themeListeners) listener(message.theme, message.colorScheme);
-        break;
-      case "libraries":
-        libraries = message.libraries;
-        for (const listener of libraryListeners) listener(libraries);
         break;
       case "services":
         services = message.services;

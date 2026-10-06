@@ -8,7 +8,6 @@ contributions. Ce qui est **fait** est dans le [journal des changements](CHANGEL
 
 - **Projets** : un dossier par projet avec un sous-dossier par plugin, déplacer un calcul dans un projet, ouvrir un projet
   partagé (clé USB, réseau), imprimer toutes les fiches d'un projet.
-- **Enregistrer les fiches en PDF** directement, sans passer par la fenêtre d'impression de Windows.
 - **Recherche dans le catalogue** dès qu'il grandit.
 
 ## Plugins possibles

@@ -35,7 +35,7 @@ Hors périmètre : un moteur compromis, une clé de signature volée (voir §5),
 | 9 | Demander ce qui n'est pas déclaré (imprimer, enregistrer, copier, envoyer, ouvrir des réglages) | permission requise par type de message (plugins de contrat ^2) | tests Vitest + validateur | ✅ ^2 · ⚠️ ^1 (voir §4) |
 | 10 | Publier un service sans l'avoir déclaré (`provides`) | refus dans le garde | tests Vitest | ✅ |
 | 11 | S'agrandir sans limite pour masquer l'interface | hauteur bornée (160 à 20 000 px) | tests Vitest | ✅ |
-| 12 | Injecter du HTML dans la fiche imprimée | cadre d'impression sans script (`sandbox` sans `allow-scripts`) ; CSP de l'application | lecture du code | ⚠️ voir §4 |
+| 12 | Injecter du HTML dans la fiche imprimée | sans objet depuis le 6 octobre 2026 : le moteur n'imprime plus de fiche (message `print` retiré) | — | ✅ supprimé |
 | 13 | Fichiers d'un plugin servis par le mauvais hôte, évasion de chemin (`../`), hôte étranger (« DNS rebinding ») | contrôle du nom d'hôte, chemins sûrs, liens symboliques refusés | tests serveur (hôtes étrangers, 404) | ✅ |
 | 14 | Données d'un fournisseur de service hostile consommées par d'autres plugins | données JSON seulement, jamais de HTML ; Svelte échappe | revue (aucun `{@html}` dans les plugins du dépôt) | ⚠️ voir §4 |
 | 15 | Boucle infinie ou calcul sans fin | hors de portée du moteur seul (le cadre est un processus du navigateur) | — | ❌ voir §4 |
@@ -129,10 +129,9 @@ Déclarées dans `permissions` du manifeste ; un plugin de contrat `"apiVersion"
 | Permission | Autorise | Message du SDK |
 | --- | --- | --- |
 | `fichiers` | « Enregistrer sous » (formats de données seulement) | `saveFile` |
-| `impression` | imprimer une fiche d'atelier | `print` |
 | `presse-papiers` | copier du texte | `copy` |
 | `envoi` | envoyer des données à une autre mini-app | `send` |
-| `reglages` | ouvrir les réglages d'un autre plugin | `openSettings`, `addMachine` |
+| `reglages` | ouvrir les réglages d'un autre plugin | `openSettings` |
 | `notifications` | programmer des rappels (notifications) sur le téléphone | `reminders` |
 | `appelle:<service>:lecture` | appeler les fonctions de **lecture** d'un service offert par un autre plugin | `serviceCall` |
 | `appelle:<service>:ecriture` | appeler les fonctions d'**écriture** (ajouter, modifier) de ce service ; ne donne pas la lecture | `serviceCall` |

@@ -2,7 +2,7 @@
 // la désinstallation. Le travail (téléchargement, signature, fichiers) est fait par Rust
 // (catalogue.rs) ; ici, l'état affiché et les règles : mises à jour automatiques au démarrage
 // (avec les dépendances obligatoires), réinstallation des plugins de qui arrive d'une version 0.1.x
-// (livrée avec ses plugins), reprise des fournisseurs et machines saisis avant les plugins qui les portent.
+// (livrée avec ses plugins).
 import { compareVersions, planInstall } from "@etabli/sdk/deps";
 import { api, type CatalogueEntry } from "$lib/api";
 import { activeSource } from "$lib/catalogue-source";
@@ -149,42 +149,8 @@ class Catalogue {
   }
 
   /**
-   * Fournisseurs et machines saisis avant les plugins Fournisseurs et Machines (fichiers `fournisseurs`
-   * et `machines` du moteur) : les plugins sont installés depuis le catalogue et reçoivent ces données.
-   * Rien n'est effacé ; sans réseau, on réessaiera au prochain démarrage.
-   */
-  async migrateLibraries(): Promise<void> {
-    if (settings.librariesMigrated) return;
-    const legacy = await Promise.all([api.dataRead("fournisseurs").catch(() => null), api.dataRead("machines").catch(() => null)]);
-    const jobs = [
-      { plugin: "fournisseurs", key: "suppliers", rows: legacy[0], label: "fournisseurs" },
-      { plugin: "machines", key: "machines", rows: legacy[1], label: "machines" },
-    ].filter((job) => Array.isArray(job.rows) && job.rows.length > 0);
-
-    const done: string[] = [];
-    for (const job of jobs) {
-      const entry = this.entryOf(job.plugin);
-      if (!entry) return;
-      if (!getPlugin(job.plugin) && !(await this.install(entry, true))) return;
-      // Ne jamais écraser ce que l'utilisateur a déjà saisi dans le plugin.
-      const existing = await api.dataRead(`plugin.${job.plugin}`).catch(() => null);
-      if (existing === null) {
-        const data = { [job.key]: job.rows };
-        await api.dataWrite(`plugin.${job.plugin}`, data);
-        await api.dataWrite(`service.${job.plugin}.${job.plugin}`, data);
-        done.push(job.label);
-      }
-    }
-    if (done.length) {
-      await services.load();
-      ui.notify(`Vos ${done.join(" et vos ")} sont repris dans ${done.length > 1 ? "les plugins" : "le plugin"} du même nom.`);
-    }
-    settings.set("librariesMigrated", true);
-  }
-
-  /**
    * Au démarrage : réinstalle les plugins de qui arrive d'une 0.1.x (ils étaient livrés avec
-   * l'application), reprend les fournisseurs et machines, puis installe les nouvelles versions des
+   * l'application), puis installe les nouvelles versions des
    * plugins du catalogue avec leurs dépendances obligatoires. Sans réseau, rien ne s'affiche : on
    * réessaiera au prochain démarrage.
    */
@@ -202,8 +168,6 @@ class Catalogue {
       }
       settings.set("catalogueMigrated", true);
     }
-
-    await this.migrateLibraries();
 
     const updated: string[] = [];
     for (const entry of this.entries) {
