@@ -92,6 +92,8 @@
     clearTimeout(readyTimer);
     readyTimer = setTimeout(() => (ready = true), 1000);
     const savedData = await pluginData.load(pluginId);
+    // Le composant a pu être retiré pendant le chargement : plus de cadre à connecter.
+    if (!frame) return;
     const channel = new MessageChannel();
     port = channel.port1;
     port.onmessage = (event: MessageEvent<PluginToHost>) => {
