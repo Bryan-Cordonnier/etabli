@@ -11,6 +11,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Removed
+
+- **The seven metalworking plugins** (Maths, Economy, Sheet metal, Layout, Materials, Suppliers, Machines) are no longer in this repository: the project is moving to a plugin-free open-source engine (Etable). The last state is kept under the Git tag `legacy/etabli-0.5-chaudronnerie`.
+
 ### Ajouté
 
 - **Rappels sur le téléphone** : un plugin peut programmer des notifications (jamais des alarmes) à l'heure voulue, avec la nouvelle permission « Programmer des rappels (notifications) sur le téléphone », montrée avant l'installation. Rien ne sonne sur PC. Les rappels d'un plugin ne remplacent jamais ceux d'un autre ; l'utilisateur garde la main (autorisations dans Paramètres › Téléphone).

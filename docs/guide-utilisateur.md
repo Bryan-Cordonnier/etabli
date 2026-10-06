@@ -1,5 +1,7 @@
 # Guide de l'utilisateur
 
+> **Out of date (6 October 2026).** The project is changing direction: this repository becomes **Etable**, an open-source engine with no bundled plugins; the metalworking plugins described below were removed (tag `legacy/etabli-0.5-chaudronnerie`). Current plan: [22-cahier-de-bord.md](22-cahier-de-bord.md), section 9. This document will be rewritten in English.
+
 Établi est une application Windows qui rassemble des outils de calcul d'atelier. Chaque outil est une **mini-app**, rangée dans
 un **plugin** ; on installe les plugins dont on a besoin. Rien n'est envoyé sur Internet, à part la recherche de mises à jour
 et les téléchargements que vous demandez.

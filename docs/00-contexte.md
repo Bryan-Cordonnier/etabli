@@ -1,5 +1,7 @@
 # 00 — Contexte du projet
 
+> **Out of date (6 October 2026).** The project is changing direction: this repository becomes **Etable**, an open-source engine with no bundled plugins; the metalworking plugins described below were removed (tag `legacy/etabli-0.5-chaudronnerie`). Current plan: [22-cahier-de-bord.md](22-cahier-de-bord.md), section 9. This document will be rewritten in English.
+
 ## En une phrase
 
 **Établi** est une boîte à outils de bureau pour la chaudronnerie : on l'ouvre à côté de SolidWorks

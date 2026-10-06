@@ -59,13 +59,6 @@ apps/desktop/src/         interface hôte Svelte (fenêtre principale + aperçu 
 apps/mobile/              emballage Android (Capacitor) de la version web ; APK de test par la CI
 packages/sdk/             @etabli/sdk : protocole et API des mini-apps
 packages/ui/              @etabli/ui : composants et outils communs des mini-apps
-plugins/maths/            7 mini-apps de géométrie
-plugins/economie/         débit de tubes (angles, 3D), calepinage de tôles à la cisaille
-plugins/tolerie/          développé de pliage, vé et effort de pliage
-plugins/tracage/          développés façon Logitrace : virole, cône, piquage, coude, trémie
-plugins/materiaux/        masse, taraudage et passages, vitesse de coupe, couple de serrage
-plugins/fournisseurs/     réglages : fournisseurs de matière (publie le service « fournisseurs »)
-plugins/machines/         réglages : scies et cisailles (publie le service « machines »)
 plugins/finances/         l'argent réel : comptes, registre en ajout seulement, tableau de bord, service « finances » (hors catalogue)
 plugins/agenda/          le temps : calendrier, heures à rebours, repos légal, service agenda@1 (docs/24)
 plugins/budget/          le prévu : courbe du mois, virements, abonnements, plafonds, service budget@1 (docs/24)
