@@ -1,0 +1,25 @@
+{
+  "id": "paie",
+  "name": "Paie",
+  "version": "0.1.0",
+  "apiVersion": "^2",
+  "author": "Bryan Cordonnier",
+  "description": "Programmer sa paie : missions d'intérim, jours de réserve, CDI et CDD. Dit combien vous serez payé ; Budget estime ce qui reste. Taux à régler et à confirmer sur un bulletin.",
+  "color": "#0369a1",
+  "icon": "weight",
+  "permissions": ["appelle:budget:ecriture", "appelle:agenda:ecriture", "appelle:finances:lecture", "appelle:finances:ecriture"],
+  "services": { "budget": "^1", "agenda": "^1", "finances": "^1" },
+  "optionalDependencies": { "budget": "^1", "agenda": "^1", "finances": "^1" },
+  "miniApps": [
+    {
+      "id": "paie",
+      "name": "Paie",
+      "description": "Missions d'intérim, réserve, contrats, taux et transmission à Budget et à l'Agenda",
+      "icon": "weight",
+      "dataVersion": 1,
+      "plannedFor": "v1",
+      "entry": "apps/paie/index.html",
+      "accepts": []
+    }
+  ]
+}
