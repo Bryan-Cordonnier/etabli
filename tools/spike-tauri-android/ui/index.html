@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etable spike</title>
+<style>
+  body { font: 16px/1.4 system-ui, sans-serif; margin: 0; padding: 16px; background: #10151c; color: #e8edf2; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  h2 { font-size: 16px; margin: 20px 0 8px; color: #8fb8de; }
+  button { font: inherit; padding: 12px 14px; margin: 4px 4px 4px 0; border: 0; border-radius: 6px; background: #2b6cb0; color: #fff; }
+  button:active { background: #1f4f85; }
+  pre { background: #0a0e13; padding: 10px; border-radius: 6px; white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+  iframe { width: 100%; height: 56px; border: 1px solid #334; border-radius: 6px; background: #fff; }
+  .ok { color: #6ee7a0; } .ko { color: #ff8a80; }
+</style>
+</head>
+<body>
+<h1>Etable spike: Tauri on Android</h1>
+<pre id="env">…</pre>
+
+<h2>1. Notifications (the reason for this spike)</h2>
+<p>Allow notifications, schedule one in 2 minutes, then <b>close the app completely</b> (swipe it away) and lock the phone.</p>
+<button id="perm">Ask permission</button>
+<button id="s1">Notify in 1 min</button>
+<button id="s2">Notify in 2 min</button>
+<button id="pend">Show pending</button>
+
+<h2>2. Sandboxed plugin pages through the custom protocol</h2>
+<button id="frames">Load plugins alpha and beta</button>
+<div id="slot"></div>
+
+<h2>Log</h2>
+<pre id="log"></pre>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const log = (...a) => { $("log").textContent += a.map((x) => (typeof x === "string" ? x : JSON.stringify(x))).join(" ") + "\n"; };
+const T = window.__TAURI__;
+$("env").textContent = JSON.stringify({ userAgent: navigator.userAgent, origin: location.origin, tauri: !!T, notificationApi: !!(T && T.notification) }, null, 1);
+window.addEventListener("error", (e) => log("ERROR:", String(e.message)));
+window.addEventListener("unhandledrejection", (e) => log("REJECTED:", String(e.reason)));
+
+const N = T && T.notification;
+
+$("perm").onclick = async () => {
+  try {
+    log("granted before:", await N.isPermissionGranted());
+    log("request ->", await N.requestPermission());
+  } catch (e) { log("permission failed:", String(e)); }
+};
+
+async function schedule(minutes) {
+  try {
+    if (N.createChannel) await N.createChannel({ id: "spike", name: "Spike reminders", importance: 4, vibration: true });
+    const at = new Date(Date.now() + minutes * 60000);
+    // Same shape as the Capacitor test: exact time, allowed while the phone is idle.
+    await N.sendNotification({
+      id: 4242 + minutes,
+      channelId: "spike",
+      title: "Etable spike",
+      body: "Scheduled for " + at.toLocaleTimeString() + " (app closed?)",
+      schedule: N.Schedule.at(at, false, true),
+    });
+    log("scheduled for", at.toISOString(), "- now close the app and wait");
+  } catch (e) { log("schedule failed:", String(e)); }
+}
+$("s1").onclick = () => schedule(1);
+$("s2").onclick = () => schedule(2);
+$("pend").onclick = async () => {
+  try { log("pending:", await N.pending()); } catch (e) { log("pending failed:", String(e)); }
+};
+
+// Two plugin pages, sandboxed exactly like the engine does (no allow-same-origin), one private MessagePort each.
+// If a forged IPC message from a plugin frame ever reaches the engine, this event fires.
+let forgedSeen = false;
+if (T && T.event) T.event.listen("probe", (e) => { forgedSeen = true; log("IPC FROM PLUGIN FRAME ACCEPTED:", e.payload, "<- the bridge is OPEN: FAIL"); });
+$("frames").onclick = () => {
+  $("slot").innerHTML = "";
+  for (const id of ["alpha", "beta"]) {
+    const f = document.createElement("iframe");
+    f.setAttribute("sandbox", "allow-scripts");
+    f.src = "http://plugins.localhost/" + id + "/index.html";
+    f.onload = () => {
+      const ch = new MessageChannel();
+      ch.port1.onmessage = (ev) => {
+        const m = ev.data;
+        const okOrigin = m.securityOrigin === "null";
+        log(id, "->", m);
+        log(id, "opaque origin:", okOrigin ? "PASS" : "FAIL", "| network blocked:", m.networkBlocked ? "PASS" : "FAIL", "| storage:", m.storage);
+        const b = m.bridge; log(id, "bridge: ipc object =", b.ipcObject, "| __TAURI_INTERNALS__ =", b.tauriInternals, "| __TAURI__ =", b.tauriGlobal, "| parent document =", b.parentAccess, "| parent internals =", b.parentInternals, "| forged message (wrong key):", m.forged);
+        log(id, "REAL invoke with the frame's own Tauri functions:", m.realInvoke);
+      };
+      f.contentWindow.postMessage({ type: "connect" }, "*", [ch.port2]);
+    };
+    f.onerror = () => log(id, "frame error");
+    $("slot").appendChild(f);
+  }
+  setTimeout(() => log(forgedSeen ? "RESULT: bridge OPEN (FAIL)" : "RESULT: no call from a plugin frame reached the engine (PASS), if both frames printed above"), 4000);
+};
+// Unattended mode (PC only): run the plugin checks, write the log to the file named by SPIKE_REPORT, quit.
+if (T && T.core) {
+  T.core.invoke("spike_auto").then((auto) => {
+    log("main frame IPC: OK (the app itself can still talk to the engine)");
+    if (!auto) return;
+    $("frames").click();
+    setTimeout(async () => {
+      await T.core.invoke("spike_report", { text: $("env").textContent + "\n" + $("log").textContent });
+      await T.core.invoke("spike_exit");
+    }, 7000);
+  }, (e) => log("main frame IPC: BROKEN:", String(e)));
+}
+</script>
+</body>
+</html>
