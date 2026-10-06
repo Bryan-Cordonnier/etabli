@@ -226,7 +226,12 @@ async function rouvrirAgenda(page) {
   // sinon la reprise de session écraserait notre clic (l'onglet gardé peut être celui d'un autre plugin).
   await attendre(() => page.frames().some((f) => estCadreApp(f, "agenda.localhost") || estCadreApp(f, "finances.localhost")), 8000);
   if (page.frames().some((f) => estCadreApp(f, "agenda.localhost"))) return;
-  await page.locator('button[data-plugin="agenda"]').click();
+  // La reprise de session peut encore écraser un clic trop tôt : on réessaie jusqu'à voir la page du plugin.
+  for (let essaiNo = 0; essaiNo < 8; essaiNo++) {
+    await page.locator('button[data-plugin="agenda"]').click();
+    const vue = await page.locator("button.open").first().waitFor({ timeout: 2500 }).then(() => true, () => false);
+    if (vue) break;
+  }
   await page.locator("button.open").first().click();
 }
 
