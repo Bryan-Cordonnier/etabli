@@ -45,6 +45,8 @@ function lancer(commande, args, options = {}) {
 
 const tmp = mkdtempSync(join(tmpdir(), "etabli-isolation-"));
 let serveur;
+/** Dernière page ouverte : sert au diagnostic quand un essai échoue avant sa fin. */
+let pageDiagnostic;
 let navigateur;
 
 async function nettoyer() {
@@ -285,6 +287,7 @@ async function essaisDansLApplication(navigateurPlaywright) {
     return route.abort();
   });
   const page = await contexte.newPage();
+  pageDiagnostic = page;
   const erreursPage = [];
   const refus = [];
   page.on("pageerror", (e) => erreursPage.push(String(e)));
@@ -565,6 +568,16 @@ try {
   await principal();
 } catch (erreur) {
   console.error(`\nErreur : ${erreur?.message ?? erreur}`);
+  try {
+    if (pageDiagnostic) {
+      console.error(`  page : ${pageDiagnostic.url()}`);
+      console.error(`  cadres : ${pageDiagnostic.frames().map((f) => f.url()).join(" | ")}`);
+      console.error(`  texte visible : ${(await pageDiagnostic.locator("body").innerText({ timeout: 3000 })).replace(/\s+/g, " ").slice(0, 700)}`);
+      console.error(`  boutons : ${(await pageDiagnostic.locator("button").evaluateAll((bs) => bs.map((b) => `${b.className}|${b.dataset.plugin ?? ""}|${(b.textContent ?? "").trim().slice(0, 25)}`).slice(0, 40))).join(" ; ")}`);
+    }
+  } catch (e) {
+    console.error(`  (diagnostic impossible : ${e?.message ?? e})`);
+  }
   if (process.env.ETABLI_DEBUG) console.error(erreur?.stack);
   code = 1;
 }
