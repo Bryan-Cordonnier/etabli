@@ -47,7 +47,19 @@ window.addEventListener("message", async (event) => {{
       forged = "sent";
     }}
   }} catch (e) {{ forged = "failed: " + String(e); }}
-  port.postMessage({{ plugin: id, origin: String(location.origin), securityOrigin, href: String(location.href), networkBlocked, storage, bridge, forged }});
+  // The REAL test: the frame calls the engine through the very functions Tauri injected into it (they carry the real invoke key).
+  // The harmless command only emits an event the main page listens to. If the main page logs "IPC FROM PLUGIN FRAME ACCEPTED", the bridge is open.
+  let realInvoke = "no __TAURI_INTERNALS__";
+  try {{
+    if (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke) {{
+      const pending = window.__TAURI_INTERNALS__.invoke("plugin:event|emit", {{ event: "probe", payload: "REAL invoke from " + id }});
+      realInvoke = await Promise.race([
+        pending.then(() => "resolved", (e) => "rejected: " + String(e)),
+        new Promise((r) => setTimeout(() => r("no answer in 1.5 s (check the main page for the event)"), 1500)),
+      ]);
+    }}
+  }} catch (e) {{ realInvoke = "threw: " + String(e); }}
+  port.postMessage({{ plugin: id, origin: String(location.origin), securityOrigin, href: String(location.href), networkBlocked, storage, bridge, forged, realInvoke }});
 }});
 </script>plugin {id} loaded</body></html>"#
     )
