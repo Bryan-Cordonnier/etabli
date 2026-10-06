@@ -24,7 +24,7 @@ Configuration : `bundle.targets = ["msi"]`, `bundle.windows.wix` (modèle, `fr-F
 **à ne jamais changer** : c'est lui qui fait remplacer l'ancienne version), `bundle.publisher`,
 `copyright`, `license` (repris dans les propriétés du programme : exigence de SignPath).
 
-## Plugins : paquet signé, installation depuis un fichier
+## Paquet de plugin signé et installation
 
 Depuis le 6 octobre 2026, le moteur n'a **ni catalogue, ni magasin, ni mise à jour de plugins par le réseau** : un plugin
 s'installe depuis un fichier `.etabli-plugin` (page « Plugins » → « Installer depuis un fichier… »). Le code du catalogue

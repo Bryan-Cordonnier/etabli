@@ -9,7 +9,7 @@ reposer les questions ouvertes avant de coder. Règles communes : [07-creer-un-p
 ## Moteur
 
 ### Catalogue de plugins : fait (0.2.0, 29/09/2026)
-Spécification validée par Bryan puis codée : voir [14-publier-une-version.md](14-publier-une-version.md#catalogue-de-plugins-depuis-la-020).
+Spécification validée par Bryan puis codée : voir [14-publier-une-version.md](14-publier-une-version.md#paquet-de-plugin-signé-et-installation).
 Restent pour plus tard : plugins d'autres auteurs (par demande de fusion sur le catalogue), version
 minimale de l'application par plugin (champ `apiVersion` publié mais pas encore contrôlé).
 

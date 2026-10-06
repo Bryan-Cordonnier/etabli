@@ -98,7 +98,7 @@ Un plugin du catalogue officiel s'exécute chez des centaines de personnes : c'e
 7. **Aucune permission** (`permissions: []`) : il n'y en a pas d'autres pour l'instant.
 8. **Journal** : `plugins/<id>/CHANGELOG.md` a une section datée pour la version du manifeste.
 9. Une **mise à jour** d'un plugin déjà accepté : relire le **diff**, en particulier les nouvelles dépendances et les changements de manifeste.
-10. Publier avec l'étiquette `plugin-<id>-vX.Y.Z` (les dépendances d'abord) : [docs/14](14-publier-une-version.md#publier-un-plugin-pas-à-pas).
+10. Publier avec l'étiquette `plugin-<id>-vX.Y.Z` (les dépendances d'abord) : [docs/14](14-publier-une-version.md#paquet-de-plugin-signé-et-installation).
 
 Refuser poliment, en expliquant, un plugin qui ne peut pas être vérifié ; proposer de le distribuer hors catalogue (fichier `.etabli-plugin`).
 
