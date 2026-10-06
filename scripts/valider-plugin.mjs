@@ -54,6 +54,7 @@ const APPELS_PERMISSION = [
   [/\bprintFiche\b|\betabli\??\.print\s*\(/, "impression"],
   [/\bsendTo\b|\betabli\??\.send\s*\(/, "envoi"],
   [/\baddMachine\b|\bopenSettings\b/, "reglages"],
+  [/\breminders\s*\??\.\s*(set|clear|state)\b/, "notifications"],
 ];
 
 /** Permissions connues : celles de apps/desktop/src/lib/plugins/permissions.ts (une seule source). */

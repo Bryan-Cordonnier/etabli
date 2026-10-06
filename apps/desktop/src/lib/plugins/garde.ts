@@ -2,10 +2,12 @@
 // est un code qu'on ne maîtrise pas (un jour, celui d'un tiers) : on ne lui fait confiance ni sur la forme, ni sur la
 // taille, ni sur ce qu'elle a le droit de demander.
 import {
+  REMINDERS_MAX,
   SERVICE_PROVIDER_CODES,
   SERVICE_TIMEOUT_MAX_MS,
   SERVICE_TIMEOUT_MIN_MS,
   type PluginToHost,
+  type Reminder,
   type SavedFile,
   type ServiceErrorCode,
   type ServiceResult,
@@ -32,11 +34,13 @@ export const LIMITES = {
 /** Identifiant d'un appel de service (choisi par l'appelant, rendu tel quel dans la réponse). */
 const ID_APPEL = /^[A-Za-z0-9_-]{1,64}$/;
 const NOM_SERVICE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+/** Identifiant d'un rappel (« finances/paie/m3 », « mission:m1@2026-10-05 ») : lettres, chiffres et quelques séparateurs. */
+const ID_RAPPEL = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,159}$/;
 /** « ecritures.ajouter », « soldes.aLaDate » : segments en lettres et chiffres, jamais de « _ » (pas de `__proto__`). */
 export const NOM_FONCTION = /^[a-z][A-Za-z0-9]{0,31}(\.[a-z][A-Za-z0-9]{0,31}){0,3}$/;
 
 /** Types qu'un cadre de service a le droit d'envoyer (liste fermée). */
-const TYPES_CADRE_SERVICE: ReadonlySet<string> = new Set(["ready", "height", "pluginData", "provide", "serviceReady", "serviceResult"]);
+const TYPES_CADRE_SERVICE: ReadonlySet<string> = new Set(["ready", "height", "pluginData", "provide", "serviceReady", "serviceResult", "reminders"]);
 
 /** Identifiant d'un `serviceCall` brut, même refusé : permet de répondre à l'appelant plutôt que de le laisser attendre. */
 export function idAppel(brut: unknown): string | null {
@@ -132,6 +136,7 @@ const PERMISSION_REQUISE: Record<string, string | null> = {
   send: "envoi",
   openSettings: "reglages",
   addMachine: "reglages",
+  reminders: "notifications",
   // La permission `appelle:<service>:<accès>` dépend du service : contrôlée plus bas, puis par le routage.
   serviceCall: null,
   serviceReady: null,
@@ -207,6 +212,24 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
           : refus("fichier refusé (nom, extension ou taille)");
       case "serviceReady":
         return bon({ type });
+      case "reminders": {
+        if (!estTexte(brut.id, 64) || !ID_APPEL.test(brut.id)) return refus("identifiant de demande invalide");
+        if (brut.op === "state") return bon({ type, id: brut.id, op: "state" });
+        if (brut.op !== "set") return refus("opération de rappels inconnue");
+        if (!Array.isArray(brut.items) || brut.items.length > REMINDERS_MAX) return refus(`au plus ${REMINDERS_MAX} rappels`);
+        const ids = new Set<string>();
+        const items: Reminder[] = [];
+        for (const r of brut.items) {
+          if (!estObjet(r)) return refus("rappel mal formé");
+          if (!estTexte(r.id, 160) || !ID_RAPPEL.test(r.id) || ids.has(r.id)) return refus("identifiant de rappel invalide ou en double");
+          if (typeof r.at !== "number" || !Number.isSafeInteger(r.at) || r.at < 0 || r.at > 8.64e15) return refus("instant de rappel invalide");
+          if (!estTexte(r.title, 120) || r.title.trim() === "") return refus("titre de rappel invalide");
+          if (r.text !== undefined && !estTexte(r.text, 300)) return refus("texte de rappel invalide");
+          ids.add(r.id);
+          items.push({ id: r.id, at: r.at, title: r.title, ...(r.text !== undefined ? { text: r.text as string } : {}) });
+        }
+        return bon({ type, id: brut.id, op: "set", items });
+      }
       case "serviceCall": {
         if (!estTexte(brut.id, 64) || !ID_APPEL.test(brut.id)) return refus("identifiant d'appel invalide");
         if (!estTexte(brut.service, 64) || !NOM_SERVICE.test(brut.service)) return refus("nom de service invalide", "argument_invalide");

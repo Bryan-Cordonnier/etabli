@@ -269,7 +269,9 @@ export type HostToPlugin =
   /** Réponse du moteur à un `serviceCall` de cette mini-app. */
   | { type: "serviceReply"; id: string; result: ServiceResult }
   /** Appel d'une fonction de service reçu par la page `serviceEntry` du fournisseur ; `caller` est écrit par le moteur. */
-  | { type: "serviceInvoke"; id: string; service: string; fn: string; args: unknown; caller: string };
+  | { type: "serviceInvoke"; id: string; service: string; fn: string; args: unknown; caller: string }
+  /** Réponse du moteur à un message `reminders` de cette mini-app (ou de sa page `serviceEntry`). */
+  | { type: "remindersResult"; id: string; result: RemindersResult };
 
 export type PluginToHost =
   | { type: "update"; data: unknown }
@@ -296,7 +298,41 @@ export type PluginToHost =
   /** Page `serviceEntry` seulement : les gestionnaires de fonctions sont enregistrés, le moteur peut envoyer l'appel. */
   | { type: "serviceReady" }
   /** Page `serviceEntry` seulement : réponse à un `serviceInvoke`. */
-  | { type: "serviceResult"; id: string; result: ServiceResult };
+  | { type: "serviceResult"; id: string; result: ServiceResult }
+  /** Rappels sur le téléphone (permission `notifications`) : `set` remplace TOUS les rappels de ce plugin, `state` lit l'état. */
+  | { type: "reminders"; id: string; op: "set"; items: Reminder[] }
+  | { type: "reminders"; id: string; op: "state" };
+
+/** Un rappel : une notification du téléphone à un instant précis (docs/24, A.1.5). Pas d'alarme : une notification seulement. */
+export interface Reminder {
+  /** Identifiant propre au plugin (rendu tel quel, unique dans son lot). */
+  id: string;
+  /** Instant de la notification, en millisecondes UTC. */
+  at: number;
+  title: string;
+  text?: string;
+}
+
+/** Ce que le téléphone permet maintenant. */
+export interface RemindersState {
+  /** Notifications autorisées par l'utilisateur ; sinon rien n'est programmé (`programmes: 0`), sans que ce soit une erreur. */
+  autorise: boolean;
+  /** Alarmes exactes autorisées (Android 12 et plus) : sans elles, l'heure n'est pas garantie à la minute. */
+  alarmeExacte: boolean;
+  /** Rappels réellement programmés pour ce plugin. */
+  programmes: number;
+  /** Date jusqu'à laquelle les rappels sont programmés (horizon de 60 jours à compter de maintenant), en ms UTC : à renouveler à l'ouverture. */
+  jusquau: number | null;
+}
+
+export type RemindersErrorCode = "telephone_seulement" | "argument_invalide" | "erreur";
+
+export type RemindersResult = ({ ok: true } & RemindersState) | { ok: false; code: RemindersErrorCode; message: string };
+
+/** Au plus ce nombre de rappels par plugin. */
+export const REMINDERS_MAX = 200;
+/** Horizon de programmation : les rappels plus lointains sont ignorés (et renouvelés quand l'agenda se rouvre). */
+export const REMINDERS_HORIZON_MS = 60 * 24 * 3600 * 1000;
 
 /** Fichier produit par une mini-app (DXF, CSV…) : le moteur ouvre « Enregistrer sous » puis l'écrit. */
 export interface SavedFile {

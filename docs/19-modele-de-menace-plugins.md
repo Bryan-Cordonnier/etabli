@@ -47,6 +47,7 @@ Hors périmètre : un moteur compromis, une clé de signature volée (voir §5),
 | 21 | **Fournisseur hostile** : réponse mal formée, code d'erreur inventé (`service_absent`…), message géant, fenêtre ou notification depuis le cadre invisible | réponse revalidée par le garde (forme, taille, codes permis au fournisseur) ; cadre de service limité à `pluginData`, `provide`, `ready`, `height`, `serviceReady`, `serviceResult` ; mêmes `sandbox`, origine et CSP que les mini-apps | tests Vitest | ✅ · cadre invisible essayé dans Chromium (isolation identique à la mini-app), pas dans WebView2 ni Android |
 | 22 | **Plugin absent, désinstallé, désactivé, trop ancien** pendant un appel | réponse typée (`service_absent`, `contrat_incompatible`), jamais d'exception ; l'appelant garde sa vérité et rejoue | tests Vitest | ✅ |
 | 23 | **Écriture appliquée mais réponse perdue** (délai expiré pendant l'exécution) | idempotence par `cle` côté fournisseur (docs/24, A.1.3) | à tester dans chaque fournisseur | ⚠️ à la charge du fournisseur |
+| 24 | **Rappels détournés** : un plugin programme des notifications trompeuses, en grand nombre, ou efface celles d'un autre | permission `notifications` montrée à l'installation ; le moteur ne remplace que la liste DU plugin demandeur (jamais celle d'un autre) ; 200 rappels, textes bornés, 60 jours d'horizon ; seules des notifications (jamais d'alarme) ; l'Agenda, seul fournisseur du service `rappels`, filtre et borne ce que lui confient les autres | `lib/mobile/rappels.test.ts`, `garde.test.ts` | ⚠️ un plugin qui détient la permission peut afficher le texte qu'il veut dans une notification : à lire à l'installation |
 
 ## 4. Limites connues et ce qu'il reste à faire
 
@@ -132,6 +133,7 @@ Déclarées dans `permissions` du manifeste ; un plugin de contrat `"apiVersion"
 | `presse-papiers` | copier du texte | `copy` |
 | `envoi` | envoyer des données à une autre mini-app | `send` |
 | `reglages` | ouvrir les réglages d'un autre plugin | `openSettings`, `addMachine` |
+| `notifications` | programmer des rappels (notifications) sur le téléphone | `reminders` |
 | `appelle:<service>:lecture` | appeler les fonctions de **lecture** d'un service offert par un autre plugin | `serviceCall` |
 | `appelle:<service>:ecriture` | appeler les fonctions d'**écriture** (ajouter, modifier) de ce service ; ne donne pas la lecture | `serviceCall` |
 
