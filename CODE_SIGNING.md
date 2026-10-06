@@ -14,7 +14,7 @@ Signature de code gratuite fournie par [SignPath.io](https://about.signpath.io),
 installateurs publiés ne sont pas signés (voir le README).*
 
 Ce qui est signé : l'installateur Windows `Etabli_<version>_x64_fr-FR.msi` publié dans les
-[Releases](https://github.com/Bryan-Cordonnier/etabli/releases) et le programme `etabli.exe` qu'il
+[Releases](https://github.com/etable-project/etable/releases) et le programme `etabli.exe` qu'il
 contient. Ils sont compilés uniquement par GitHub Actions (workflow
 [`publier.yml`](.github/workflows/publier.yml)), à partir du code de ce dépôt, sur des machines
 hébergées par GitHub. Chaque demande de signature est approuvée à la main.

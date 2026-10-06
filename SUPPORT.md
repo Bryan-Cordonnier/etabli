@@ -5,9 +5,9 @@
 1. **La documentation** répond à beaucoup de questions : le [guide de l'utilisateur](docs/guide-utilisateur.md)
    (installation, catalogue, plugins, raccourcis, données, dépannage).
 2. **Les discussions** : posez votre question dans l'onglet
-   [Discussions](https://github.com/Bryan-Cordonnier/etabli/discussions) (catégorie « Questions »).
+   [Discussions](https://github.com/etable-project/etable/discussions) (catégorie « Questions »).
    Si l'onglet n'est pas encore ouvert, utilisez un ticket avec l'étiquette `question`.
-3. Un **bug** ou un **résultat de calcul faux** : [ouvrez un ticket](https://github.com/Bryan-Cordonnier/etabli/issues/new/choose).
+3. Un **bug** ou un **résultat de calcul faux** : [ouvrez un ticket](https://github.com/etable-project/etable/issues/new/choose).
    Dans l'application : *Paramètres → Mises à jour et à propos → Signaler un problème* préremplit la
    version et les plugins.
 
@@ -35,7 +35,7 @@ Plus votre message est complet, plus vite on peut aider :
 ## Dépannage rapide
 
 - **Windows « a protégé votre ordinateur »** ou installateur bloqué (Contrôle intelligent des
-  applications) : l'installateur n'est pas encore signé, voir le [README](README.md#installer).
+  applications) : l'installateur n'est pas encore signé, voir la [politique de signature](CODE_SIGNING.md).
 - **Établi est vide** au premier lancement : normal, ouvrez le **Catalogue** pour installer des plugins.
 - **Un plugin affiche « Il faut installer X »** : il dépend d'un autre plugin, le bouton l'installe.
 - **Où sont mes calculs ?** Dans `Documents\Etabli\<plugin>\` (fichiers `.etabli`) : voir le

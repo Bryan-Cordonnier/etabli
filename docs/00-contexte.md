@@ -48,7 +48,7 @@ agent n'y aura peut-être pas accès : **l'essentiel est résumé dans ce dossie
 | Maquette validée de la fiche de coupe (tubes) | https://claude.ai/artifact/HRdrvgaowa5hDKUw15f72v |
 | Maquette validée de la fiche de calepinage (cisaille) | https://claude.ai/artifact/GFGEuW5SZ6eK9Q1326h5ft |
 
-Dépôt : https://github.com/Bryan-Cordonnier/etabli (public, branche `main`, CI « Vérification »).
+Dépôt : https://github.com/etable-project/etable (public, branche `main`, CI « Vérification »).
 
 ## Découpage en lots (cahier des charges des plugins)
 
@@ -107,7 +107,7 @@ Les ajouts de fin septembre 2026 (conversions, débit v2, Traçage, Matériaux) 
 vus à l'écran** : liste dans [12-a-faire.md](12-a-faire.md).
 
 **Distribution** : première version publiée le 29 septembre 2026 (v0.1.0) sur
-https://github.com/Bryan-Cordonnier/etabli/releases/latest, avec mises à jour automatiques
+https://github.com/etable-project/etable/releases/latest, avec mises à jour automatiques
 signées (voir [14-publier-une-version.md](14-publier-une-version.md)). Des camarades de Bryan
 l'installent : une version publiée doit rester sûre (pas de calcul faux, pas de perte de données).
 Depuis la 0.2.0, l'installateur ne contient **aucun plugin** : on les installe depuis le **catalogue**

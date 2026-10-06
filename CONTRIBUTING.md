@@ -22,7 +22,7 @@ En participant, vous acceptez le [code de conduite](CODE_OF_CONDUCT.md).
 
 ## Sans écrire de code
 
-- **Signaler un bug** : [ouvrez un ticket « Bug »](https://github.com/Bryan-Cordonnier/etabli/issues/new/choose).
+- **Signaler un bug** : [ouvrez un ticket « Bug »](https://github.com/etable-project/etable/issues/new/choose).
   Le bouton *Paramètres → Mises à jour et à propos → Signaler un problème* préremplit la version et
   la liste des plugins.
 - **Signaler un résultat de calcul faux** : c'est le bug le plus important d'un outil d'atelier. Utilisez
@@ -62,14 +62,11 @@ Le guide complet est [docs/07-creer-un-plugin.md](docs/07-creer-un-plugin.md). L
 - Les plugins dépendent les uns des autres seulement par le mécanisme de
   [dépendances et services](docs/07-creer-un-plugin.md#dépendances-et-services), jamais directement.
 
-Deux voies pour publier un plugin :
-
-1. **Dans le catalogue officiel** : ouvrez une demande de fusion qui ajoute `plugins/<id>/` (modèle
-   « plugin »). Après relecture, un mainteneur l'étiquette : la CI compile le plugin, le signe et le
-   publie dans le catalogue. **Vous ne recevez jamais la clé de signature.**
-2. **Vous-même**, hors catalogue : fabriquez le paquet (`npm run paquet -- <id>`) et distribuez-le, ou
-   déposez le dossier compilé dans `%APPDATA%\Etabli\plugins\<id>\` (voir [docs/07](docs/07-creer-un-plugin.md)).
-   Les catalogues d'autres auteurs viendront plus tard.
+Le moteur n'a **ni catalogue ni magasin** : un plugin se distribue lui-même. Fabriquez le paquet signé
+(`npm run paquet -- <id>`, qui produit un fichier `.etabli-plugin`) et installez-le depuis la page « Plugins », ou
+déposez le dossier compilé dans `%APPDATA%\Etabli\plugins\<id>\` (voir [docs/07](docs/07-creer-un-plugin.md)).
+Une demande de fusion qui ajoute un plugin d'exemple dans `plugins/<id>/` n'est acceptée que si ce plugin sert à
+illustrer ou à tester le moteur.
 
 ## Modifier le moteur, le SDK ou un plugin existant
 
@@ -87,7 +84,7 @@ Prérequis : **Windows 10 ou 11** (WebView2), **Node.js 24** (22.18 au minimum),
 [docs/02-environnement.md](docs/02-environnement.md).
 
 ```bash
-git clone https://github.com/Bryan-Cordonnier/etabli.git
+git clone https://github.com/etable-project/etable.git
 cd etabli
 npm install
 npm run dev          # compile les plugins, puis lance l'application en mode développement
@@ -144,11 +141,11 @@ ce qui a été vérifié et ce qui ne l'a pas été.
 
 Types : `feat` (nouveauté), `fix` (correction), `docs`, `style` (apparence sans changement de logique),
 `refactor`, `test`, `ci`, `chore` (version, dépendances, outils), `perf`.
-Portées courantes : `moteur`, `sdk`, `ui`, `catalogue`, `interface`, un identifiant de plugin
-(`economie`, `tracage`…).
+Portées courantes : `moteur`, `sdk`, `ui`, `serveur`, `interface`, un identifiant de plugin
+(`agenda`, `finances`…).
 
-Exemples : `fix(economie): la chute réservée n'est plus comptée deux fois`,
-`feat(catalogue): installer les dépendances obligatoires d'un plugin`.
+Exemples : `fix(agenda): le repos légal ne compte plus deux fois le dimanche`,
+`feat(moteur): refuser l'installation d'une version plus ancienne`.
 
 ## Comment se passe la relecture
 
@@ -170,8 +167,8 @@ Seuls les mainteneurs publient. Le processus complet est dans
 
 - **Application** : `CHANGELOG.md` mis à jour, `npm run version:app -- X.Y.Z`, étiquette `vX.Y.Z` →
   la CI compile et signe l'installateur et publie la version, avec pour notes la section du journal.
-- **Plugin** : `CHANGELOG.md` du plugin et `version` du manifeste mis à jour, étiquette
-  `plugin-<id>-vX.Y.Z` → la CI compile, signe et publie le paquet dans le catalogue.
+- **Plugin** : `CHANGELOG.md` du plugin et `version` du manifeste mis à jour, puis `npm run paquet -- <id>` fabrique le
+  paquet signé ; le distribuer est l'affaire de son auteur (le moteur ne publie plus dans un catalogue).
 - Les versions suivent [SemVer](https://semver.org/lang/fr/) : correction = dernier chiffre, ajout
   compatible = deuxième, changement qui casse quelque chose = premier.
 

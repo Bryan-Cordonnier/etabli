@@ -19,7 +19,7 @@ et les téléchargements que vous demandez.
 
 ## Installer
 
-1. Téléchargez **`Etabli_…_x64_fr-FR.msi`** sur la page de la [dernière version](https://github.com/Bryan-Cordonnier/etabli/releases/latest).
+1. Téléchargez **`Etabli_…_x64_fr-FR.msi`** sur la page de la [dernière version](https://github.com/etable-project/etable/releases/latest).
 2. Double-cliquez dessus : l'installation se fait **pour votre compte**, sans droits d'administrateur, dans
    `%LOCALAPPDATA%\Programs\Etabli`. Un raccourci est ajouté au menu Démarrer et au Bureau.
 3. Windows peut afficher **« Windows a protégé votre ordinateur »** : l'installateur n'est pas encore signé. Cliquez sur
@@ -156,4 +156,4 @@ restent sur le disque : supprimez ces dossiers si vous voulez tout effacer.
 | Un plugin a disparu de la colonne | Il est peut-être désactivé (Catalogue ou Paramètres → Plugins installés), ou il n'a que des réglages (Paramètres). |
 | Le raccourci de l'aperçu ne répond pas | Une autre application l'utilise peut-être : changez-le dans *Paramètres → Aperçu rapide*. Établi doit tourner (arrière-plan ou démarrage avec Windows). |
 | Je ne retrouve plus un calcul | Regardez la corbeille (`Documents\Etabli\.corbeille`), ou les anciens calculs de la mini-app. |
-| Autre | [Ouvrez un ticket](https://github.com/Bryan-Cordonnier/etabli/issues/new/choose) : voir [SUPPORT.md](../SUPPORT.md). |
+| Autre | [Ouvrez un ticket](https://github.com/etable-project/etable/issues/new/choose) : voir [SUPPORT.md](../SUPPORT.md). |

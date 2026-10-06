@@ -148,7 +148,7 @@ Première version.
 
   files["README.md"] = `# ${nom}
 
-Plugin pour [Établi](https://github.com/Bryan-Cordonnier/etabli). Décrivez ici ce qu'il calcule et d'où viennent
+Plugin pour [Établi](https://github.com/etable-project/etable). Décrivez ici ce qu'il calcule et d'où viennent
 les formules (normes, catalogues, ouvrages) : c'est ce que les relecteurs regarderont en premier.
 
 \`\`\`bash

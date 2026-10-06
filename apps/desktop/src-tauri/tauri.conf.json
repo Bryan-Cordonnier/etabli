@@ -50,7 +50,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZDOTVBMzg4RUYzNDJBNEYKUldSUEtqVHZpS09WL0kvV2JadXpYSUpoQTVqM3dLTUxuOWZCanpZWitPckRUWXpqTnROR0RXazQK",
-      "endpoints": ["https://github.com/Bryan-Cordonnier/etabli/releases/latest/download/latest.json"],
+      "endpoints": ["https://github.com/etable-project/etable/releases/latest/download/latest.json"],
       "windows": {
         "installMode": "passive"
       }
@@ -63,7 +63,7 @@
     "publisher": "Bryan Cordonnier",
     "copyright": "© 2026 Bryan Cordonnier, licence MIT",
     "license": "MIT",
-    "homepage": "https://github.com/Bryan-Cordonnier/etabli",
+    "homepage": "https://github.com/etable-project/etable",
     "shortDescription": "Boîte à outils de chaudronnerie",
     "icon": [
       "icons/32x32.png",

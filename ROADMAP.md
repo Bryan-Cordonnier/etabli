@@ -1,35 +1,22 @@
-# Feuille de route
+# Roadmap
 
-Ce qui est prévu pour Établi, sans dates : le projet avance par petits pas, au rythme des besoins d'atelier et des
-contributions. Ce qui est **fait** est dans le [journal des changements](CHANGELOG.md). Une idée qui manque ?
-[Ouvrez un ticket](https://github.com/Bryan-Cordonnier/etabli/issues/new/choose) ; on décide ensemble avant de coder.
+What is planned for Etable, without dates. What is **done** is in the [changelog](CHANGELOG.md); decisions and progress notes are in
+[docs/22-cahier-de-bord.md](docs/22-cahier-de-bord.md) (section 9). Missing an idea? [Open an issue](https://github.com/etable-project/etable/issues/new/choose);
+we decide before we code.
 
-## En cours de réflexion
+## In progress, in this order
 
-- **Projets** : un dossier par projet avec un sous-dossier par plugin, déplacer un calcul dans un projet, ouvrir un projet
-  partagé (clé USB, réseau), imprimer toutes les fiches d'un projet.
-- **Recherche dans le catalogue** dès qu'il grandit.
+1. **Cut what does not belong to the engine.** Done: the metalworking plugins, the domain code (suppliers, machines, workshop
+   sheets, DXF), and the plugin store (catalogue, signed catalogue, key rotation, revocation). Plugins now install from a signed file.
+2. **Android on Tauri mobile**, in place of Capacitor, with the native-bridge fix validated by the spike
+   ([docs/26](docs/26-tauri-android-spike.md)); then delete the web build and the Capacitor project.
+3. **English everywhere**: repository, code identifiers, commands, commits and documentation. The interface stays in French for
+   now, written so that it can be translated.
+4. **A minimal server**: command line only, PostgreSQL only, organisations from the start, stateless, no panel, documented deployment.
+5. **Rename the application** (installer name, identifiers, update endpoint), which is why it comes last.
 
-## Plugins possibles
+## Not planned in this repository
 
-Ces plugins sont décrits dans [docs/13-specs-a-venir.md](docs/13-specs-a-venir.md) ; les proposer ou les écrire est le
-meilleur moyen d'aider (voir [CONTRIBUTING.md](CONTRIBUTING.md)).
-
-- **Soudage** : cordon d'angle, chanfrein, consommables et coût, préchauffage.
-- **Tolérances et ajustements** : ISO 286, ISO 2768, ISO 13920 (tables à vérifier sur la norme).
-- **Chiffrage** : lit les résultats des autres plugins et les prix des fournisseurs (facultatif).
-- **Traçage, suite** : piquage cône sur cylindre, réduction excentrée, culotte, virole à pas de vis.
-- **Autres métiers** : menuiserie, charpente, électricité, plomberie et chauffage… voir les discussions.
-
-## Plus tard, si le projet grossit
-
-- Un **catalogue hébergé** avec recherche, comptes de développeurs, vérifications automatiques et révocation d'un plugin
-  dangereux, et des **catalogues tiers** signés par leurs auteurs.
-- **Points d'extension** entre plugins (un plugin qui enrichit un autre, par exemple les prix d'un fournisseur réel).
-- **Réglages déclaratifs** : un plugin décrit ses réglages en quelques lignes, l'application les dessine.
-- Signature Windows de l'installateur (SignPath Foundation), pour ne plus avoir d'avertissement à l'installation.
-
-## Pas prévu
-
-- Un ERP, du multi-utilisateur, de la synchronisation en ligne : Établi reste une boîte à outils de poste de travail, locale.
-- De la collecte de données ou de la publicité.
+- A plugin catalogue, a store, licences or accounts for selling plugins: these belong to separate, closed distributions built on the engine.
+- A web or iPhone version. Only Windows and Android.
+- Telemetry or advertising.

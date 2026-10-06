@@ -8,7 +8,7 @@ body:
       value: |
         Un plugin regroupe des mini-apps autour d'un métier ou d'un sujet (voir les plugins existants dans le
         dépôt). Ce formulaire sert à en discuter **avant** de l'écrire. Pour déposer un plugin déjà
-        écrit, ouvrez une demande de fusion (modèle « plugin ») : voir [CONTRIBUTING.md](https://github.com/Bryan-Cordonnier/etabli/blob/main/CONTRIBUTING.md).
+        écrit, ouvrez une demande de fusion (modèle « plugin ») : voir [CONTRIBUTING.md](https://github.com/etable-project/etable/blob/main/CONTRIBUTING.md).
   - type: input
     id: nom
     attributes:

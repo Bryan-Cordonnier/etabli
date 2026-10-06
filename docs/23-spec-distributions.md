@@ -88,17 +88,17 @@ Un seul format, validé par un schéma (`distributions/schema.json`) et par `npm
     "installationParFichier": true
   },
   "registre": {
-    "catalogue": "https://github.com/Bryan-Cordonnier/etabli/releases/download/catalogue/catalogue.json",
+    "catalogue": "https://github.com/etable-project/etable/releases/download/catalogue/catalogue.json",
     "canal": "stable",
     "clesRacines": ["<clé publique minisign>"],
     "sourcesPersonnalisees": true
   },
   "miseAJour": {
     "cle": "<clé publique minisign de mise à jour>",
-    "adresses": ["https://github.com/Bryan-Cordonnier/etabli/releases/latest/download/latest.json"]
+    "adresses": ["https://github.com/etable-project/etable/releases/latest/download/latest.json"]
   },
   "serveur": { "mode": "local", "adresseParDefaut": null },
-  "liens": { "depot": "https://github.com/Bryan-Cordonnier/etabli", "aide": "…" },
+  "liens": { "depot": "https://github.com/etable-project/etable", "aide": "…" },
   "fonctions": { "catalogue": true, "essai": null }
 }
 ```

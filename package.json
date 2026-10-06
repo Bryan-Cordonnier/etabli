@@ -4,13 +4,13 @@
   "description": "Boîte à outils de bureau extensible par plugins, pour la chaudronnerie (BTS CRCI)",
   "license": "MIT",
   "author": "Bryan Cordonnier",
-  "homepage": "https://github.com/Bryan-Cordonnier/etabli#readme",
+  "homepage": "https://github.com/etable-project/etable#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Bryan-Cordonnier/etabli.git"
+    "url": "git+https://github.com/etable-project/etable.git"
   },
   "bugs": {
-    "url": "https://github.com/Bryan-Cordonnier/etabli/issues"
+    "url": "https://github.com/etable-project/etable/issues"
   },
   "keywords": [
     "chaudronnerie",

@@ -1,7 +1,7 @@
 # 14 — Publier une version, signature et mises à jour
 
 Établi est distribué par les **Releases GitHub** du dépôt public (gratuit) :
-https://github.com/Bryan-Cordonnier/etabli/releases/latest. Chaque version contient l'installateur
+https://github.com/etable-project/etable/releases/latest. Chaque version contient l'installateur
 `Etabli_<version>_x64_fr-FR.msi`, sa signature de mise à jour `.msi.sig` et `latest.json`, le
 fichier que les Établi installés consultent pour se mettre à jour. Licence : **MIT** (`LICENSE`).
 

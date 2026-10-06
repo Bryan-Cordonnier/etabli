@@ -35,7 +35,7 @@ et dans les lieux publics où l'on représente le projet.
 Si vous êtes témoin d'un comportement inacceptable ou si vous en êtes la cible, écrivez aux
 mainteneurs **en privé** :
 
-1. par un [signalement privé GitHub](https://github.com/Bryan-Cordonnier/etabli/security/advisories/new)
+1. par un [signalement privé GitHub](https://github.com/etable-project/etable/security/advisories/new)
    (onglet *Security* → *Report a vulnerability*) en écrivant « Conduite » dans le titre : il n'est
    visible que des mainteneurs ; ou
 2. par le contact indiqué sur le profil GitHub de [Bryan Cordonnier](https://github.com/Bryan-Cordonnier).

@@ -12,7 +12,7 @@ if (!tag || !msi || !notesFile) {
   process.exit(1);
 }
 
-const url = `https://github.com/Bryan-Cordonnier/etabli/releases/download/${tag}/${encodeURIComponent(basename(msi))}`;
+const url = `https://github.com/etable-project/etable/releases/download/${tag}/${encodeURIComponent(basename(msi))}`;
 const signature = readFileSync(`${msi}.sig`, "utf8").trim();
 const platform = { signature, url };
 

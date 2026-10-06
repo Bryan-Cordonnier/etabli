@@ -1,6 +1,6 @@
 # Finances
 
-Plugin pour [Établi](https://github.com/Bryan-Cordonnier/etabli) : l'argent **réel** (ce qui s'est passé), jamais le prévu (futur plugin « budget »).
+Plugin pour [Établi](https://github.com/etable-project/etable) : l'argent **réel** (ce qui s'est passé), jamais le prévu (futur plugin « budget »).
 Spécification : [docs/24](../../docs/24-spec-plugins-budget.md) ; description du code : [docs/10](../../docs/10-plugins-existants.md).
 
 ```bash
