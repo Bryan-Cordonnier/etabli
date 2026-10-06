@@ -222,11 +222,12 @@ async function ouvrirDansLApplication(page, ouvrir, hoteAttendu) {
 async function rouvrirAgenda(page) {
   await page.reload();
   await page.locator('button[data-plugin="agenda"]').waitFor({ timeout: 15_000 });
-  const dejaOuvert = await attendre(() => page.frames().some((f) => estCadreApp(f, "agenda.localhost")), 4000);
-  if (!dejaOuvert) {
-    await page.locator('button[data-plugin="agenda"]').click();
-    await page.locator("button.open").first().click();
-  }
+  // L'application rouvre ses onglets de façon asynchrone : on attend qu'un cadre d'application soit revenu avant de naviguer,
+  // sinon la reprise de session écraserait notre clic (l'onglet gardé peut être celui d'un autre plugin).
+  await attendre(() => page.frames().some((f) => estCadreApp(f, "agenda.localhost") || estCadreApp(f, "finances.localhost")), 8000);
+  if (page.frames().some((f) => estCadreApp(f, "agenda.localhost"))) return;
+  await page.locator('button[data-plugin="agenda"]').click();
+  await page.locator("button.open").first().click();
 }
 
 /** Cadre d'une mini-app (/apps/…) sur l'hôte d'un plugin : pas la page discrète qui enregistre le service worker. */
