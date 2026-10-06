@@ -8,8 +8,8 @@ pub struct AppPaths {
     pub documents: PathBuf,
     /// Réglages de l'application et plugins installés par l'utilisateur.
     pub config: PathBuf,
-    /// Plugins installés depuis le catalogue ou un fichier `.etabli-plugin` (un dossier par plugin).
-    pub catalogue: PathBuf,
+    /// Plugins installés depuis un fichier `.etabli-plugin` (un dossier par plugin).
+    pub installes: PathBuf,
     /// Dossiers où chercher des plugins, dans l'ordre : le premier trouvé pour un identifiant gagne.
     pub plugin_roots: Vec<(PathBuf, Source)>,
 }
@@ -30,21 +30,21 @@ impl AppPaths {
         };
 
         // Plugins intégrés : ceux du dépôt en développement ; une fois installée, l'application
-        // n'en contient plus (ils viennent du catalogue), le dossier des ressources reste lu.
+        // n'en contient plus (ils s'installent depuis un fichier), le dossier des ressources reste lu.
         let integres = if cfg!(debug_assertions) {
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../plugins")
         } else {
             app.path().resource_dir()?.join("plugins")
         };
-        let catalogue = config.join("catalogue");
+        let installes = config.join("installes");
 
         Ok(Self {
             plugin_roots: vec![
                 (integres, Source::Integre),
-                (catalogue.clone(), Source::Catalogue),
+                (installes.clone(), Source::Installe),
                 (config.join("plugins"), Source::Utilisateur),
             ],
-            catalogue,
+            installes,
             documents,
             config,
         })

@@ -17,8 +17,8 @@ export function describeView(view: View): ViewInfo {
       return { title: "Accueil", icon: "home", color: "var(--accent)" };
     case "settings":
       return { title: "Paramètres", icon: "settings", color: "var(--faint)" };
-    case "catalogue":
-      return { title: "Catalogue", icon: "store", color: "var(--accent)" };
+    case "plugins":
+      return { title: "Plugins", icon: "puzzle", color: "var(--accent)" };
     case "plugin": {
       const plugin = getPlugin(view.pluginId);
       return plugin ? { title: plugin.name, icon: plugin.icon, color: plugin.color } : UNKNOWN;

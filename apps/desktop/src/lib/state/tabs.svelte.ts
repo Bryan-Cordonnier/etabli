@@ -24,7 +24,7 @@ function sameView(a: View, b: View): boolean {
   if (a.kind !== b.kind) return false;
   switch (a.kind) {
     case "home":
-    case "catalogue":
+    case "plugins":
       return true;
     case "plugin":
       return b.kind === "plugin" && a.pluginId === b.pluginId;
@@ -54,7 +54,8 @@ class Tabs {
 
   constructor() {
     const session = load<Session | null>("session", null);
-    const views = session?.views.length ? session.views : [HOME];
+    // Une session enregistrée par une version qui avait un catalogue rouvre la page des plugins.
+    const views = session?.views.length ? session.views.map((v) => ((v.kind as string) === "catalogue" ? ({ kind: "plugins" } as View) : v)) : [HOME];
     for (const view of views) this.#create(fresh(view));
     const restored = this.list[Math.min(session?.active ?? 0, this.list.length - 1)];
     this.activeId = restored?.id ?? 0;
@@ -111,8 +112,8 @@ class Tabs {
         return;
       }
     }
-    // Un seul onglet Paramètres, un seul onglet Catalogue.
-    if (view.kind === "settings" || view.kind === "catalogue") {
+    // Un seul onglet Paramètres, un seul onglet Plugins.
+    if (view.kind === "settings" || view.kind === "plugins") {
       const open = this.list.find((t) => t.view.kind === view.kind);
       if (open) {
         if (view.kind === "settings" && view.section) open.view = fresh(view);

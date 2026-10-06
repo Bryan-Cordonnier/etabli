@@ -41,7 +41,7 @@ body:
     attributes:
       label: Comment le reproduire
       placeholder: |
-        1. Ouvrir le catalogue
+        1. Ouvrir la page des plugins
         2. Installer …
         3. Cliquer sur …
     validations:

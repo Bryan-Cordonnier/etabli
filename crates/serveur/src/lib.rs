@@ -31,7 +31,7 @@ use tower_http::{
 pub use etat::{Config, Interne};
 pub use hote_plugins::ModelePlugins;
 
-/// Clé publique des mises à jour d'Établi : elle signe aussi les plugins du catalogue officiel.
+/// Clé publique des mises à jour d'Établi : elle signe aussi les paquets de plugins (`.etabli-plugin`).
 pub fn cle_publique_officielle() -> String {
     let conf: serde_json::Value = serde_json::from_str(include_str!(
         "../../../apps/desktop/src-tauri/tauri.conf.json"

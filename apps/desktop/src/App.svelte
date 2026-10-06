@@ -8,10 +8,10 @@
   import ServiceHost from "$lib/components/ServiceHost.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import UpdateBanner from "$lib/components/UpdateBanner.svelte";
-  import CataloguePage from "$lib/pages/CataloguePage.svelte";
   import Home from "$lib/pages/Home.svelte";
   import MiniAppPage from "$lib/pages/MiniAppPage.svelte";
   import PluginPage from "$lib/pages/PluginPage.svelte";
+  import PluginsPage from "$lib/pages/PluginsPage.svelte";
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
   import { api, system } from "$lib/api";
   import { preparerPluginsHorsLigne } from "$lib/serveur/horsLigne";
@@ -20,7 +20,6 @@
   import { sendToApp } from "$lib/send";
   import { handleShortcut } from "$lib/shortcuts";
   import { loadPlugins } from "$lib/plugins/registry.svelte";
-  import { catalogue } from "$lib/state/catalogue.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { suivreEcran, ui } from "$lib/state/ui.svelte";
@@ -41,23 +40,10 @@
     return () => clearTimeout(timer);
   });
 
-  // Catalogue : réinstallation des plugins de qui arrive d'une 0.1.x, puis mises à jour
-  // automatiques des plugins, une fois au démarrage.
-  $effect(() => {
-    const timer = setTimeout(() => void catalogue.startup(), 2000);
-    return () => clearTimeout(timer);
-  });
-
-  // Plugins installés ou désinstallés depuis l'autre fenêtre, et progression des téléchargements.
+  // Plugins installés ou désinstallés depuis l'autre fenêtre.
   $effect(() => {
     const changed = api.onPluginsChanged(() => void loadPlugins());
-    const progress = api.onInstallProgress(({ id, pourcent }) => {
-      if (catalogue.progress[id] !== undefined) catalogue.progress[id] = pourcent;
-    });
-    return () => {
-      void changed.then((stop) => stop());
-      void progress.then((stop) => stop());
-    };
+    return () => void changed.then((stop) => stop());
   });
 
   // « Ouvrir dans l'Établi » depuis l'aperçu rapide : le calcul arrive dans un nouvel onglet.
@@ -66,7 +52,7 @@
     return () => void unlisten.then((stop) => stop());
   });
 
-  // « + Ajouter une machine… » et « Envoyer au calepinage » depuis une mini-app de l'aperçu rapide.
+  // Ouvrir les réglages d'un plugin et envoyer des données à une mini-app, depuis l'aperçu rapide.
   $effect(() => {
     const reglages = system.onSettingsRequest(({ plugin, hash }) => openPluginSettings(plugin, hash));
     const send = system.onSendRequest(({ kind, data, from }) => sendToApp(kind, data, from));
@@ -129,8 +115,8 @@
             <MiniAppPage tabId={tabs.activeId} pluginId={view.pluginId} appId={view.appId} docId={view.docId} />
           {:else if view?.kind === "settings"}
             <SettingsPage section={view.section} hash={view.hash} />
-          {:else if view?.kind === "catalogue"}
-            <CataloguePage />
+          {:else if view?.kind === "plugins"}
+            <PluginsPage />
           {/if}
         </div>
       {/key}

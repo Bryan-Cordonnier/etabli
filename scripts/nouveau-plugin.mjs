@@ -13,7 +13,7 @@ import { iconesConnues } from "./valider-plugin.mjs";
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ID = /^[a-z][a-z0-9-]{1,40}$/;
-const RESERVES = new Set(["moteur", "sdk", "ui", "catalogue", "test", "essai", "exemple"]);
+const RESERVES = new Set(["moteur", "sdk", "ui", "plugins", "test", "essai", "exemple"]);
 
 const pascal = (texte) =>
   texte
@@ -110,7 +110,7 @@ export default defineConfig({
     version: "0.1.0",
     apiVersion: "^2",
     author: "Votre nom",
-    description: "Une phrase qui dit ce que fait le plugin (elle s'affiche dans le catalogue).",
+    description: "Une phrase qui dit ce que fait le plugin (elle s'affiche dans la page des plugins).",
     color: couleur,
     icon: icone,
     permissions: ["presse-papiers"],
@@ -133,7 +133,7 @@ export default defineConfig({
   files["CHANGELOG.md"] = `# ${nom} : journal des changements
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions [SemVer](https://semver.org/lang/fr/).
-Chaque version a sa section ; elle devient les « Nouveautés » affichées dans le catalogue.
+Chaque version a sa section ; elle sert de notes de version du plugin.
 
 ## [Non publié]
 

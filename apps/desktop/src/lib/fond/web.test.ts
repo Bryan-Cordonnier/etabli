@@ -104,11 +104,9 @@ describe("fond web : données, réglages, plugins", () => {
     expect(await fond.storeLoad()).toEqual({ settings: { theme: "sombre" }, session: { onglets: [] } });
   });
 
-  it("liste les plugins fournis et refuse le catalogue et l'installation", async () => {
+  it("liste les plugins fournis et refuse l'installation", async () => {
     const fond = neuf({ plugins: async () => [{ manifest: { id: "maths" }, official: true }] });
     expect(await fond.pluginsList()).toEqual([{ manifest: { id: "maths" }, official: true }]);
-    await expect(fond.catalogueRead()).rejects.toThrow("application");
-    await expect(fond.pluginInstall("x", "http://x")).rejects.toThrow("application");
     await expect(fond.pluginInstallFile()).rejects.toThrow("application");
     await expect(fond.pluginUninstall("x")).rejects.toThrow("application");
   });

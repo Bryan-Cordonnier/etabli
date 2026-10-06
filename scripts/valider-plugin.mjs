@@ -142,7 +142,7 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
   if (typeof m.id !== "string" || !ID.test(m.id)) erreur("« id » absent ou invalide (minuscules, chiffres et tirets).");
   else if (m.id !== id) erreur(`« id » vaut « ${m.id} » mais le dossier s'appelle « ${id} » : les deux doivent être identiques.`);
   if (typeof m.name !== "string" || m.name.trim() === "") erreur("« name » (nom affiché) est absent.");
-  if (typeof m.description !== "string" || m.description.trim() === "") erreur("« description » est absente : elle s'affiche dans le catalogue.");
+  if (typeof m.description !== "string" || m.description.trim() === "") erreur("« description » est absente : elle s'affiche dans la page des plugins.");
   else if (m.description.length > 300) avertir("« description » dépasse 300 caractères : une ou deux phrases suffisent.");
   if (typeof m.version !== "string" || !SEMVER.test(m.version)) erreur("« version » doit avoir la forme 1.2.3.");
   if (typeof m.apiVersion !== "string" || !plageValide(m.apiVersion)) erreur("« apiVersion » est absente ou illisible (par exemple « ^1 »).");

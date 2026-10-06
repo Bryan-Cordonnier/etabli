@@ -35,7 +35,7 @@ export const ACTIONS: ShortcutAction[] = [
   { id: "palette", label: "Ouvrir la recherche (palette de commandes)", group: "Recherche et pages", run: () => (ui.paletteOpen = !ui.paletteOpen) },
   { id: "home", label: "Aller à l'accueil", group: "Recherche et pages", run: () => tabs.navigate({ kind: "home" }) },
   { id: "settings", label: "Ouvrir les paramètres", group: "Recherche et pages", run: () => tabs.navigate({ kind: "settings" }) },
-  { id: "catalogue", label: "Ouvrir le catalogue de plugins", group: "Recherche et pages", run: () => tabs.navigate({ kind: "catalogue" }) },
+  { id: "plugins", label: "Ouvrir les plugins installés", group: "Recherche et pages", run: () => tabs.navigate({ kind: "plugins" }) },
   { id: "back", label: "Page précédente", group: "Recherche et pages", run: () => tabs.back() },
   { id: "newTab", label: "Nouvel onglet", group: "Onglets", run: () => tabs.newTab() },
   { id: "closeTab", label: "Fermer l'onglet", group: "Onglets", run: () => tabs.close(tabs.activeId) },

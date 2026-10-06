@@ -124,10 +124,8 @@ describe("fond serveur : routes de l'API", () => {
     expect(appels[0]?.url).toBe("/api/donnees/..%2Fx%3Fy%3D1");
   });
 
-  it("catalogue et installation de plugins : gérés par l'administrateur", async () => {
+  it("installation de plugins : gérée par l'administrateur", async () => {
     const fond = creerFondServeur(new ClientApi({ base: "", fetch: faux(() => json({})).f }));
-    await expect(fond.catalogueRead()).rejects.toThrow("administrateur");
-    await expect(fond.pluginInstall("x", "u")).rejects.toThrow("administrateur");
     await expect(fond.pluginInstallFile()).rejects.toThrow("administrateur");
     await expect(fond.pluginUninstall("x")).rejects.toThrow("administrateur");
   });
@@ -136,6 +134,6 @@ describe("fond serveur : routes de l'API", () => {
     const fond = creerFondServeur(new ClientApi({ base: "https://s.fr/", fetch: faux(() => json({})).f }));
     expect(fond.id).toBe("serveur");
     expect(fond.urlPlugins).toBe("https://s.fr/plugins");
-    expect(fond.capacites).toMatchObject({ isolationComplete: true, catalogue: false, miseAJour: false, fenetresNatives: false });
+    expect(fond.capacites).toMatchObject({ isolationComplete: true, plugins: false, miseAJour: false, fenetresNatives: false });
   });
 });

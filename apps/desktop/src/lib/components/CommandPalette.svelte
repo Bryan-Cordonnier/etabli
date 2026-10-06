@@ -21,8 +21,8 @@
 
   const entries: Entry[] = [
     { label: "Accueil", detail: "Page", view: { kind: "home" }, color: "var(--accent)", icon: "home" },
-    ...(api.capacites.catalogue
-      ? [{ label: "Catalogue", detail: "Installer des plugins", view: { kind: "catalogue" } as const, color: "var(--accent)", icon: "store" as const }]
+    ...(api.capacites.plugins
+      ? [{ label: "Plugins", detail: "Installer et gérer", view: { kind: "plugins" } as const, color: "var(--accent)", icon: "puzzle" as const }]
       : []),
     { label: "Paramètres", detail: "Page", view: { kind: "settings" }, color: "var(--faint)", icon: "settings" },
     ...pluginsWithApps().map((p) => ({

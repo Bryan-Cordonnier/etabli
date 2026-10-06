@@ -1,5 +1,7 @@
 # 20 — Spécification : mises à jour et registre des plugins « en béton » (brouillon)
 
+> **Déplacé vers Etablink (6 octobre 2026).** Le moteur Etable n'a plus ni catalogue, ni licences, ni magasin ; ce document décrit la future distribution fermée Etablink. Le code existant (catalogue signé, rotation de clés, révocation, retour arrière) est sous l'étiquette Git `legacy/store-before-cut`.
+
 > **Statut : brouillon.** Le noyau de vérification (catalogue signé, séquence, expiration, révocation, anti-retour-en-arrière) est
 > codé et testé dans `crates/noyau/src/catalogue.rs`. **Rien n'est encore branché** dans l'application ni dans la chaîne de
 > publication : ces branchements se font à partir de cette spec, une fois validée par Bryan.

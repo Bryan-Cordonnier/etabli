@@ -1,9 +1,8 @@
 <script lang="ts">
   // Dépendances obligatoires d'un plugin qui ne sont pas satisfaites : dit ce qui manque, en français,
-  // avec le bouton qui règle le problème (installer, activer, ouvrir le catalogue).
+  // avec le bouton qui règle le problème (activer, ouvrir la page des plugins).
   import type { Problem } from "@etabli/sdk/deps";
   import { getPlugin, pluginProblems } from "$lib/plugins/registry.svelte";
-  import { catalogue } from "$lib/state/catalogue.svelte";
   import { lifecycle } from "$lib/state/lifecycle.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import type { PluginManifest } from "$lib/types";
@@ -18,17 +17,13 @@
 
   const problems = $derived(pluginProblems(plugin));
 
-  $effect(() => {
-    if (problems.length && catalogue.status === "idle") void catalogue.load();
-  });
-
-  const nameOf = (id: string) => getPlugin(id)?.name ?? catalogue.entryOf(id)?.name ?? id;
+  const nameOf = (id: string) => getPlugin(id)?.name ?? id;
 
   function text(problem: Problem): string {
     const name = nameOf(problem.id);
     switch (problem.kind) {
       case "missing":
-        return `Il faut installer « ${name} » (version ${problem.range}).`;
+        return `Il faut installer le plugin « ${name} » (version ${problem.range}), depuis un fichier.`;
       case "incompatible":
         return `« ${name} » est en version ${problem.found} ; ${plugin.name} demande ${problem.range}. Mettez l'un des deux à jour.`;
       case "disabled":
@@ -38,17 +33,12 @@
 
   function fix(problem: Problem): void {
     if (problem.kind === "disabled") lifecycle.toggle(problem.id);
-    else {
-      const entry = catalogue.entryOf(problem.id);
-      if (problem.kind === "missing" && entry) lifecycle.askInstall(entry);
-      else tabs.navigate({ kind: "catalogue" });
-    }
+    else tabs.navigate({ kind: "plugins" });
   }
 
   function label(problem: Problem): string {
     if (problem.kind === "disabled") return "Activer";
-    if (problem.kind === "missing" && catalogue.entryOf(problem.id)) return `Installer ${nameOf(problem.id)}`;
-    return "Ouvrir le catalogue";
+    return "Ouvrir les plugins";
   }
 </script>
 

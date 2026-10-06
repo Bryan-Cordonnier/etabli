@@ -45,7 +45,7 @@ export interface Invocation {
 
 export interface EnvAppels {
   plugins(): readonly PluginAppel[];
-  /** Installé ET activé ET non révoqué (la révocation viendra avec le catalogue signé, docs/20). */
+  /** Installé ET activé. */
   actif(pluginId: string): boolean;
   /**
    * Charge la page `serviceEntry` du fournisseur dans un cadre invisible isolé, lui transmet l'appel, rend sa réponse

@@ -1,8 +1,6 @@
 // Types partagés par les « fonds » : la couche qui stocke les calculs, les réglages et les plugins.
 // Un fond est soit local (Rust dans l'application, ou navigateur), soit — plus tard — un serveur.
 // Voir docs/16-spec-serveur-utilisateurs-mobile.md.
-import type { CatalogueSource } from "$lib/catalogue-source";
-
 export interface DocumentMeta {
   id: string;
   pluginId: string;
@@ -33,8 +31,8 @@ export interface DocumentInput {
   versionAttendue?: number;
 }
 
-/** D'où vient un plugin : livré avec l'application, installé depuis le catalogue, ou déposé à la main. */
-export type PluginSource = "integre" | "catalogue" | "utilisateur";
+/** D'où vient un plugin : livré avec l'application, installé depuis un fichier signé, ou déposé à la main. */
+export type PluginSource = "integre" | "installe" | "utilisateur";
 
 export interface PluginInfo {
   /** Fichiers du plugin (chemins relatifs), fournis par un serveur pour les garder d'avance hors ligne. */
@@ -42,41 +40,6 @@ export interface PluginInfo {
   manifest: unknown;
   official: boolean;
   source?: PluginSource;
-  /** Raison pour laquelle la version installée est révoquée (docs/20) : le plugin est alors désactivé. */
-  revoque?: string;
-  /** Version précédente gardée pour un retour en arrière (plugins du catalogue). */
-  precedente?: string;
-}
-
-/** Plugin du catalogue publié sur GitHub (voir scripts/paquet-plugin.mjs). */
-export interface CatalogueEntry {
-  id: string;
-  name: string;
-  description: string;
-  version: string;
-  author: string;
-  color: string;
-  icon: string;
-  apiVersion: string;
-  /** Permissions demandées (docs/19) ; vide pour un catalogue publié avant le contrat 2. */
-  permissions: string[];
-  /** Plugins obligatoires (identifiant → plage de versions) ; vide pour un catalogue publié avant la 0.3. */
-  dependencies: Record<string, string>;
-  /** Plugins dont celui-ci profite s'ils sont là. */
-  optionalDependencies: Record<string, string>;
-  /** Données que ce plugin publie pour les autres (nom du service → version du contrat). */
-  provides: Record<string, string>;
-  /** Titres des pages de réglages que ce plugin ajoute aux Paramètres. */
-  settings: { id: string; title: string }[];
-  /** Nouveautés de cette version (texte brut, tirées du CHANGELOG.md du plugin) ; vide si le catalogue n'en a pas. */
-  notes: string;
-  /** Date de cette version (« 2026-09-30 »), ou null. */
-  notesDate: string | null;
-  miniApps: { id: string; name: string; description: string; icon: string }[];
-  /** Taille du paquet, en octets. */
-  size: number;
-  url: string;
-  published: string;
 }
 
 export interface DocumentFilter {
@@ -87,8 +50,8 @@ export interface DocumentFilter {
 
 /** Ce que le fond actuel sait faire ; l'interface s'en sert pour masquer ou désactiver les fonctions absentes. */
 export interface Capacites {
-  /** Catalogue en ligne, installation et désinstallation de plugins. */
-  catalogue: boolean;
+  /** Installation et désinstallation de plugins depuis un fichier signé. */
+  plugins: boolean;
   /** Mises à jour automatiques de l'application. */
   miseAJour: boolean;
   /** Vraies fenêtres (barre de titre, aperçu rapide, raccourci global, zone de notification). */
@@ -125,18 +88,11 @@ export interface Fond {
   exporterTout?(): Promise<ExportComplet>;
 
   pluginsList(): Promise<PluginInfo[]>;
-  /** Catalogue des plugins officiels (lu sur GitHub par Rust). */
-  catalogueRead(source?: CatalogueSource | null, channel?: string): Promise<unknown>;
-  /** Télécharge, vérifie la signature et installe (ou met à jour) un plugin ; renvoie son identifiant. */
-  pluginInstall(id: string, url: string, source?: CatalogueSource | null): Promise<string>;
   /** Installe un fichier .etabli-plugin choisi par l'utilisateur ; null s'il annule. */
   pluginInstallFile(): Promise<string | null>;
   pluginUninstall(id: string): Promise<void>;
-  /** Revient à la version précédente du plugin (un second appel revient en avant) ; renvoie la version en place. */
-  pluginRevert(id: string): Promise<string>;
   /** Liste des plugins changée (installation, désinstallation), dans n'importe quelle fenêtre. */
   onPluginsChanged(handler: () => void): Promise<() => void>;
-  onInstallProgress(handler: (progress: { id: string; pourcent: number }) => void): Promise<() => void>;
 
   documentsList(filter?: DocumentFilter): Promise<DocumentMeta[]>;
   documentRead(id: string): Promise<DocumentFile>;

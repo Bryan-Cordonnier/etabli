@@ -15,7 +15,7 @@ l'onglet actif.
 | `lib/fond/` | **fond** : couche de stockage et de plugins. `types.ts` (interface `Fond`, `Capacites`, types de documents et de plugins), `tauri.ts` (commandes Rust), `web.ts` (IndexedDB, plugins statiques), `index.ts` (choix au démarrage). L'interface teste `api.capacites.*` (catalogue, mise à jour, fenêtres natives, isolation, journal) plutôt que `inTauri`. Un fond « serveur » est prévu (docs/16) |
 | `lib/components/MobileBar.svelte` | barre du haut en mode compact (< 760 px) : tiroir des plugins, retour, titre, recherche ; remplace `TabBar` (`ui.compact`, `suivreEcran()` dans `state/ui.svelte.ts`). La colonne (`Sidebar`) devient un tiroir (`ui.menuOpen`) sans glisser-déposer ni redimensionnement |
 | `lib/storage.ts` | cache synchrone de `settings.json` ou, dans un navigateur, de la clé `etabli.store` (`load`, `save` différé de 300 ms, `reloadStorage`), toujours via le fond |
-| `lib/state/settings.svelte.ts` | réglages (`settings`) : thème, thèmes importés, animations, taille du texte, colonne (repliée, largeur), favoris, plugins désactivés, ordre des plugins, raccourci global de l'aperçu (`quickShortcut`), raccourcis de l'application par action (`shortcuts`, vide par défaut), zone de notification, auteur des fiches, source et canal du catalogue (`catalogueSource`, `catalogueChannel` ; helpers purs dans `lib/catalogue-source.ts`) |
+| `lib/state/settings.svelte.ts` | réglages (`settings`) : thème, thèmes importés, animations, taille du texte, colonne (repliée, largeur), favoris, plugins désactivés, ordre des plugins, raccourci global de l'aperçu (`quickShortcut`), raccourcis de l'application par action (`shortcuts`, vide par défaut), zone de notification |
 | `lib/state/tabs.svelte.ts` | onglets (`tabs`) : ouverture, navigation, historique par onglet, onglets fermés, persistance de la session |
 | `lib/state/ui.svelte.ts` | palette ouverte, notification (toast 4 s), focus de la recherche |
 | `lib/state/pluginData.svelte.ts` | réglages de chaque plugin (`pluginData`), fichier `plugin.<id>.json` |
@@ -24,7 +24,7 @@ l'onglet actif.
 | `lib/dataFiles.ts` | écritures différées des fichiers de données (400 ms), noms valides |
 | `lib/documents.svelte.ts` | `DocumentSession` : un calcul ouvert (chargement, enregistrement différé, historique, duplication, corbeille) |
 | `lib/plugins/registry.svelte.ts` | `PLUGINS` (liste **réactive**, rechargée après chaque installation), `loadPlugins`, validation des manifestes (avec `source`), `pluginUrl`, recherche de mini-apps, ordre officiel |
-| `lib/state/catalogue.svelte.ts` | catalogue (`catalogue`) : entrées publiées, installation avec progression, désinstallation, installation depuis un fichier, `startup` (réinstallation des plugins de qui arrive d'une 0.1.x, puis mises à jour automatiques), `compareVersions` |
+| `lib/state/installation.svelte.ts` | installation d'un plugin depuis un fichier (`installFile`) et désinstallation (`uninstall`) |
 | `lib/state/updates.svelte.ts` | mises à jour de l'application (voir docs/14) |
 | `lib/views.ts` | titre, icône et couleur d'une vue ; `normalize` (recherche sans accents) |
 | `lib/shortcuts.ts` | raccourcis clavier de l'application : liste des actions (`ACTIONS`), `handleShortcut` (aussi appelé pour les touches renvoyées par les mini-apps), `frameShortcuts`, `shortcutHint` (infobulles), `actionUsing` (doublons) |
@@ -32,7 +32,7 @@ l'onglet actif.
 | `lib/icons.ts` | liste fermée des icônes Lucide utilisables par les manifestes |
 | `lib/pluginSettings.ts`, `lib/send.ts` | ouvrir la page de réglages d'un plugin (« + Ajouter une machine… ») et envoi entre mini-apps (fenêtre principale) |
 | `lib/components/*` | composants (voir plus bas) |
-| `lib/pages/*` | `Home` (bienvenue et bouton du catalogue quand aucun plugin n'est installé), `PluginPage`, `MiniAppPage`, `SettingsPage`, `CataloguePage` |
+| `lib/pages/*` | `Home` (bienvenue et installation depuis un fichier quand aucun plugin n'est installé), `PluginPage`, `MiniAppPage`, `SettingsPage`, `PluginsPage` (plugins installés, activer, désinstaller, installer depuis un fichier) |
 
 ## Vues et navigation
 

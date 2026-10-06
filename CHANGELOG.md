@@ -15,6 +15,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 - **The seven metalworking plugins** (Maths, Economy, Sheet metal, Layout, Materials, Suppliers, Machines) are no longer in this repository: the project is moving to a plugin-free open-source engine (Etable). The last state is kept under the Git tag `legacy/etabli-0.5-chaudronnerie`.
 - **Domain code of those plugins is removed from the engine**: the `Libraries` service (suppliers and machines, message `libraries`, `addMachine`), workshop sheets (message `print`, permission `impression`, `printFiche`), DXF export (`toDxf`), templates (`gabaritPages`) and the "Workshop sheets" setting (author name). A plugin still sending `print` or `addMachine` is refused like any unknown message.
+- **The plugin store is removed from the engine**: no more catalogue, signed catalogue, key rotation, revocation, rollback, API-contract stop, plugin catalogue source or channel, automatic plugin updates, nor the per-plugin publishing workflows (`publier-plugin.yml`, `catalogue-renouvellement.yml`). A plugin now installs from a signed `.etabli-plugin` file (page *Plugins* → *Install from a file*), and the engine refuses a version older than the installed one. The page *Catalogue* becomes *Plugins*. The store code is kept under the Git tag `legacy/store-before-cut` to seed Etablink.
 
 ### Ajouté
 

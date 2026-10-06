@@ -1,6 +1,6 @@
 // Notes de version : extrait d'un journal des changements (CHANGELOG.md, format « Keep a Changelog »
 // en français) la section d'une version, pour les Releases GitHub, `latest.json` (notification de mise
-// à jour dans l'application) et le catalogue de plugins.
+// à jour dans l'application).
 //
 //   node scripts/notes-version.mjs CHANGELOG.md 0.3.0            notes en Markdown (Release GitHub)
 //   node scripts/notes-version.mjs CHANGELOG.md 0.3.0 --texte    notes en texte brut (latest.json)
