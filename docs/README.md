@@ -43,6 +43,7 @@ Toute la documentation est **en français**. Choisissez selon ce que vous voulez
 | [22-cahier-de-bord.md](22-cahier-de-bord.md) | cahier de bord : à faire à la main, décisions, avancées |
 | [24-spec-plugins-budget.md](24-spec-plugins-budget.md) | inventaire de l'ancien projet budget et spec des plugins agenda, revenus, budget ; Rust/WASM ou TypeScript (brouillon) |
 | [25-comment-ca-marche.md](25-comment-ca-marche.md) | **pour Bryan** : comment tout fonctionne aujourd'hui, en clair (bac à sable, mises à jour, Windows / web / Android / serveur), avec schémas |
+| [26-tauri-android-spike.md](26-tauri-android-spike.md) | Tauri on Android spike (6 Oct 2026): notifications, sandbox, the native bridge hole and its fix, how to test with an emulator |
 | [20-spec-mises-a-jour-registre.md](20-spec-mises-a-jour-registre.md) | mises à jour et registre « en béton » : catalogue signé, révocation, clés (brouillon) |
 | [19-modele-de-menace-plugins.md](19-modele-de-menace-plugins.md) | isolation des plugins : menaces, défenses, permissions v1 |
 | [18-spec-plateforme-comptes-licences.md](18-spec-plateforme-comptes-licences.md) | plateforme : comptes, licences, baux, registre, mobile, étapes (brouillon) |
