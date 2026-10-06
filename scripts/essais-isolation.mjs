@@ -304,7 +304,15 @@ async function essaisDansLApplication(navigateurPlaywright) {
   essai("l'application garde bien une session dans son propre stockage (cible à protéger)", jetonApp.length > 10, jetonApp);
 
   etape("Plugin « agenda » dans son cadre");
-  const agenda = await ouvrirDansLApplication(page, () => page.locator("button.open").first().click(), "agenda.localhost");
+  const agenda = await ouvrirDansLApplication(
+    page,
+    async () => {
+      // L'accueil n'affiche que les favoris (aucun par défaut) : on passe par la page du plugin.
+      await page.locator('button[data-plugin="agenda"]').click();
+      await page.locator("button.open").first().click();
+    },
+    "agenda.localhost",
+  );
   essai("le cadre vit sur l'origine propre du plugin (agenda.localhost)", new URL(agenda.url()).origin === `http://agenda.localhost:${PORT_PLUGINS}`, agenda.url());
   const sandbox = await page.locator('iframe[src*="/apps/"]').first().getAttribute("sandbox");
   essai(
