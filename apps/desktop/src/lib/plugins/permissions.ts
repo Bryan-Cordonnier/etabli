@@ -14,6 +14,7 @@ export const PERMISSIONS: PermissionInfo[] = [
   { id: "presse-papiers", label: "Copier du texte dans le presse-papiers" },
   { id: "envoi", label: "Envoyer des données à une autre mini-app" },
   { id: "reglages", label: "Ouvrir les réglages d'un autre plugin" },
+  { id: "notifications", label: "Programmer des rappels (notifications) sur le téléphone" },
 ];
 
 export const PERMISSION_IDS: ReadonlySet<string> = new Set(PERMISSIONS.map((p) => p.id));

@@ -62,6 +62,7 @@ describe("permissions", () => {
     ["send", { type: "send", kind: "piece-plate", data: {} }, "envoi"],
     ["openSettings", { type: "openSettings", plugin: "machines" }, "reglages"],
     ["addMachine", { type: "addMachine", kind: "ruban" }, "reglages"],
+    ["reminders", { type: "reminders", id: "r1", op: "state" }, "notifications"],
   ];
 
   it.each(exigences)("%s exige la permission en contrat strict", (_nom, message, permission) => {
@@ -233,6 +234,51 @@ describe("appels de service : serviceCall", () => {
     expect(idAppel({ ...appel, id: "a b" })).toBeNull();
     expect(idAppel({ type: "notify", id: "c1" })).toBeNull();
     expect(idAppel(null)).toBeNull();
+  });
+});
+
+describe("rappels sur le téléphone", () => {
+  const rappel = { id: "paie/mission:m1", at: Date.UTC(2026, 9, 12, 6, 0), title: "Pars maintenant", text: "Mission Dupont" };
+  const demande = (items: unknown) => ({ type: "reminders", id: "r1", op: "set", items });
+  const permis = strict(["notifications"]);
+
+  it("accepte une liste de rappels et ne garde que les champs connus", () => {
+    const r = controler(demande([{ ...rappel, pirate: 1 }]), permis);
+    expect(r).toEqual({ ok: true, message: { type: "reminders", id: "r1", op: "set", items: [rappel] } });
+    expect(controler(demande([]), permis).ok).toBe(true);
+  });
+
+  it("refuse une demande mal formée : opération, identifiant, trop de rappels, doublon", () => {
+    expect(controler({ type: "reminders", id: "r1", op: "tout-casser" }, permis).ok).toBe(false);
+    expect(controler({ type: "reminders", id: "a b", op: "state" }, permis).ok).toBe(false);
+    expect(controler({ type: "reminders", op: "state" }, permis).ok).toBe(false);
+    expect(controler(demande("pas une liste"), permis).ok).toBe(false);
+    expect(controler(demande(Array.from({ length: 201 }, (_, i) => ({ ...rappel, id: `r${i}` }))), permis).ok).toBe(false);
+    expect(controler(demande(Array.from({ length: 200 }, (_, i) => ({ ...rappel, id: `r${i}` }))), permis).ok).toBe(true);
+    expect(controler(demande([rappel, rappel]), permis).ok).toBe(false);
+  });
+
+  it("refuse un rappel invalide : instant, titre, texte, identifiant", () => {
+    for (const mauvais of [
+      { ...rappel, at: "demain" },
+      { ...rappel, at: -1 },
+      { ...rappel, at: 1.5 },
+      { ...rappel, at: Infinity },
+      { ...rappel, title: "" },
+      { ...rappel, title: "x".repeat(121) },
+      { ...rappel, text: "x".repeat(301) },
+      { ...rappel, id: "../etc" },
+      { ...rappel, id: "" },
+      null,
+    ]) {
+      expect(controler(demande([mauvais]), permis).ok, JSON.stringify(mauvais)).toBe(false);
+    }
+  });
+
+  it("le cadre de service du fournisseur peut programmer des rappels, avec la permission seulement", () => {
+    const service = (permissions: string[]): Contexte => ({ permissions, strict: true, provides: ["agenda"], service: true });
+    expect(controler(demande([rappel]), service(["notifications"])).ok).toBe(true);
+    expect(controler(demande([rappel]), service([])).ok).toBe(false);
   });
 });
 

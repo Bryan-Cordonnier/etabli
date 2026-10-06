@@ -45,6 +45,7 @@ facultatifs, nouveaux messages) ne changent pas la version ; le SDK tolère un c
 | `serviceCall` `{ id, service, fn, args, timeoutMs? }` | appelle la fonction `fn` du service `service` d'un autre plugin (permission `appelle:<service>:<accès>`, voir « Appeler la fonction d'un autre plugin » ci-dessous) ; le moteur répond toujours par un `serviceReply` |
 | `serviceReady` | **page `serviceEntry` seulement** : les gestionnaires sont enregistrés (`services.handle`), le moteur peut envoyer l'appel |
 | `serviceResult` `{ id, result }` | **page `serviceEntry` seulement** : réponse à un `serviceInvoke` |
+| `reminders` `{ id, op: "set", items }` ou `{ id, op: "state" }` | rappels sur le **téléphone** (permission `notifications`) : `set` remplace TOUS les rappels du plugin (jamais ceux d'un autre), `state` lit les autorisations ; le moteur répond par `remindersResult` `{ id, result }`. Autorisé aussi dans le cadre de service. Détail ci-dessous |
 | `saveFile` `{ file }` | boîte « Enregistrer sous » de Windows puis écriture (`SavedFile` : `name`, `content` texte, `extension` sans point, `description` du filtre) ; notification « Enregistré : chemin » |
 
 Types partagés dans `protocol.ts` : `Supplier`, `SupplierItem`, `StockKind` (+ `STOCK_KINDS`),
@@ -187,12 +188,29 @@ l'appelant rejoue (docs/24, A.1.3). Le cadre de service n'a droit qu'à `pluginD
 (`provides`), non sur celle du plugin : le fournisseur peut passer en 3.0.0 en gardant le contrat 1. Pour la lecture des instantanés
 (`services.get`), le même champ `services` s'applique ; sans lui, c'est la plage de `dependencies` sur la version du plugin, comme avant.
 
+## Rappels sur le téléphone (docs/24, étape 5)
+
+Une **notification** du téléphone à un instant précis : jamais une alarme, jamais sur PC (décision du 4 octobre 2026). Permission `notifications`. Seul l'hôte parle aux notifications natives de Capacitor (une mini-app n'y a pas accès, docs/19) ; la mini-app (ou la page `serviceEntry` d'un fournisseur) le demande par le message `reminders`.
+
+```ts
+const r = await etabli.reminders.set([{ id: "m1", at: Date.UTC(2026, 9, 12, 5, 10), title: "Pars maintenant", text: "Mission Dupont" }]);
+// r = { ok: true, autorise, alarmeExacte, programmes, jusquau }  ou  { ok: false, code, message }
+await etabli.reminders.state();   // lit les autorisations sans rien changer
+await etabli.reminders.clear();   // = set([])
+```
+
+- `set` **remplace tous les rappels du plugin** : on envoie la liste complète à chaque fois. Les rappels d'un autre plugin ne sont jamais touchés.
+- Bornes (garde) : 200 rappels, titre 120 caractères, texte 300, identifiant de 160 caractères au plus commençant par une lettre ou un chiffre, aucun doublon ; **une seule demande invalide fait refuser toute la liste**.
+- Le moteur ne programme que `now + 5 s` à `now + 60 jours` ; le reste est ignoré (le plugin renvoie sa liste à chaque ouverture : `jusquau` dit jusqu'où c'est programmé).
+- **Notifications refusées par l'utilisateur : pas une erreur** (`ok: true`, `autorise: false`, `programmes: 0`). **PC ou navigateur : `{ ok: false, code: "telephone_seulement" }`**. `alarmeExacte: false` (Android 12 et plus) : l'heure peut varier de quelques minutes.
+- Les autorisations se donnent dans les Paramètres d'Établi (section « Téléphone »), pas depuis une mini-app. Code : `lib/mobile/rappels.ts` (pur, testé avec un faux plugin), `lib/mobile/rappelsHote.ts` (câblage, file d'attente, identifiants gardés dans `rappels.<plugin>`), `lib/plugins/garde.ts`.
+- Un fournisseur peut programmer des rappels depuis son cadre de service : c'est ainsi que l'Agenda envoie les rappels que d'autres plugins lui confient (`rappels@1`, docs/10).
 ## Ce que le moteur vérifie avant d'écouter une mini-app
 
 Tout message reçu par le port est contrôlé par `apps/desktop/src/lib/plugins/garde.ts` avant d'être traité : le type doit être
 connu, les champs bien formés, les tailles bornées (4 Mo de données par message, textes de 2 000 caractères, hauteur de 160 à
 20 000 px), et — pour un plugin `"apiVersion": "^2"` — la **permission** correspondante déclarée dans le manifeste
-(`fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages`, ou `appelle:<service>:<accès>` pour un appel de service). Un message refusé est
+(`fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages`, `notifications`, ou `appelle:<service>:<accès>` pour un appel de service). Un message refusé est
 ignoré (une ligne dans la console) ; seul un `serviceCall` refusé reçoit une réponse d'erreur, pour que l'appelant n'attende pas en vain.
 `saveFile` n'accepte que des formats de données (`csv tsv dxf json txt svg md xml ics`) et un nom sans chemin. Détail, menaces et
 limites : [19](19-modele-de-menace-plugins.md).

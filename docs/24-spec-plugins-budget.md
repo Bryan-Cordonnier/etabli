@@ -482,7 +482,9 @@ dépendances facultatives et leur installation, `send` (geste utilisateur), `sav
 | M12 schémas vérifiés par le moteur | pas fait (le fournisseur valide) |
 | M13 `mockService` | pas fait ; les fixtures `fixtures/appels-entre-plugins/` et `appels.integration.test.ts` montrent un appel complet |
 | M10 argent et dates partagés | **fait** (`money.ts`, `civil.ts` dans `@etabli/ui`, 179 tests ; voir `packages/ui/README.md`). Choix : arrondi `demi-haut` par défaut (le `arr()` du Rust), `parseEuros` refuse plus de deux décimales, fériés français fournis en option (jamais supposés) |
-| M6 à M8, M11, M14 à M16 | pas faits |
+| M6 rappels | **fait (5 octobre 2026), jamais essayé sur un téléphone** : message `reminders` (`set` remplace tous les rappels du plugin, `state`), permission `notifications`, `etabli.reminders`, programmation par l'hôte avec le plugin de notifications de Capacitor (notifications d'importance 4, jamais d'alarme ; PC : `telephone_seulement`), horizon de 60 jours renouvelé à chaque ouverture, `rappels@1` dans l'Agenda. Écarts : pas de reprogrammation au démarrage (les notifications programmées survivent au redémarrage grâce au récepteur de Capacitor, non vérifié) ; pas de `niveau: "alarme"` ni de `ouvre` ; pas de rappel sur PC (décision du 4 octobre) |
+| M8 `ics` | **fait** : `ics` dans la liste blanche (Rust et garde) |
+| M7, M11, M14 à M16 | pas faits |
 
 **Choix de conception retenus** (à valider) : (1) `ecriture` ne donne pas `lecture` ; (2) `services` (plage de contrat) est
 obligatoire pour appeler, la dépendance sur le plugin aussi ; (3) le délai (5 s par défaut, 10 s au plus) couvre l'attente en file ;

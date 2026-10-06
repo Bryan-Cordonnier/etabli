@@ -13,6 +13,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Ajouté
 
+- **Rappels sur le téléphone** : un plugin peut programmer des notifications (jamais des alarmes) à l'heure voulue, avec la nouvelle permission « Programmer des rappels (notifications) sur le téléphone », montrée avant l'installation. Rien ne sonne sur PC. Les rappels d'un plugin ne remplacent jamais ceux d'un autre ; l'utilisateur garde la main (autorisations dans Paramètres › Téléphone).
 - **Export de calendriers (.ics)** : une mini-app peut maintenant enregistrer un fichier `.ics` (calendrier lisible par un téléphone),
   en plus des CSV, DXF, JSON, texte, SVG, Markdown et XML.
 - **Permissions des plugins** : un plugin déclare ce qu'il a besoin de faire (enregistrer des fichiers, imprimer, copier, envoyer
@@ -85,6 +86,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 ### Sécurité
 - Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
 
+### Pour les développeurs de plugins
+
+- **`etabli.reminders`** (`set`, `clear`, `state`) et la permission `notifications` : voir docs/06 (« Rappels sur le téléphone »). `set` remplace tous les rappels du plugin ; une seule demande invalide fait refuser toute la liste.
+
 ### Pour les contributeurs
 - Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
@@ -135,6 +140,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 ### Sécurité
 - Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
 
+### Pour les développeurs de plugins
+
+- **`etabli.reminders`** (`set`, `clear`, `state`) et la permission `notifications` : voir docs/06 (« Rappels sur le téléphone »). `set` remplace tous les rappels du plugin ; une seule demande invalide fait refuser toute la liste.
+
 ### Pour les contributeurs
 - Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.
 
@@ -170,6 +179,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Sécurité
 - Le SDK n'accepte plus la liaison avec le moteur que si elle vient de la fenêtre parente : une mini-app voisine ne peut plus s'interposer. Les plugins doivent être reconstruits pour en profiter.
+
+### Pour les développeurs de plugins
+
+- **`etabli.reminders`** (`set`, `clear`, `state`) et la permission `notifications` : voir docs/06 (« Rappels sur le téléphone »). `set` remplace tous les rappels du plugin ; une seule demande invalide fait refuser toute la liste.
 
 ### Pour les contributeurs
 - Cahier de bord du projet (`docs/22-cahier-de-bord.md`) : tâches manuelles de Bryan, décisions prises, journal des avancées.

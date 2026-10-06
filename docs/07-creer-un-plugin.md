@@ -70,7 +70,7 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
   plugin n'a qu'un nom d'icône et une couleur à fournir, l'application dessine le reste.
 - `apiVersion` : `"^2"` pour un plugin neuf. Le moteur contrôle alors **strictement** ce que fait le plugin ; un plugin `"^1"`
   garde ses anciens droits mais est signalé à l'installation, et `npm run valider` le signale.
-- `permissions` : ce que le plugin a besoin de faire (`fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages`).
+- `permissions` : ce que le plugin a besoin de faire (`fichiers`, `impression`, `presse-papiers`, `envoi`, `reglages`, `notifications`).
   L'utilisateur les voit avant d'installer. Déclarez le strict nécessaire ; `npm run valider` refuse l'usage d'une
   fonction sans sa permission. Détail et justification : [19](19-modele-de-menace-plugins.md).
 - `entry` absent : la mini-app s'affiche « à venir » (placeholder).

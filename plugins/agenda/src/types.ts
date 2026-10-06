@@ -60,6 +60,10 @@ export interface Reglages {
   endormissementMin: number;
   /** Majoration du trajet en points de base (1500 = +15 %). */
   majorationTrajetBp: number;
+  /** Rappel « pars dans X min » avant l'heure de départ. */
+  preAlerteMin: number;
+  /** Rappel de coucher, X minutes avant l'heure de coucher. */
+  rappelCoucherMin: number;
 }
 
 export const REGLAGES_DEFAUT: Reglages = {
@@ -69,7 +73,25 @@ export const REGLAGES_DEFAUT: Reglages = {
   sommeilMin: 480,
   endormissementMin: 15,
   majorationTrajetBp: 0,
+  preAlerteMin: 5,
+  rappelCoucherMin: 30,
 };
+
+/** Un rappel demandé par un plugin (ou calculé par l'Agenda) : une notification du téléphone à un instant précis. */
+export interface RappelStocke {
+  /** Identifiant propre à l'appelant, unique dans son groupe. */
+  id: string;
+  /** Instant UTC en millisecondes. */
+  at: number;
+  titre: string;
+  texte: string | null;
+}
+
+/** Rappels par plugin appelant puis par groupe (« paie » → « missions » → liste) : remplacer un groupe n'efface jamais celui d'un autre plugin. */
+export type RappelsParAppelant = Record<string, Record<string, RappelStocke[]>>;
+
+/** Au plus ce nombre de rappels par plugin appelant (docs/24, A.1.3). */
+export const RAPPELS_MAX_PAR_APPELANT = 200;
 
 /** Réponse mémorisée d'un `evenements.remplacer`, pour rejouer sans doublon. */
 export interface ReponseMemorisee {
@@ -85,6 +107,10 @@ export interface Carnet {
   dernierNumero: number;
   /** Dernières clés d'idempotence vues, par plugin appelant. */
   cles: Record<string, ReponseMemorisee[]>;
+  /** Rappels confiés par les autres plugins (service `rappels@1`). */
+  rappels: RappelsParAppelant;
+  /** Programmer aussi les rappels de l'Agenda lui-même : « pars dans X min », « pars maintenant », « coucher » pour les événements avec trajet. */
+  rappelsHoraires: boolean;
 }
 
 /** Source des événements saisis dans l'écran de l'Agenda (le « @ » est interdit dans un identifiant de plugin : aucun plugin ne peut s'en réclamer). */

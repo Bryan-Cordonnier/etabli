@@ -197,7 +197,7 @@ illisible), `src/tableau.test.ts` (10 : vue, formulaire) ; essai réel dans Chro
 
 ## Agenda (`plugins/agenda`)
 
-Le temps : événements, calendrier, heures à rebours, repos légal. Spécification : [docs/24](24-spec-plugins-budget.md). **Pas de rappels** (étape 5 de docs/24).
+Le temps : événements, calendrier, heures à rebours, repos légal, **rappels sur le téléphone** (notifications, jamais d'alarme, rien sur PC). Spécification : [docs/24](24-spec-plugins-budget.md).
 
 | Fichier | Rôle |
 | --- | --- |
@@ -208,10 +208,12 @@ Le temps : événements, calendrier, heures à rebours, repos légal. Spécifica
 | `src/ics.ts` | export iCalendar, heures flottantes, lignes pliées à 75 octets |
 | `src/service.ts`, `service/main.ts` | service `agenda@1` : `evenements.liste`, `plages.occupees` (lecture), `evenements.remplacer`, `evenements.supprimer` (écriture) |
 | `src/vue.ts`, `apps/calendrier/` | grille du mois, jour, écran Calendrier |
+| `src/rappels.ts`, `apps/rappels/` | service `rappels@1` (`rappels.remplacer`, `rappels.annuler`, `rappels.etat`) : l'Agenda est le **seul** plugin à détenir la permission `notifications`, les autres lui confient leurs rappels (par plugin et par groupe, jamais mélangés) ; rappels calculés « pars dans X min », « pars maintenant », « coucher » pour les événements avec trajet ; liste COMPLÈTE envoyée au moteur à chaque changement et à chaque ouverture (horizon de 60 jours) ; écran « Rappels » (état du téléphone, d'où viennent les rappels, annuler, essai dans 1 minute) |
 
-Limites : 500 événements par appel, 2 000 par plugin, 5 000 occurrences par lecture, fenêtre de 5 ans, carnet de 3,5 Mo. Un événement dont la fin est avant ou égale au début passe minuit ; début = fin est refusé.
+Limites : 500 événements par appel, 2 000 par plugin, 5 000 occurrences par lecture, fenêtre de 5 ans, carnet de 3,5 Mo, 200 rappels par plugin appelant et 200 envoyés au téléphone (les plus proches). Un événement dont la fin est avant ou égale au début passe minuit ; début = fin est refusé.
 Choix de conception (à valider) : types `travail`, `retux`, `rdv`, `autre` ; seuls `travail` et `retux` comptent pour le repos légal ; icône `clock` (le moteur n'a pas d'icône calendrier).
-**Pas vérifié à l'écran** : l'écran Calendrier n'a été ni ouvert ni vu (types, tests et construction seulement).
+Rappels : `niveau` n'accepte que `notification` (les alarmes sont refusées) ; `ouvre` n'existe pas ; un rappel est refusé s'il est dans le passé ; notifications refusées ou PC = `programmes: 0` avec une `raison`, jamais une erreur ; un carnet de la première version se relit (réglages de rappels absents = valeurs de départ).
+**Pas vérifié à l'écran** : les écrans Calendrier et Rappels n'ont été ni ouverts ni vus (types, tests et construction seulement). **Aucun rappel n'a sonné sur un vrai téléphone** : le programmeur est testé avec un faux plugin de notifications ; l'APK et les autorisations Android restent à essayer.
 
 ## Budget (`plugins/budget`)
 

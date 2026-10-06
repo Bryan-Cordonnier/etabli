@@ -9,7 +9,15 @@ export interface PluginNotifications {
   changeExactNotificationSetting(): Promise<{ exact_alarm: string }>;
   createChannel(canal: { id: string; name: string; importance: 1 | 2 | 3 | 4 | 5; vibration: boolean }): Promise<void>;
   schedule(options: {
-    notifications: { id: number; title: string; body: string; channelId: string; schedule: { at: Date; allowWhileIdle: boolean } }[];
+    notifications: {
+      id: number;
+      title: string;
+      body: string;
+      channelId: string;
+      schedule: { at: Date; allowWhileIdle: boolean };
+      /** Données gardées avec la notification (par exemple le plugin qui l'a demandée). */
+      extra?: Record<string, unknown>;
+    }[];
   }): Promise<unknown>;
   getPending(): Promise<{ notifications: { id: number }[] }>;
   cancel(options: { notifications: { id: number }[] }): Promise<void>;

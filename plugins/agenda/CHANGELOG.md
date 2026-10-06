@@ -5,6 +5,12 @@ Chaque version a sa section ; elle devient les « Nouveautés » affichées dans
 
 ## [Non publié]
 
+### Ajouté
+
+- **Rappels sur le téléphone** : de simples notifications (pas d'alarme), jamais sur PC. « Pars dans 5 min » et « Pars maintenant » avant chaque événement avec trajet, rappel de coucher la veille ; tous les délais se règlent.
+- **Écran Rappels** : ce que le téléphone permet (notifications, alarmes exactes), ce qui est programmé et par qui, annuler les rappels d'un plugin, essai dans 1 minute.
+- **Service appels@1** : les autres plugins confient leurs rappels à l'Agenda (remplacer, annuler, état), sans doublon si l'appel est rejoué. Au plus 200 par plugin, 60 jours à l'avance : l'Agenda renvoie la liste à chaque ouverture.
+
 ## [0.1.0] — 2026-10-05
 
 Première version (version préliminaire, pas encore publiée dans le catalogue). Pas de rappels pour l'instant.

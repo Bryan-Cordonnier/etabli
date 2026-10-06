@@ -4,6 +4,7 @@
   // même `sandbox`, même origine par plugin, même CSP côté serveur de fichiers, même garde — en plus étroit : ce cadre
   // n'a droit qu'aux réglages de son plugin, à la publication de ses services et à sa réponse (garde, `service: true`).
   import { CONNECT, PROTOCOL_VERSION, type HostToPlugin, type PluginToHost } from "@etabli/sdk/protocol";
+  import { traiterRappels } from "$lib/mobile/rappelsHote";
   import { lireTheme, sandboxDe } from "$lib/plugins/cadre";
   import { controler, erreurService, idAppel, type Contexte } from "$lib/plugins/garde";
   import { connues, estStrict } from "$lib/plugins/permissions";
@@ -81,6 +82,12 @@
         case "serviceResult":
           if (message.id === invocation.id) hote.terminer(invocation.id, message.result);
           break;
+        case "reminders": {
+          // Le fournisseur (l'Agenda) programme les rappels que d'autres plugins lui ont confiés : permission `notifications` contrôlée par la garde.
+          const id = message.id;
+          void traiterRappels(pluginId, message).then((result) => send({ type: "remindersResult", id, result }));
+          break;
+        }
         default:
           break; // ready, height : sans objet pour un cadre invisible
       }
