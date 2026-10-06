@@ -20,7 +20,34 @@ window.addEventListener("message", async (event) => {{
   try {{ await fetch("https://example.com/", {{ mode: "no-cors" }}); }} catch (e) {{ networkBlocked = true; }}
   let storage = "unavailable";
   try {{ localStorage.setItem("probe", id); storage = "available"; }} catch (e) {{ storage = "blocked (opaque origin)"; }}
-  port.postMessage({{ plugin: id, origin: String(location.origin), href: String(location.href), networkBlocked, storage }});
+  // Security origin of the DOCUMENT (location.origin only reflects the URL): "null" means an opaque origin.
+  const securityOrigin = String(window.origin);
+  // Probe of the native bridge from inside the sandbox.
+  let parentAccess = "blocked";
+  try {{ void window.parent.document; parentAccess = "READABLE"; }} catch (e) {{ parentAccess = "blocked"; }}
+  let parentInternals = "blocked";
+  try {{ parentInternals = typeof window.parent.__TAURI_INTERNALS__; }} catch (e) {{ parentInternals = "blocked"; }}
+  const bridge = {{
+    ipcObject: typeof window.ipc,
+    tauriInternals: typeof window.__TAURI_INTERNALS__,
+    tauriGlobal: typeof window.__TAURI__,
+    parentAccess,
+    parentInternals,
+  }};
+  // A FORGED message through the Android JavaScript interface, with a guessed invoke key. The frame cannot know the real key
+  // (it lives in a closure of the main frame). If the main page logs "FORGED IPC ACCEPTED", the bridge is open.
+  let forged = "no ipc object";
+  try {{
+    if (window.ipc && window.ipc.postMessage) {{
+      window.ipc.postMessage(JSON.stringify({{
+        cmd: "plugin:event|emit", callback: 1, error: 2,
+        payload: {{ event: "probe", payload: "forged-by-" + id }},
+        options: {{ headers: {{}} }}, "__TAURI_INVOKE_KEY__": "guess",
+      }}));
+      forged = "sent";
+    }}
+  }} catch (e) {{ forged = "failed: " + String(e); }}
+  port.postMessage({{ plugin: id, origin: String(location.origin), securityOrigin, href: String(location.href), networkBlocked, storage, bridge, forged }});
 }});
 </script>plugin {id} loaded</body></html>"#
     )
