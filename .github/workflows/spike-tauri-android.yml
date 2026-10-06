@@ -61,6 +61,14 @@ jobs:
           grep -c "EXACT_ALARM" "$manifest"
           grep "uses-permission" "$manifest"
 
+      # The engine bridge (window.ipc) is open to plugin frames on Android: replace it with an origin-restricted one.
+      - name: Close the native bridge to plugin frames
+        run: |
+          find src-tauri/gen/android/app/src/main/java -name '*.kt' | head -20
+          target=$(find src-tauri/gen/android/app/src/main/java -name MainActivity.kt)
+          echo "replacing $target"
+          cat "$target"
+          cp android/MainActivity.kt "$target"
       - name: Build debug APK
         run: npx tauri android build --debug --apk --target aarch64 --ci
 

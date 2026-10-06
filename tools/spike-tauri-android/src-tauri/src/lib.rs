@@ -81,10 +81,32 @@ fn plugin_response(path: &str) -> Response<Vec<u8>> {
         .unwrap()
 }
 
+// Test helpers so the spike can run unattended on a PC: SPIKE_AUTO=1 runs the checks on start, SPIKE_REPORT=<file> receives the log.
+#[tauri::command]
+fn spike_auto() -> bool {
+    std::env::var("SPIKE_AUTO").is_ok()
+}
+
+#[tauri::command]
+fn spike_report(text: String) {
+    if let Ok(path) = std::env::var("SPIKE_REPORT") {
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+            let _ = writeln!(f, "{text}");
+        }
+    }
+}
+
+#[tauri::command]
+fn spike_exit(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .invoke_handler(tauri::generate_handler![spike_auto, spike_report, spike_exit])
         .register_uri_scheme_protocol("plugins", |_ctx, request| plugin_response(request.uri().path()))
         .run(tauri::generate_context!())
         .expect("error while running the spike");

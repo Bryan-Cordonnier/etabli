@@ -98,6 +98,18 @@ $("frames").onclick = () => {
   }
   setTimeout(() => log(forgedSeen ? "RESULT: bridge OPEN (FAIL)" : "RESULT: no call from a plugin frame reached the engine (PASS), if both frames printed above"), 4000);
 };
+// Unattended mode (PC only): run the plugin checks, write the log to the file named by SPIKE_REPORT, quit.
+if (T && T.core) {
+  T.core.invoke("spike_auto").then((auto) => {
+    log("main frame IPC: OK (the app itself can still talk to the engine)");
+    if (!auto) return;
+    $("frames").click();
+    setTimeout(async () => {
+      await T.core.invoke("spike_report", { text: $("env").textContent + "\n" + $("log").textContent });
+      await T.core.invoke("spike_exit");
+    }, 7000);
+  }, (e) => log("main frame IPC: BROKEN:", String(e)));
+}
 </script>
 </body>
 </html>
