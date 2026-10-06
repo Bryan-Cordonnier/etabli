@@ -219,6 +219,12 @@ async function ouvrirDansLApplication(page, ouvrir, hoteAttendu) {
 }
 
 /** Recharge l'application : elle rouvre ses onglets ; si le cadre de agenda n'en fait pas partie, on ouvre sa première mini-app. */
+// Ouvre un plugin depuis la barre : si son onglet est déjà ouvert (session restaurée), il n'y a pas de page du plugin à passer.
+async function ouvrirPlugin(page, id) {
+  await page.locator(`button[data-plugin="${id}"]`).click();
+  const bouton = page.locator("button.open").first();
+  if (await bouton.waitFor({ timeout: 3000 }).then(() => true, () => false)) await bouton.click();
+}
 async function rouvrirAgenda(page) {
   await page.reload();
   await page.locator('button[data-plugin="agenda"]').waitFor({ timeout: 15_000 });
@@ -317,8 +323,7 @@ async function essaisDansLApplication(navigateurPlaywright) {
     page,
     async () => {
       // L'accueil n'affiche que les favoris (aucun par défaut) : on passe par la page du plugin.
-      await page.locator('button[data-plugin="agenda"]').click();
-      await page.locator("button.open").first().click();
+      await ouvrirPlugin(page, "agenda");
     },
     "agenda.localhost",
   );
@@ -445,8 +450,7 @@ async function essaisDansLApplication(navigateurPlaywright) {
   const finances = await ouvrirDansLApplication(
     page,
     async () => {
-      await page.locator('button[data-plugin="finances"]').click();
-      await page.locator("button.open").first().click();
+      await ouvrirPlugin(page, "finances");
     },
     "finances.localhost",
   );
