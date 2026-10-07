@@ -54,17 +54,21 @@ export async function pluginNatif(): Promise<PluginNotifications> {
     // Android connaît des importances de 1 à 5 ; le plugin Tauri s'arrête à 4 (« haute » : bandeau et son).
     createChannel: (c) => n.createChannel({ id: c.id, name: c.name, importance: Math.min(c.importance, 4) as 1 | 2 | 3 | 4, vibration: c.vibration }),
     // atch et non sendNotification : seule la commande atch enregistre la notification (pour la rendre après un
-    // redémarrage du téléphone et pour pending). Même forme que les options de sendNotification.
+    // redémarrage du téléphone et pour pending). Le plugin garde sourceJson tel quel et le relit au redémarrage : sans lui,
+    // il stocke « null » et ne restaure rien.
     schedule: async ({ notifications }) => {
       await invoke("plugin:notification|batch", {
-        notifications: notifications.map((x) => ({
-          id: x.id,
-          title: x.title,
-          body: x.body,
-          channelId: x.channelId,
-          schedule: n.Schedule.at(x.schedule.at, false, x.schedule.allowWhileIdle),
-          ...(x.extra ? { extra: x.extra } : {}),
-        })),
+        notifications: notifications.map((x) => {
+          const options = {
+            id: x.id,
+            title: x.title,
+            body: x.body,
+            channelId: x.channelId,
+            schedule: n.Schedule.at(x.schedule.at, false, x.schedule.allowWhileIdle),
+            ...(x.extra ? { extra: x.extra } : {}),
+          };
+          return { ...options, sourceJson: JSON.stringify(options) };
+        }),
       });
     },
     getPending: async () => ({ notifications: (await n.pending()).map((p) => ({ id: p.id })) }),
