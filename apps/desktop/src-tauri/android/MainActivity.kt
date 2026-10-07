@@ -1,8 +1,11 @@
 package __PACKAGE__
 
 import android.os.Bundle
+import android.view.View
 import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 
@@ -21,6 +24,13 @@ class MainActivity : TauriActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
+    // Android 15 impose l'affichage bord à bord : sans cela, la barre de l'application passe sous l'heure et la barre d'état.
+    // Le contenu est donc décalé de la hauteur des barres système (et de l'encoche éventuelle).
+    ViewCompat.setOnApplyWindowInsetsListener(findViewById<View>(android.R.id.content)) { vue, insets ->
+      val barres = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime())
+      vue.setPadding(barres.left, barres.top, barres.right, barres.bottom)
+      insets
+    }
   }
 
   override fun onWebViewCreate(webView: WebView) {
