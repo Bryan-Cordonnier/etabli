@@ -83,7 +83,7 @@
   const estAdmin = api.id === "serveur" && connexion?.mode === "serveur" && connexion.utilisateur.role === "admin";
 
   const GROUPS: { title: string; sections: FixedSection[] }[] = [
-    { title: "Application", sections: ["general", "apparence", "apercu", "raccourcis"] },
+    { title: "Application", sections: api.capacites.fenetresNatives ? ["general", "apparence", "apercu", "raccourcis"] : ["general", "apparence"] },
     { title: "Serveur", sections: estAdmin ? ["serveur", "administration"] : ["serveur"] },
     ...(estNatif() ? [{ title: "Téléphone", sections: ["alarmes" as const] }] : []),
     { title: "Plugins", sections: ["plugins"] },
@@ -136,8 +136,10 @@
 
   $effect(() => {
     void system.appInfo().then((value) => (info = value));
-    void system.autostartEnabled().then((value) => (autostart = value));
-    void system.shortcutStatus().then((status) => (shortcutError = status.erreur));
+    if (api.capacites.fenetresNatives) {
+      void system.autostartEnabled().then((value) => (autostart = value));
+      void system.shortcutStatus().then((status) => (shortcutError = status.erreur));
+    }
   });
 
   const goto = (id: SettingsSection) => tabs.navigate({ kind: "settings", section: id });
@@ -299,6 +301,7 @@
       {:else if active === "administration"}
         <AdministrationSection />
       {:else if active === "general"}
+        {#if api.capacites.fenetresNatives}
         <div class="box">
           <h3>Quand je ferme la fenêtre</h3>
           <div class="choices" role="radiogroup" aria-label="Quand je ferme la fenêtre">
@@ -335,13 +338,14 @@
             <Switch checked={autostart} label="Lancer Établi au démarrage de Windows" onchange={setAutostart} />
           </div>
         </div>
+        {/if}
 
         <div class="box">
           <h3>Dossier de travail</h3>
           <p class="hint">Tous vos calculs y sont enregistrés, un sous-dossier par plugin.</p>
           <div class="path">
             <code>{info?.documents ?? "…"}</code>
-            <button class="btn" onclick={() => info && void system.reveal(info.documents)}>Afficher dans l'Explorateur</button>
+            {#if api.capacites.fenetresNatives}<button class="btn" onclick={() => info && void system.reveal(info.documents)}>Afficher dans l'Explorateur</button>{/if}
           </div>
         </div>
       {:else if active === "apparence"}

@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "tauri": "tauri",
+    "android:init": "tauri android init --ci && node src-tauri/android/appliquer-correctifs.mjs",
+    "android:build": "tauri android build --apk --ci",
     "test": "vitest run",
     "build:web": "vite build --config vite.web.config.ts"
   },
@@ -21,6 +23,7 @@
     "@lucide/svelte": "^1.48.0",
     "@tauri-apps/api": "^2.12.1",
     "@tauri-apps/plugin-autostart": "^2.7.0",
+    "@tauri-apps/plugin-notification": "^2.5.1",
     "@tauri-apps/plugin-opener": "^2.7.0",
     "@tauri-apps/plugin-process": "^2.4.0",
     "@tauri-apps/plugin-updater": "^2.13.1"

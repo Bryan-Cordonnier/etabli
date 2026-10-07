@@ -27,11 +27,17 @@ function faux(refus = false): PluginNotifications & { appels: string[] } {
 }
 
 describe("alarmes", () => {
-  it("n'est natif que dans Capacitor", () => {
+  it("n'est natif que dans l'application Android (Tauri mobile)", () => {
     expect(estNatif()).toBe(false);
-    (globalThis as Record<string, unknown>).Capacitor = { isNativePlatform: () => true };
+    const g = globalThis as Record<string, unknown>;
+    g.isTauri = true;
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Windows NT 10.0)" });
+    expect(estNatif()).toBe(false);
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Linux; Android 14)" });
     expect(estNatif()).toBe(true);
-    delete (globalThis as Record<string, unknown>).Capacitor;
+    delete g.isTauri;
+    expect(estNatif()).toBe(false);
+    vi.unstubAllGlobals();
   });
 
   it("demande notifications puis alarmes exactes", async () => {

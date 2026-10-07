@@ -1,20 +1,15 @@
-# Application Android (Capacitor) : fabrique un APK de test à installer à la main sur le téléphone.
-# Lancement manuel (onglet Actions › « Android (APK de test) ») ou à chaque Pull Request qui touche au mobile.
-name: Android (APK de test)
+# APK Android (Tauri mobile) : construit le moteur pour Android, avec le correctif du pont natif (docs/26).
+# L'APK de test embarque les plugins d'exemple du dépôt ; le moteur seul, lui, ne livre aucun plugin.
+name: Android
 
 on:
   workflow_dispatch:
-    inputs:
-      sonde_pont:
-        description: "APK de sonde du pont natif (outil de test, remplace l'application ; voir tools/sonde-pont-android)"
-        type: boolean
-        default: false
   pull_request:
     paths:
-      - apps/mobile/**
-      - apps/desktop/src/lib/mobile/**
-      - tools/sonde-pont-android/**
-      - .github/workflows/android.yml
+      - "apps/desktop/**"
+      - "crates/**"
+      - "packages/**"
+      - ".github/workflows/android.yml"
 
 concurrency:
   group: android-${{ github.ref }}
@@ -24,6 +19,8 @@ jobs:
   apk:
     name: APK de test
     runs-on: ubuntu-latest
+    env:
+      ETABLE_PLUGINS_DIR: ${{ github.workspace }}/plugins
     steps:
       - uses: actions/checkout@v7
 
@@ -37,25 +34,28 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Cible Rust pour Android
+        run: rustup target add aarch64-linux-android
+
+      - name: NDK Android (préinstallé sur l'image)
+        run: |
+          echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+
       - name: Dépendances npm
         run: npm ci
 
-      - name: Version web (plugins compris)
-        run: npm run build:web
+      - name: Plugins d'exemple
+        run: npm run build:plugins
+
+      - name: Projet Android et correctifs (pont natif fermé, alarmes exactes)
+        run: npm run android:init -w @etabli/desktop
 
       - name: APK de test
-        working-directory: apps/mobile
-        run: npm run apk
-        env:
-          ETABLI_SONDE_PONT: ${{ inputs.sonde_pont && '1' || '0' }}
-
-      # Règles d'adresse et de chemin des plugins (origine par plugin), en Java pur : CheminsPluginsTest.
-      - name: Tests Java
-        working-directory: apps/mobile/android
-        run: ./gradlew testDebugUnitTest
+        run: npm run android:build -w @etabli/desktop -- --debug --target aarch64
 
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.sonde_pont && 'etabli-sonde-pont.apk' || 'etabli-test.apk' }}
-          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: etable-android-apk-de-test
+          path: apps/desktop/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error

@@ -5,6 +5,7 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { estBureau } from "./plateforme";
 import type { AppView } from "./types";
 
 export const inTauri = isTauri();
@@ -22,14 +23,14 @@ export interface AppInfo {
 
 /** Fenêtres, raccourci global, démarrage avec Windows, liens. */
 export const system = {
-  toggleQuick: (): Promise<void> => (inTauri ? invoke("apercu_basculer") : Promise.resolve()),
-  closeQuick: (): Promise<void> => (inTauri ? invoke("apercu_fermer") : Promise.resolve()),
-  showMain: (): Promise<void> => (inTauri ? invoke("etabli_afficher") : Promise.resolve()),
+  toggleQuick: (): Promise<void> => (estBureau ? invoke("apercu_basculer") : Promise.resolve()),
+  closeQuick: (): Promise<void> => (estBureau ? invoke("apercu_fermer") : Promise.resolve()),
+  showMain: (): Promise<void> => (estBureau ? invoke("etabli_afficher") : Promise.resolve()),
 
   setShortcut: (accelerator: string): Promise<void> =>
-    inTauri ? invoke("raccourci_definir", { accelerator }) : Promise.resolve(),
+    estBureau ? invoke("raccourci_definir", { accelerator }) : Promise.resolve(),
   shortcutStatus: (): Promise<ShortcutStatus> =>
-    inTauri ? invoke("raccourci_etat") : Promise.resolve({ accelerator: null, erreur: null }),
+    estBureau ? invoke("raccourci_etat") : Promise.resolve({ accelerator: null, erreur: null }),
 
   appInfo: (): Promise<AppInfo> =>
     inTauri
@@ -37,18 +38,18 @@ export const system = {
       : Promise.resolve({ version: "0.1.0", documents: "(aperçu navigateur)", config: "(aperçu navigateur)" }),
 
   setCloseToTray: (active: boolean): Promise<void> =>
-    inTauri ? invoke("fermeture_zone_definir", { active }) : Promise.resolve(),
+    estBureau ? invoke("fermeture_zone_definir", { active }) : Promise.resolve(),
 
-  autostartEnabled: (): Promise<boolean> => (inTauri ? isEnabled() : Promise.resolve(false)),
+  autostartEnabled: (): Promise<boolean> => (estBureau ? isEnabled() : Promise.resolve(false)),
   setAutostart: (active: boolean): Promise<void> =>
-    inTauri ? (active ? enable() : disable()) : Promise.resolve(),
+    estBureau ? (active ? enable() : disable()) : Promise.resolve(),
 
   openUrl: (url: string): Promise<void> => (inTauri ? openUrl(url) : Promise.resolve(void window.open(url))),
-  reveal: (path: string): Promise<void> => (inTauri ? revealItemInDir(path) : Promise.resolve()),
+  reveal: (path: string): Promise<void> => (estBureau ? revealItemInDir(path) : Promise.resolve()),
 
   /** Taille du texte : zoom de toute la fenêtre, mini-apps comprises. */
   setZoom: (factor: number): Promise<void> => {
-    if (inTauri) return getCurrentWebview().setZoom(factor);
+    if (inTauri) return getCurrentWebview().setZoom(factor).catch(() => undefined);
     document.documentElement.style.zoom = String(factor);
     return Promise.resolve();
   },

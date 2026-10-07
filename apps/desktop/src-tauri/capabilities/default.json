@@ -3,6 +3,7 @@
   "identifier": "default",
   "description": "Permissions de la fenêtre principale et de l'aperçu rapide.",
   "windows": ["main", "apercu"],
+  "platforms": ["windows", "linux", "macOS"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",

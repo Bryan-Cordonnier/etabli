@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Permissions de la fenêtre principale sur Android : pas d'aperçu rapide, de raccourci global ni de mises à jour.",
+  "windows": ["main"],
+  "platforms": ["android", "iOS"],
+  "permissions": [
+    "core:default",
+    "core:webview:allow-set-webview-zoom",
+    "opener:allow-open-url",
+    "notification:default"
+  ]
+}
