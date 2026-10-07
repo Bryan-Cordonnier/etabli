@@ -1,4 +1,4 @@
-import { isTauri } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 
 // Alarmes locales du téléphone (docs/16 §6) : notifications exactes même application fermée, via le plugin Tauri. Sert
 // d'abord à l'essai d'alarme des Paramètres (l'usage principal : rappels de départ et de coucher à l'heure près).
@@ -53,17 +53,19 @@ export async function pluginNatif(): Promise<PluginNotifications> {
     changeExactNotificationSetting: async () => ({ exact_alarm: "granted" }),
     // Android connaît des importances de 1 à 5 ; le plugin Tauri s'arrête à 4 (« haute » : bandeau et son).
     createChannel: (c) => n.createChannel({ id: c.id, name: c.name, importance: Math.min(c.importance, 4) as 1 | 2 | 3 | 4, vibration: c.vibration }),
+    // atch et non sendNotification : seule la commande atch enregistre la notification (pour la rendre après un
+    // redémarrage du téléphone et pour pending). Même forme que les options de sendNotification.
     schedule: async ({ notifications }) => {
-      for (const x of notifications) {
-        n.sendNotification({
+      await invoke("plugin:notification|batch", {
+        notifications: notifications.map((x) => ({
           id: x.id,
           title: x.title,
           body: x.body,
           channelId: x.channelId,
           schedule: n.Schedule.at(x.schedule.at, false, x.schedule.allowWhileIdle),
           ...(x.extra ? { extra: x.extra } : {}),
-        });
-      }
+        })),
+      });
     },
     getPending: async () => ({ notifications: (await n.pending()).map((p) => ({ id: p.id })) }),
     cancel: async ({ notifications }) => n.cancel(notifications.map((x) => x.id)),
