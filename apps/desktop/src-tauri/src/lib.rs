@@ -60,6 +60,21 @@ struct InfosApp {
     version: String,
     documents: String,
     config: String,
+    /// Une adresse de mises à jour est configurée (plugins.updater.endpoints) : sinon l'application n'en cherche pas.
+    #[serde(rename = "miseAJour")]
+    mise_a_jour: bool,
+}
+
+/// Vrai si la configuration donne au moins une adresse de mises à jour. Une distribution qui n'a pas encore ses propres
+/// publications la laisse vide : elle ne doit surtout pas interroger celles d'Établi (elle s'y mettrait à jour... en Établi).
+fn mise_a_jour_configuree(app: &tauri::AppHandle) -> bool {
+    app.config()
+        .plugins
+        .0
+        .get("updater")
+        .and_then(|u| u.get("endpoints"))
+        .and_then(serde_json::Value::as_array)
+        .is_some_and(|liste| !liste.is_empty())
 }
 
 #[tauri::command]
@@ -68,6 +83,7 @@ fn infos_app(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> InfosA
         version: app.package_info().version.to_string(),
         documents: state.paths.documents.display().to_string(),
         config: state.paths.config.display().to_string(),
+        mise_a_jour: mise_a_jour_configuree(&app),
     }
 }
 

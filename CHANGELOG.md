@@ -18,6 +18,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Changed
 
+- **Each application keeps its own data folders.** The folders under Documents and the configuration directory are named after `productName` (`Etabli` for Établi, so nothing moves for it): a distribution no longer shares its data with Établi.
+- **No update search without an address.** The application looks for updates only if `plugins.updater.endpoints` is not empty. A distribution that has no releases of its own leaves it empty instead of offering to turn itself into Établi.
 - **The repository moved** from `Bryan-Cordonnier/etabli` to `etable-project/etable` (the old address redirects, so installed copies keep finding their updates). README and ROADMAP are rewritten for the new plan (Etable, a plugin engine) and CONTRIBUTING no longer mentions a catalogue.
 
 ### Removed
