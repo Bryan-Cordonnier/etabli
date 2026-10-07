@@ -10,6 +10,7 @@
 | **Argent** | no (service only, `pages: []`) | yes, reused by the ERP | accounts ("coffres") and movements, transfers, balances |
 | **Mes finances** | one page | **no, stays private (Bryan)** | estimate of the money, forecast curve, next payments, survival date, quick +/−, recalibration |
 | **Travail** | one page with several apps | yes | contracts, agencies, missions, reserve; announces **expected income** |
+| **Courses** | one page | to decide | weekly food budget, deducted on the shopping day (later: prices) |
 | **Agenda** | (unchanged for now) | to decide | time, missions on the calendar, phone reminders |
 
 Existing code is reused: the register of `finances` becomes Argent, the curve maths of `budget` move into Mes finances, `paie` becomes Travail.
@@ -50,8 +51,9 @@ One page, one layout (`app`): a dashboard.
 ### Accuracy figure (Bryan: "a % of how precise the software is against the real bank accounts")
 
 At each recalibration *i*: `error_i = |real_i − estimated_i|`, `flow_i` = sum of the absolute amounts of the movements recorded since the previous recalibration,
-`accuracy_i = max(0, 1 − error_i / flow_i)`. Shown: the **average of the last three** recalibrations, with a trend arrow, and "not measured yet" before the first one.
-Example: 3 000 € of movements and an error of 150 € give 95 %. Dividing by the flow and not by the balance prevents a big balance from hiding errors.
+`accuracy_i = max(0, 1 − error_i / flow_i)`. Shown: the **average of ALL the recalibrations since the start** (Bryan): a first recalibration at 98 %, then one at 89 %, gives 93,5 %. A trend arrow compares the last one to the average, and "not measured yet" appears before the first one.
+The figure is **published as a value other plugins can read** (`precision`), not just displayed.
+Example of one recalibration: 3 000 € of movements and an error of 150 € give 95 %. Dividing by the flow and not by the balance prevents a big balance from hiding errors.
 A secondary hint shows the days since the last recalibration.
 
 ## 3. Travail (public, one page with apps)
@@ -63,9 +65,17 @@ A secondary hint shows the days since the last recalibration.
 - Travail **does not write real money into Argent.** It **announces expected income** ("around 10 November, about 1 812 € net"). Mes finances shows it in the curve
   and the survival date, and records the real movement in Argent on pay day, with the amount actually received. Travail therefore works without any private plugin.
 
+## 4. Courses (fifth plugin, Bryan)
+
+Food is **its own plugin**, not a setting of Mes finances. It sets a **weekly budget** (shopping is usually done once a week); on the shopping day the amount is deducted, and the forecast shows it ahead of time.
+Later it can look up prices through APIs. It announces its planned spending to Mes finances, like Travail announces income.
+
+## 5. Accounts counted in the forecast (Bryan)
+
+Settable per account: **counted as the money I live on**, counted as a **safety margin** (savings, a future PEA: shown separately and optionally added to the survival date), or **excluded**.
+Whether a safety-margin account counts toward survival is a switch the user can flip; both results are shown.
+
 ## Still open
 
-1. Is the "food allowance" a monthly amount spread over days, or a daily amount?
-2. Are the accounts of the forecast chosen in Mes finances (several allowed), or only the current account?
-3. Should Agenda keep its own reminders page, or become a service used by the others plus a page of its own?
-4. Names confirmed by Bryan: **Argent**, **Mes finances**, **Travail**.
+1. Agenda: does it keep its own reminders page, or become a service used by the others plus a page of its own (see the explanation given to Bryan)?
+2. Names confirmed by Bryan: **Argent**, **Mes finances**, **Travail**, **Courses**.
