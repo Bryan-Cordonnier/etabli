@@ -1,0 +1,60 @@
+# 27 — Building a distribution on Etable (and the Android build)
+
+A **distribution** is an application built on the Etable engine: its own name, identifier, plugins and release pipeline, in its
+own repository. [Quotidien](https://github.com/Bryan-Cordonnier/quotidien) (private, personal) is the first one; Etablink will be another.
+The engine ships **no plugin** and no store; a distribution brings its plugins at build time.
+
+## What a distribution repository contains
+
+```
+etable/                 the engine, as a Git submodule (a fixed version; update it on purpose)
+plugins/<id>/           the distribution's plugins (each one a self-contained npm package with its own manifest and changelog)
+<name>.conf.json        Tauri configuration overrides: productName, identifier, version, windows, bundle metadata
+scripts/tauri.mjs       runs the engine's Tauri CLI with the override file and ETABLE_PLUGINS_DIR set
+package.json            npm workspaces: etable/packages/*, etable/apps/desktop, plugins/*
+.npmrc                  legacy-peer-deps=true (the engine's TypeScript 7 / svelte-check peer ranges)
+```
+
+The root `package.json` pins `typescript` to `~6.0.3`: `svelte-check` needs TypeScript 6 at the root while the desktop app and plugins
+use 7, exactly as in this repository's lockfile.
+
+## How plugins get into the application
+
+At compile time, `ETABLE_PLUGINS_DIR` points to a folder of plugins. `apps/desktop/src-tauri/build.rs` packs every sub-folder that has a
+compiled `dist/manifest.json` (or a `manifest.json` at its root) into an uncompressed zip embedded in the binary. At start-up
+`integres.rs` writes it to the `integres` folder of the configuration directory (only when its fingerprint changed) and the engine scans
+that folder like any other plugin root. This works the same on Windows and Android, where APK resources are not real files.
+In a debug build, a run-time `ETABLE_PLUGINS_DIR` (and the repository's own `plugins/` on desktop) is read first, so plugins can be edited
+without recompiling Rust.
+
+Plugins installed by the user from a signed `.etabli-plugin` file go to `installes` and are checked against the public key of the
+distribution's `tauri.conf.json` (`plugins.updater.pubkey`).
+
+## Android
+
+```bash
+npm run android:init    # tauri android init, then src-tauri/android/appliquer-correctifs.mjs
+npm run android:build   # tauri android build --apk
+```
+
+`appliquer-correctifs.mjs` replaces the generated `MainActivity.kt` with the engine's (closes the native bridge to plugin frames, keeps
+the content below the system bars) and adds the `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM` permissions. It exits with an error if
+anything it expects is missing: better no APK than an APK with an open bridge (docs/26).
+
+The Android build needs the Rust targets (`rustup target add aarch64-linux-android x86_64-linux-android`), the Android NDK 27, JDK 17+ and
+`ANDROID_HOME` / `NDK_HOME`. CI (`.github/workflows/android.yml`) does it on Linux. A local build on Windows needs **Developer Mode**
+(Tauri creates symbolic links); without it, use the CI artifact.
+
+Things learnt on the emulator (Android 14), now covered by the code:
+
+- Reminders must go through the notification plugin's `batch` command **with `sourceJson`**: `sendNotification` does not store the
+  notification, so nothing is restored after a reboot and `pending` is empty.
+- `adb shell am force-stop` cancels the app's alarms; to test "app closed", send it to the background and use `am kill`.
+- Every CI build signs its debug APK with a different key: uninstall before installing a newer one. A stable signing key will be needed
+  to update an installed APK in place.
+- Documents live in the app's private storage (`app_data_dir/documents`), not in the shared Documents folder.
+
+## Not done yet
+
+- Signing and updating a distribution (updater key, Android release key).
+- Replacing the engine's browser-based isolation tests by a test of the real WebView (a Windows CI run of the app driven over CDP).
