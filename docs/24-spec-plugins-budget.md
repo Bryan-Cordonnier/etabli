@@ -1,5 +1,7 @@
 # 24 — Spécification : plugins « agenda », « finances », « paie » et « budget » (reprise de gestion-budget-perso) — brouillon
 
+> **Superseded in part (7 October 2026).** The money side is redesigned as three plugins (Argent, Mes finances, Travail): see [29](29-argent-finances-travail.md). The technical annex on services between plugins stays valid.
+
 > **Statut : brouillon, documentation seulement.** Aucun code n'est écrit. Aucune étape de code ne démarre avant la validation de Bryan (règle d'`AGENTS.md`).
 > Documents liés : [06](06-protocole-sdk.md) (SDK), [07](07-creer-un-plugin.md) (plugin), [08](08-documents-donnees.md) (données),
 > [16](16-spec-serveur-utilisateurs-mobile.md) (serveur, mobile), [19](19-modele-de-menace-plugins.md) (isolation, permissions).
