@@ -8,6 +8,7 @@ target/
 
 # Tauri (généré)
 apps/desktop/src-tauri/gen/schemas/
+apps/desktop/src-tauri/gen/android/
 # Paquets de plugins fabriqués en local (scripts/paquet-plugin.mjs)
 paquets/
 

@@ -93,12 +93,12 @@ export function pluginUrl(pluginId: string, path: string): string {
   // Origine propre au plugin (serveur avec un hôte par plugin) : les fichiers sont à la racine de cette origine.
   const origine = api.originePlugin?.(pluginId);
   if (origine) return `${origine}/${path.split("/").map(encodeURIComponent).join("/")}`;
-  // Sous Windows, WebView2 expose les protocoles personnalisés en http://<nom>.localhost.
+  // Sous Windows et Android, le WebView expose les protocoles personnalisés en http://<nom>.localhost.
   // Dans un navigateur, ce sont des fichiers statiques : `plugins/` de la version construite, ou le serveur
   // Vite en développement (voir vite.config.ts).
   const base = api.urlPlugins
     ? api.urlPlugins
-    : navigator.userAgent.includes("Windows")
+    : navigator.userAgent.includes("Windows") || navigator.userAgent.includes("Android")
       ? "http://plugins.localhost"
       : "plugins://localhost";
   const encoded = path.split("/").map(encodeURIComponent).join("/");

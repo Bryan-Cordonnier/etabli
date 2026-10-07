@@ -1,29 +1,35 @@
+#[cfg(desktop)]
 mod apercu;
 mod documents;
 mod donnees;
 mod files;
 mod installation;
+mod integres;
 mod paths;
 mod plugins;
+#[cfg(desktop)]
 mod raccourci;
 mod store;
+#[cfg(desktop)]
 mod tray;
 
 use paths::AppPaths;
 use plugins::LoadedPlugin;
 use serde::Serialize;
+#[cfg(desktop)]
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     borrow::Cow,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        RwLock, RwLockReadGuard,
-    },
+    sync::{RwLock, RwLockReadGuard},
 };
 use tauri::{http::Response, Manager, WindowEvent};
+#[cfg(desktop)]
 use tauri_plugin_autostart::MacosLauncher;
+#[cfg(desktop)]
 use tauri_plugin_global_shortcut::ShortcutState;
 
 /// Argument ajouté au lancement automatique avec Windows : l'application démarre dans la zone de notification.
+#[cfg(desktop)]
 const DEMARRAGE: &str = "--demarrage";
 
 /// État partagé par les commandes et le service des fichiers de plugins.
@@ -32,6 +38,7 @@ pub struct AppState {
     /// Relue après chaque installation ou désinstallation depuis un fichier (sans redémarrer).
     plugins: RwLock<Vec<LoadedPlugin>>,
     /// Fermer la fenêtre principale la réduit dans la zone de notification (réglage « Général »).
+    #[cfg(desktop)]
     pub fermeture_zone: AtomicBool,
 }
 
@@ -64,6 +71,7 @@ fn infos_app(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> InfosA
     }
 }
 
+#[cfg(desktop)]
 #[tauri::command]
 fn fermeture_zone_definir(state: tauri::State<'_, AppState>, active: bool) {
     state.fermeture_zone.store(active, Ordering::Relaxed);
@@ -76,12 +84,15 @@ fn journal(fenetre: tauri::Window, message: String) {
 }
 
 /// Argument de lancement qui ouvre directement l'aperçu rapide (utile pour un raccourci Windows).
+#[cfg(desktop)]
 const APERCU: &str = "--apercu";
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        // En premier : relancer l'application ramène la fenêtre existante au lieu d'en ouvrir une seconde.
+    let builder = tauri::Builder::default();
+    // Bureau : en premier, relancer l'application ramène la fenêtre existante au lieu d'en ouvrir une seconde.
+    #[cfg(desktop)]
+    let builder = builder
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.iter().any(|a| a == APERCU) {
                 apercu::toggle(app);
@@ -93,8 +104,6 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             Some(vec![DEMARRAGE]),
         ))
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
         // Mises à jour signées depuis GitHub Releases (voir docs/14-publier-une-version.md).
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
@@ -106,7 +115,14 @@ pub fn run() {
                     }
                 })
                 .build(),
-        )
+        );
+    // Mobile : notifications programmées pour les rappels des plugins.
+    #[cfg(mobile)]
+    let builder = builder.plugin(tauri_plugin_notification::init());
+
+    builder
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .register_uri_scheme_protocol(plugins::SCHEME, |ctx, request| {
             match ctx.app_handle().try_state::<AppState>() {
                 Some(state) => plugins::serve(&state.plugins(), request.uri().path()),
@@ -132,8 +148,14 @@ pub fn run() {
 
             let paths = AppPaths::resolve(app.handle())?;
             installation::nettoyer(&paths.installes);
+            // Plugins livrés avec la distribution (aucun pour le moteur seul).
+            if let Err(err) = integres::extraire(&paths.integres) {
+                log::warn!("Plugins livrés non écrits : {err}");
+            }
             let plugins = plugins::scan(&paths.plugin_roots);
+            #[cfg(desktop)]
             let reglages = store::read(&paths.config);
+            #[cfg(desktop)]
             let reglage = |cle: &str| reglages.get("settings").and_then(|s| s.get(cle)).cloned();
             log::info!(
                 "{} plugin(s) chargé(s), documents dans {}",
@@ -141,86 +163,139 @@ pub fn run() {
                 paths.documents.display()
             );
 
+            #[cfg(desktop)]
             let fermeture_zone = reglage("closeToTray")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(true);
             app.manage(AppState {
                 paths,
                 plugins: RwLock::new(plugins),
+                #[cfg(desktop)]
                 fermeture_zone: AtomicBool::new(fermeture_zone),
             });
 
             // Les fenêtres (« create »: false dans tauri.conf.json) sont créées seulement maintenant.
             // Créées avant cet état, leurs pages, servies instantanément une fois installées,
             // demandaient la liste des plugins et les réglages avant qu'ils existent : liste vide.
+            // Sur mobile, il n'y a qu'une fenêtre (« main ») : l'aperçu rapide n'existe pas.
             for config in app.config().app.windows.clone() {
+                #[cfg(mobile)]
+                if config.label != "main" {
+                    continue;
+                }
                 tauri::WebviewWindowBuilder::from_config(app.handle(), &config)?.build()?;
             }
 
-            // Raccourci de l'aperçu rapide : celui des réglages, sinon Ctrl+Maj+Espace.
-            app.manage(raccourci::QuickShortcut::default());
-            let accelerator = reglage("quickShortcut")
-                .and_then(|v| {
-                    v.get("accelerator")
-                        .and_then(|a| a.as_str().map(String::from))
-                })
-                .unwrap_or_else(|| raccourci::DEFAULT.to_string());
-            if let Err(err) = raccourci::set(app.handle(), &accelerator) {
-                log::warn!("Aperçu rapide sans raccourci : {err}");
-            }
-
-            tray::create(app)?;
-
-            // Lancé avec Windows : on reste discret dans la zone de notification.
-            let args: Vec<String> = std::env::args().collect();
-            if args.iter().any(|a| a == APERCU) {
-                apercu::toggle(app.handle());
-            } else if !args.iter().any(|a| a == DEMARRAGE) {
-                if let Some(main) = app.get_webview_window(apercu::MAIN) {
-                    main.show()?;
-                }
+            #[cfg(desktop)]
+            demarrage_bureau(app, &reglage)?;
+            #[cfg(mobile)]
+            if let Some(main) = app.get_webview_window("main") {
+                main.show()?;
             }
             Ok(())
         })
         // Pas de fermeture de l'aperçu sur `Focused(false)` : WebView2 le déclenche aussi quand le
         // focus passe de la fenêtre à la page. C'est la page qui détecte la vraie perte de focus.
-        .on_window_event(|window, event| {
-            if let (apercu::MAIN, WindowEvent::CloseRequested { api, .. }) = (window.label(), event)
-            {
-                let app = window.app_handle();
-                let vers_zone = app
-                    .try_state::<AppState>()
-                    .is_some_and(|s| s.fermeture_zone.load(Ordering::Relaxed));
-                if vers_zone {
-                    api.prevent_close();
-                    let _ = window.hide();
-                } else {
-                    app.exit(0);
-                }
-            }
-        })
-        .invoke_handler(tauri::generate_handler![
-            plugins::plugins_list,
-            installation::plugin_installer_fichier,
-            installation::plugin_desinstaller,
-            documents::documents_list,
-            documents::document_read,
-            documents::document_save,
-            documents::document_delete,
-            store::store_load,
-            store::store_save,
-            donnees::donnees_lire,
-            donnees::donnees_ecrire,
-            apercu::apercu_basculer,
-            apercu::apercu_fermer,
-            apercu::etabli_afficher,
-            raccourci::raccourci_definir,
-            raccourci::raccourci_etat,
-            infos_app,
-            fermeture_zone_definir,
-            journal,
-            files::fichier_enregistrer,
-        ])
+        .on_window_event(fenetre)
+        .invoke_handler(commandes())
         .run(tauri::generate_context!())
         .expect("erreur au lancement de l'application");
+}
+
+/// Fermer la fenêtre principale la réduit dans la zone de notification (réglage « Général ») ; sur mobile, rien à faire.
+fn fenetre(window: &tauri::Window, event: &WindowEvent) {
+    #[cfg(desktop)]
+    if let (apercu::MAIN, WindowEvent::CloseRequested { api, .. }) = (window.label(), event) {
+        let app = window.app_handle();
+        let vers_zone = app
+            .try_state::<AppState>()
+            .is_some_and(|s| s.fermeture_zone.load(Ordering::Relaxed));
+        if vers_zone {
+            api.prevent_close();
+            let _ = window.hide();
+        } else {
+            app.exit(0);
+        }
+    }
+    #[cfg(mobile)]
+    let _ = (window, event);
+}
+
+/// Raccourci global de l'aperçu rapide, zone de notification et lancement discret (bureau seulement).
+#[cfg(desktop)]
+fn demarrage_bureau(
+    app: &mut tauri::App,
+    reglage: &dyn Fn(&str) -> Option<serde_json::Value>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Raccourci de l'aperçu rapide : celui des réglages, sinon Ctrl+Maj+Espace.
+    app.manage(raccourci::QuickShortcut::default());
+    let accelerator = reglage("quickShortcut")
+        .and_then(|v| {
+            v.get("accelerator")
+                .and_then(|a| a.as_str().map(String::from))
+        })
+        .unwrap_or_else(|| raccourci::DEFAULT.to_string());
+    if let Err(err) = raccourci::set(app.handle(), &accelerator) {
+        log::warn!("Aperçu rapide sans raccourci : {err}");
+    }
+
+    tray::create(app)?;
+
+    // Lancé avec Windows : on reste discret dans la zone de notification.
+    let args: Vec<String> = std::env::args().collect();
+    if args.iter().any(|a| a == APERCU) {
+        apercu::toggle(app.handle());
+    } else if !args.iter().any(|a| a == DEMARRAGE) {
+        if let Some(main) = app.get_webview_window(apercu::MAIN) {
+            main.show()?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(desktop)]
+fn commandes() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
+    tauri::generate_handler![
+        plugins::plugins_list,
+        installation::plugin_installer_fichier,
+        installation::plugin_desinstaller,
+        documents::documents_list,
+        documents::document_read,
+        documents::document_save,
+        documents::document_delete,
+        store::store_load,
+        store::store_save,
+        donnees::donnees_lire,
+        donnees::donnees_ecrire,
+        apercu::apercu_basculer,
+        apercu::apercu_fermer,
+        apercu::etabli_afficher,
+        raccourci::raccourci_definir,
+        raccourci::raccourci_etat,
+        infos_app,
+        fermeture_zone_definir,
+        journal,
+        files::fichier_enregistrer,
+    ]
+}
+
+/// Mobile : les mêmes commandes, sans fenêtres, raccourci ni zone de notification.
+#[cfg(mobile)]
+fn commandes() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
+    tauri::generate_handler![
+        plugins::plugins_list,
+        installation::plugin_installer_fichier,
+        installation::plugin_desinstaller,
+        documents::documents_list,
+        documents::document_read,
+        documents::document_save,
+        documents::document_delete,
+        store::store_load,
+        store::store_save,
+        donnees::donnees_lire,
+        donnees::donnees_ecrire,
+        infos_app,
+        journal,
+        files::fichier_enregistrer,
+    ]
 }

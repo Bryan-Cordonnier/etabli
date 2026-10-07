@@ -11,6 +11,11 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Added
+
+- **Android on Tauri mobile.** The engine now builds for Android from the same Rust core as Windows (`npm run android:init` then `npm run android:build` in `apps/desktop`; CI workflow *Android*). Windows-only parts (quick preview, global shortcut, tray, autostart, updater) are compiled out; scheduled reminders use the Tauri notification plugin; documents live in the app's private storage. The native bridge is closed to plugin frames by a Kotlin fix applied by `src-tauri/android/appliquer-correctifs.mjs` (see docs/26).
+- **Distributions ship their own plugins.** Set `ETABLE_PLUGINS_DIR` when compiling: the plugin folders it contains are packed into the binary and written to the `integres` folder at start-up, on Windows and Android alike. The engine alone ships none.
+
 ### Changed
 
 - **The repository moved** from `Bryan-Cordonnier/etabli` to `etable-project/etable` (the old address redirects, so installed copies keep finding their updates). README and ROADMAP are rewritten for the new plan (Etable, a plugin engine) and CONTRIBUTING no longer mentions a catalogue.

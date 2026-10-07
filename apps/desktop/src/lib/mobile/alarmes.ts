@@ -1,7 +1,9 @@
-// Alarmes locales du téléphone (docs/16 §6) : notifications exactes même application fermée, via Capacitor. Sert
+import { isTauri } from "@tauri-apps/api/core";
+
+// Alarmes locales du téléphone (docs/16 §6) : notifications exactes même application fermée, via le plugin Tauri. Sert
 // d'abord à l'essai d'alarme des Paramètres (l'usage principal : rappels de départ et de coucher à l'heure près).
 
-/** Partie du plugin `@capacitor/local-notifications` utilisée ici (permet de la remplacer dans les tests). */
+/** Forme des notifications utilisée ici (celle de l'ancien plugin Capacitor) : pluginNatif l'adapte au plugin Tauri, et les tests la remplacent. */
 export interface PluginNotifications {
   checkPermissions(): Promise<{ display: string }>;
   requestPermissions(): Promise<{ display: string }>;
@@ -32,15 +34,40 @@ export interface EtatAlarmes {
 export const CANAL = "rappels";
 export const ID_ESSAI = 900001;
 
-/** Vrai dans l'application Android (Capacitor), faux dans un navigateur ou sur PC. */
+/** Vrai dans l'application Android (Tauri mobile), faux dans un navigateur ou sur PC. */
 export function estNatif(): boolean {
-  const c = (globalThis as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-  return !!c?.isNativePlatform?.();
+  return isTauri() && typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 }
 
+/**
+ * Le plugin Tauri de notifications, sous la forme attendue ici. Les alarmes exactes sont déclarées dans le manifeste Android
+ * (USE_EXACT_ALARM, accordée d'office aux applications installées hors Play Store) : il n'y a ni réglage à ouvrir ni état à lire,
+ * exactes vaut toujours « accordée ».
+ */
 export async function pluginNatif(): Promise<PluginNotifications> {
-  const { LocalNotifications } = await import("@capacitor/local-notifications");
-  return LocalNotifications as unknown as PluginNotifications;
+  const n = await import("@tauri-apps/plugin-notification");
+  return {
+    checkPermissions: async () => ({ display: (await n.isPermissionGranted()) ? "granted" : "prompt" }),
+    requestPermissions: async () => ({ display: (await n.requestPermission()) === "granted" ? "granted" : "denied" }),
+    checkExactNotificationSetting: async () => ({ exact_alarm: "granted" }),
+    changeExactNotificationSetting: async () => ({ exact_alarm: "granted" }),
+    // Android connaît des importances de 1 à 5 ; le plugin Tauri s'arrête à 4 (« haute » : bandeau et son).
+    createChannel: (c) => n.createChannel({ id: c.id, name: c.name, importance: Math.min(c.importance, 4) as 1 | 2 | 3 | 4, vibration: c.vibration }),
+    schedule: async ({ notifications }) => {
+      for (const x of notifications) {
+        n.sendNotification({
+          id: x.id,
+          title: x.title,
+          body: x.body,
+          channelId: x.channelId,
+          schedule: n.Schedule.at(x.schedule.at, false, x.schedule.allowWhileIdle),
+          ...(x.extra ? { extra: x.extra } : {}),
+        });
+      }
+    },
+    getPending: async () => ({ notifications: (await n.pending()).map((p) => ({ id: p.id })) }),
+    cancel: async ({ notifications }) => n.cancel(notifications.map((x) => x.id)),
+  };
 }
 
 export async function lireEtat(plugin: PluginNotifications): Promise<EtatAlarmes> {

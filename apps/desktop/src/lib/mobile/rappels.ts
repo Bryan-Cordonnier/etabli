@@ -11,7 +11,7 @@ export const CANAL_RAPPELS = "rappels-notifications";
 const MARGE_MS = 5000;
 
 export interface DepsRappels {
-  /** Le plugin de notifications de Capacitor, ou `null` hors du téléphone (PC, navigateur). */
+  /** Le plugin de notifications (voir `pluginNatif`), ou `null` hors du téléphone (PC, navigateur). */
   plugin: PluginNotifications | null;
   /** Identifiants natifs que ce plugin a déjà programmés. */
   lireIds(pluginId: string): Promise<number[]>;
