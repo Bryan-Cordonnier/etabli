@@ -19,6 +19,8 @@ export interface AppInfo {
   version: string;
   documents: string;
   config: string;
+  /** Une adresse de mises à jour est configurée : sinon (distribution sans publications) on n'en cherche pas. */
+  miseAJour: boolean;
 }
 
 /** Fenêtres, raccourci global, démarrage avec Windows, liens. */
@@ -35,7 +37,7 @@ export const system = {
   appInfo: (): Promise<AppInfo> =>
     inTauri
       ? invoke("infos_app")
-      : Promise.resolve({ version: "0.1.0", documents: "(aperçu navigateur)", config: "(aperçu navigateur)" }),
+      : Promise.resolve({ version: "0.1.0", documents: "(aperçu navigateur)", config: "(aperçu navigateur)", miseAJour: false }),
 
   setCloseToTray: (active: boolean): Promise<void> =>
     estBureau ? invoke("fermeture_zone_definir", { active }) : Promise.resolve(),

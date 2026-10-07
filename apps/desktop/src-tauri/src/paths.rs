@@ -57,9 +57,11 @@ impl AppPaths {
     /// Windows : Documents et AppData. Android : le stockage privé de l'application (pas d'accès aux Documents partagés).
     #[cfg(desktop)]
     fn par_defaut<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<(PathBuf, PathBuf)> {
+        // Un dossier par application : une distribution (Quotidien…) ne partage pas ses données avec Établi.
+        let nom = nom_dossier(app.config().product_name.as_deref());
         Ok((
-            app.path().document_dir()?.join("Etabli"),
-            app.path().config_dir()?.join("Etabli"),
+            app.path().document_dir()?.join(&nom),
+            app.path().config_dir()?.join(&nom),
         ))
     }
 
@@ -69,5 +71,39 @@ impl AppPaths {
             app.path().app_data_dir()?.join("documents"),
             app.path().app_config_dir()?,
         ))
+    }
+}
+
+/// Nom du dossier de données d'après le nom du produit (`productName`) : lettres, chiffres, espace, tiret et tiret bas ;
+/// « Etabli » si le nom est absent ou ne laisse rien. Le nom du produit d'Établi est « Etabli » : ses dossiers ne changent pas.
+#[cfg(any(desktop, test))]
+fn nom_dossier(produit: Option<&str>) -> String {
+    let propre: String = produit
+        .unwrap_or("")
+        .chars()
+        .filter(|c| c.is_alphanumeric() || matches!(c, ' ' | '-' | '_'))
+        .collect();
+    let propre = propre.trim();
+    if propre.is_empty() {
+        "Etabli".to_string()
+    } else {
+        propre.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::nom_dossier;
+
+    #[test]
+    fn dossier_d_apres_le_nom_du_produit() {
+        assert_eq!(nom_dossier(Some("Etabli")), "Etabli");
+        assert_eq!(nom_dossier(Some("Quotidien")), "Quotidien");
+        assert_eq!(nom_dossier(Some("Mon app")), "Mon app");
+        // Rien qui sorte du dossier ou que Windows refuse.
+        assert_eq!(nom_dossier(Some("../Evil:*?")), "Evil");
+        assert_eq!(nom_dossier(Some("..")), "Etabli");
+        assert_eq!(nom_dossier(Some("   ")), "Etabli");
+        assert_eq!(nom_dossier(None), "Etabli");
     }
 }

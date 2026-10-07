@@ -5,7 +5,7 @@ import "@fontsource/jetbrains-mono/500.css";
 import "@fontsource/jetbrains-mono/600.css";
 import "./app.css";
 import { reportErrors } from "./lib/errors";
-import { api } from "./lib/api";
+import { api, system } from "./lib/api";
 import { decider } from "./lib/porte";
 import { initStorage } from "./lib/storage";
 
@@ -28,6 +28,8 @@ if (porte) {
 } else {
   // Réglages et plugins d'abord : les onglets et les paramètres en ont besoin dès leur création.
   await initStorage();
+  // Pas d'adresse de mises à jour dans la configuration (distribution sans publications) : on n'en cherche pas.
+  if (api.id === "tauri" && api.capacites.miseAJour) api.capacites.miseAJour = (await system.appInfo()).miseAJour;
   // Les modules qui lisent les réglages sont importés seulement maintenant : ils attendent le fichier de réglages.
   const { loadPlugins } = await import("./lib/plugins/registry.svelte");
   await loadPlugins();
