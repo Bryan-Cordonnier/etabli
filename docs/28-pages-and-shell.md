@@ -38,6 +38,10 @@ ledger, the calendar), and where "a calculation" does not exist.
 - The user **moves pages** in the sidebar to the order they want (drag and drop, as plugins are moved today); the order is saved in the
   settings. A page that is new to the user appears at the end of its plugin's group, in the order the plugin declared.
 - The distribution only provides the default order (the order of its plugins and of their pages); it does not impose one.
+- **The plugin's name is not shown (Bryan).** The sidebar shows pages only.
+- **Categories (Bryan).** The sidebar can group pages into **categories** (for example *Argent*, *Temps*). Showing categories is an **appearance setting**:
+  off, the sidebar is a flat list of pages; on, the user moves a whole category, or moves pages between and inside categories. The distribution
+  provides the default categories and which page goes in which; the user's changes win. A page belongs to at most one category.
 
 ## 3. The shell no longer knows "calculations" (Bryan)
 
@@ -81,6 +85,8 @@ Manifest and validator (`apiVersion ^3`, `pages`, `apps`, `widgets`, `documents`
 - The phone interface reorganises pages and the widget board; it is designed separately, with mock-ups, after the Windows application.
 
 ## Still open
+
+0. **Who names the categories?** Proposal: the distribution (a list in its configuration); the user can rename, add and remove them in the appearance settings.
 
 1. **Widget grid**: fixed columns (for example 4 on a wide window, fewer on a narrow one) with free vertical growth? Proposal: yes.
 2. **Widgets of the engine**: only *favourite pages* and *recently opened* at first, or also a clock/date and free notes? Proposal: the two first.
