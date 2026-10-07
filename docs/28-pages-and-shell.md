@@ -52,19 +52,36 @@ What belongs to the **plugin**, not to the engine: a document title, *New / Dupl
 - Engine-level features tied to the old model become **optional, set by the distribution**: favourites, home page with recent documents,
   quick preview window. A distribution turns on only what it uses.
 
-## 4. Consequences in the code (for the estimate, not yet done)
+## 4. The home page is a board of widgets (Bryan)
 
-Manifest and validator (`apiVersion ^3`, `pages`, `apps`, `documents`), SDK types and a documents API, `registry` (pages), sidebar and tab views
-(`page` replaces `plugin` and `app`), a page component with the four layouts, command palette (search pages), settings (`pluginOrder` becomes
+- The home page stays, and it is **fully editable**: a grid of **widgets** that the user adds, removes, moves and resizes (an *Edit* mode,
+  as on a phone's home screen). The layout is saved in the settings.
+- **Built-in widgets** (provided by the engine, only if the distribution turns them on): *favourite pages* (the old favourite mini-apps),
+  *recently opened* (the old "recent calculations", for the plugins that have documents).
+- **Plugins declare widgets** in the manifest, next to `apps` and `pages`: a title, an icon, an entry page, and the **sizes** it supports
+  (in grid cells, for example `1x1`, `2x1`, `2x2`, `4x2`, with a default). The user picks among the declared sizes; the widget is told its
+  size and redraws. Examples: *salary over the months* (payroll), *this month's curve* (budget), *next events* (agenda), *stock under the
+  threshold* or *margin this quarter* (ERP).
+- A widget is a small **sandboxed frame**, exactly like a mini-app (same isolation, same SDK, same permissions, same services: it reads what
+  its plugin and the plugins it depends on publish, and updates live). It is **read-only by default**: it shows, and a click opens the
+  related **page**; actions that change data stay in pages.
+- A **distribution** gives the **default layout** (which widgets, where). The user's changes win and are kept.
+- A phone shows the same board as a single column of widgets, which is why this model is also the base of the Android interface.
+## 5. Consequences in the code (for the estimate, not yet done)
+
+Manifest and validator (`apiVersion ^3`, `pages`, `apps`, `widgets`, `documents`), SDK types and a documents API, `registry` (pages), sidebar and tab views
+(`page` replaces `plugin` and `app`), a page component with the four layouts, the home board (grid, edit mode, widget frames, built-in widgets, saved layout), command palette (search pages), settings (`pluginOrder` becomes
 `pageOrder`), removal of the document header from the shell, migration of the four plugins, tests and docs 06/07/19.
 
-## Open questions
+## Decisions taken on 7 October 2026 (Bryan)
 
-1. **Home.** Is there still a home page? Proposal: no home in the engine; the first page of the sidebar opens at start-up (a distribution may
-   declare a start page).
-2. **Several apps on one page.** Do they share the page's data (one `pluginData`, as today) or can they talk to each other? Proposal: same
-   rules as today (shared plugin data, services between plugins); no direct app-to-app channel.
-3. **Page title bar.** Does the engine show a thin bar with the page title and the plugin colour, or nothing at all? Proposal: nothing; the page
-   draws its own header with the UI kit.
-4. **Mobile.** Pages are the unit the phone interface will reorganise (bottom navigation, one page at a time). That interface is designed
-   separately, with mock-ups, after the Windows application.
+- Home: kept, as an editable **board of widgets** (section 4).
+- Several apps on one page share the plugin's data as today, with no direct app-to-app channel.
+- No engine title bar: each page draws its own header with the UI kit.
+- The phone interface reorganises pages and the widget board; it is designed separately, with mock-ups, after the Windows application.
+
+## Still open
+
+1. **Widget grid**: fixed columns (for example 4 on a wide window, fewer on a narrow one) with free vertical growth? Proposal: yes.
+2. **Widgets of the engine**: only *favourite pages* and *recently opened* at first, or also a clock/date and free notes? Proposal: the two first.
+3. **Where is the board edited**: a pencil button on the home page, with an *Add widget* gallery listing every installed plugin's widgets.
