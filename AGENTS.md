@@ -43,6 +43,7 @@ Ce fichier est un **sommaire** : lisez seulement les fichiers utiles à votre t�
 | [docs/24-spec-plugins-budget.md](docs/24-spec-plugins-budget.md) | Inventaire de `gestion-budget-perso` et spécification (brouillon) des plugins agenda, finances, paie et budget : services entre plugins (contrats, appels, absence), données, calculs, manques du SDK, Rust/WASM ou TypeScript | vous touchez au budget, aux finances, à la paie, à l'agenda, aux services entre plugins, aux rappels (`notifications`) ou au réemploi de l'ancien cœur Rust |
 | [docs/25-comment-ca-marche.md](docs/25-comment-ca-marche.md) | Vue d'ensemble vulgarisée pour Bryan : moteur, plugins, bac à sable, mises à jour, PC / web / Android / serveur, schémas | vous expliquez le fonctionnement à Bryan ou découvrez l'architecture sans lire tout le code |
 | [docs/26-tauri-android-spike.md](docs/26-tauri-android-spike.md) | Tauri on Android spike results, the native bridge fix (Kotlin), emulator testing | you touch the Android shell, notifications or the plugin sandbox on Android |
+| [docs/27-building-a-distribution.md](docs/27-building-a-distribution.md) | Building an application on the engine (a distribution): submodule, plugins embedded at build time, Tauri overrides, the Android build and what was learnt on the emulator | you create or build Quotidien, Etablink or another distribution, or touch the Android build |
 | [docs/14-publier-une-version.md](docs/14-publier-une-version.md) | Releases GitHub, mises à jour automatiques signées de l'application, clé, paquet de plugin signé, publier une version, installer | vous publiez une version ou touchez aux mises à jour |
 
 Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](CONTRIBUTING.md) (règles pour les contributeurs),
@@ -54,9 +55,8 @@ Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](
 ```
 crates/noyau/             règles communes (identifiants, calculs, paquets signés) — sans entrée-sortie
 crates/serveur/           serveur facultatif : comptes, calculs, plugins (docs/17)
-apps/desktop/src-tauri/   cœur Rust : fenêtres, plugins, documents, réglages, raccourci global
+apps/desktop/src-tauri/   cœur Rust : fenêtres, plugins, documents, réglages, raccourci global ; ndroid/ : correctifs du projet Android (pont natif fermé)
 apps/desktop/src/         interface hôte Svelte (fenêtre principale + aperçu rapide)
-apps/mobile/              emballage Android (Capacitor) de la version web ; APK de test par la CI
 packages/sdk/             @etabli/sdk : protocole et API des mini-apps
 packages/ui/              @etabli/ui : composants et outils communs des mini-apps
 plugins/finances/         l'argent réel : comptes, registre en ajout seulement, tableau de bord, service « finances » (hors catalogue)

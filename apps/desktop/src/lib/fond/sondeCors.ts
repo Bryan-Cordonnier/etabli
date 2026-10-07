@@ -1,6 +1,6 @@
 // Sonde de l'hébergement des plugins (docs/19, §4) : un cadre à origine opaque ne charge ses modules, ses styles et ses
 // polices que si l'hébergement envoie « Access-Control-Allow-Origin » sous plugins/. Si oui, la version web isole les
-// mini-apps (sandbox sans allow-same-origin) ; sinon (WebView Android de Capacitor, hébergement sans en-têtes, hors
+// mini-apps (sandbox sans allow-same-origin) ; sinon (hébergement sans en-têtes, hors
 // ligne) elle retombe sur la même origine, seule façon de les faire fonctionner : limite connue, plugins officiels seuls.
 // La sonde est faite par un cadre opaque dont le code vient de l'hôte, jamais d'un plugin : un plugin ne peut pas
 // forcer le repli.

@@ -1,6 +1,8 @@
 # 26 — Tauri on Android: spike results (6 October 2026)
 
-Throwaway test in [`tools/spike-tauri-android`](../tools/spike-tauri-android) (workflow `.github/workflows/spike-tauri-android.yml`
+> **Adopted (7 October 2026).** The result below is now the real Android build: the engine in `apps/desktop` builds for Android with Tauri mobile (`npm run android:init` then `npm run android:build`, workflow *Android*). The Kotlin fix lives in `apps/desktop/src-tauri/android/MainActivity.kt` and is applied, with the exact-alarm permissions, by `appliquer-correctifs.mjs` (it fails if anything is missing). The throwaway spike in `tools/spike-tauri-android`, the Capacitor project (`apps/mobile`) and the Capacitor probes were deleted; see the Git history for them.
+
+Throwaway test in `tools/spike-tauri-android` (deleted) (workflow `.github/workflows/spike-tauri-android.yml`
 builds a debug APK). It answers: can Tauri 2 replace Capacitor as the Android shell, so that Windows and Android share one Rust core?
 
 ## Verdict

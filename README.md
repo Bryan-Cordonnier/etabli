@@ -31,8 +31,8 @@ by itself.
 - **Plugins talk to each other** through declared services, with the caller's identity enforced by the engine.
 - **No store.** The engine has no catalogue and no licence check. A plugin is a signed `.etabli-plugin` file that you install
   from a file; the engine verifies the signature before writing anything.
-- **Windows today, Android next.** The Android shell is being ported from Capacitor to Tauri mobile
-  (see [docs/26](docs/26-tauri-android-spike.md)).
+- **Windows and Android.** Both run the same Rust core (Tauri 2 and Tauri mobile); the native bridge is closed to plugin frames on
+  Android (see [docs/26](docs/26-tauri-android-spike.md)).
 
 Distributions (full applications built on the engine) live in their own repositories. **Etable ships no plugin of its own**:
 the four plugins in `plugins/` (finances, agenda, budget, payroll) are working examples that will move to the private
@@ -77,8 +77,7 @@ npm run paquet -- demo                    # builds paquets/demo-<version>.etabli
 ## Repository layout
 
 ```
-apps/desktop/    the engine: Tauri 2 (Rust) shell and Svelte 5 interface
-apps/mobile/     Android packaging (Capacitor; to be replaced by Tauri mobile)
+apps/desktop/    the engine: Tauri 2 / Tauri mobile (Rust) shell and Svelte 5 interface
 crates/noyau/    shared rules (identifiers, documents, signed packages), no I/O
 crates/serveur/  optional server (accounts, shared documents, plugins)
 packages/sdk/    @etabli/sdk: protocol and API for mini-apps

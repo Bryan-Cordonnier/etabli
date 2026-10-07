@@ -1,5 +1,7 @@
 # 19 — Isolation des plugins : modèle de menace et permissions
 
+> **Note du 7 octobre 2026.** Le projet Android Capacitor (`apps/mobile`) et son origine par plugin (`OriginesPlugins.java`) sont supprimés : Android tourne avec Tauri mobile, qui sert les plugins par le protocole `plugins` dans des cadres à origine opaque, comme sous Windows, et ferme le pont natif aux cadres (docs/26). Les passages ci-dessous sur Capacitor sont historiques.
+
 Établi exécute du code qu'il ne maîtrise pas : les mini-apps. Aujourd'hui ce sont celles de Bryan ; demain, celles de tiers.
 **L'isolation doit donc être vraie dès maintenant**, pas ajoutée le jour où un tiers publie. Ce document dit contre qui on se
 défend, comment, et ce qui est vérifié par un test.

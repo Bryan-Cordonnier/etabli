@@ -1,5 +1,7 @@
 # Spécification — Établi : mode serveur facultatif, utilisateurs, mobile
 
+> **Note du 7 octobre 2026.** Le projet Android Capacitor (`apps/mobile`) et son origine par plugin (`OriginesPlugins.java`) sont supprimés : Android tourne avec Tauri mobile, qui sert les plugins par le protocole `plugins` dans des cadres à origine opaque, comme sous Windows, et ferme le pont natif aux cadres (docs/26). Les passages ci-dessous sur Capacitor sont historiques.
+
 Statut : **réponses de Bryan intégrées (3 oct. 2026), en attente de sa validation finale avant E1** (règle d'`AGENTS.md` : pas de gros développement sans spécification validée).
 Cible : le dépôt `etable-project/etable` (moteur). 
 
