@@ -9,7 +9,8 @@ we decide before we code.
 1. **Cut what does not belong to the engine.** Done: the metalworking plugins, the domain code (suppliers, machines, workshop
    sheets, DXF), and the plugin store (catalogue, signed catalogue, key rotation, revocation). Plugins now install from a signed file.
 2. **Android on Tauri mobile**, in place of Capacitor, with the native-bridge fix validated by the spike
-   ([docs/26](docs/26-tauri-android-spike.md)); then delete the web build and the Capacitor project.
+   ([docs/26](docs/26-tauri-android-spike.md)). Done: the engine builds for Android and the Capacitor project is gone. Still to do: delete the web
+   build and the browser storage once a Tauri client can talk to the server (step 4), and replace the browser-based isolation tests.
 3. **English everywhere**: repository, code identifiers, commands, commits and documentation. The interface stays in French for
    now, written so that it can be translated.
 4. **A minimal server**: command line only, PostgreSQL only, organisations from the start, stateless, no panel, documented deployment.

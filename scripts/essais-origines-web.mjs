@@ -7,7 +7,7 @@
 // de lire l'application, l'IndexedDB de l'hôte et le stockage de l'autre sonde. Deux hébergements sont joués :
 //   - « avec CORS » : les fichiers sous /plugins/ portent Access-Control-Allow-Origin: * (GitHub Pages, serveur Établi,
 //     Netlify ou Cloudflare Pages avec le fichier _headers produit par scripts/construire-web.mjs) ;
-//   - « sans CORS » : un hébergement qui n'envoie pas l'en-tête (WebView Android de Capacitor). Les cadres à origine
+//   - « sans CORS » : un hébergement qui n'envoie pas l'en-tête. Les cadres à origine
 //     opaque ne peuvent alors pas charger leurs modules : l'application doit retomber sur la même origine (limite connue).
 // Code de retour : 0 si tous les essais passent, 1 sinon. Playwright (@playwright/test) et Chromium sont requis ;
 // le Chromium se règle avec ETABLI_CHROMIUM (par défaut /opt/pw-browsers/chromium s'il existe).
@@ -255,7 +255,7 @@ async function principal() {
   const navigateur = await chromium.launch({ executablePath, args: ["--no-sandbox"] });
   try {
     await jouer(navigateur, { nom: "avec CORS sur /plugins/", cors: true, opaque: true });
-    await jouer(navigateur, { nom: "sans CORS (WebView Android)", cors: false, opaque: false });
+    await jouer(navigateur, { nom: "sans CORS (hébergement sans en-têtes)", cors: false, opaque: false });
   } finally {
     await navigateur.close();
   }

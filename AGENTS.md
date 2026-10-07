@@ -54,9 +54,8 @@ Autres références : [README.md](README.md) (présentation), [CONTRIBUTING.md](
 ```
 crates/noyau/             règles communes (identifiants, calculs, paquets signés) — sans entrée-sortie
 crates/serveur/           serveur facultatif : comptes, calculs, plugins (docs/17)
-apps/desktop/src-tauri/   cœur Rust : fenêtres, plugins, documents, réglages, raccourci global
+apps/desktop/src-tauri/   cœur Rust : fenêtres, plugins, documents, réglages, raccourci global ; ndroid/ : correctifs du projet Android (pont natif fermé)
 apps/desktop/src/         interface hôte Svelte (fenêtre principale + aperçu rapide)
-apps/mobile/              emballage Android (Capacitor) de la version web ; APK de test par la CI
 packages/sdk/             @etabli/sdk : protocole et API des mini-apps
 packages/ui/              @etabli/ui : composants et outils communs des mini-apps
 plugins/finances/         l'argent réel : comptes, registre en ajout seulement, tableau de bord, service « finances » (hors catalogue)

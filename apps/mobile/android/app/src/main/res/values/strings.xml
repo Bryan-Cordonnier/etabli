@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Établi</string>
-    <string name="title_activity_main">Établi</string>
-    <string name="package_name">fr.etabli.app</string>
-    <string name="custom_url_scheme">fr.etabli.app</string>
-</resources>
