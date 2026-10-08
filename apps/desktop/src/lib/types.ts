@@ -71,6 +71,27 @@ export interface PageManifest {
   app: string;
 }
 
+/** Taille d'un widget en cases de la grille de l'accueil : « largeur x hauteur » (« 2x1 »), de 1 à 4 cases de large et de haut. */
+export type WidgetSize = `${1 | 2 | 3 | 4}x${1 | 2 | 3 | 4}`;
+
+/** Un widget : une petite app que l'accueil affiche dans sa grille (`widgets` du manifeste, docs/28 §4). */
+export interface WidgetManifest {
+  id: string;
+  title: string;
+  icon: IconName;
+  /** Identifiant de l'app de `apps` affichée ; elle sait qu'elle est un widget par `location.hash === "#widget"`. */
+  app: string;
+  /** Tailles que le widget sait afficher (la première est la taille de départ si `default` est absent). */
+  sizes: WidgetSize[];
+  default: WidgetSize;
+}
+
+/** Un widget posé sur l'accueil : sa clé (« plugin/widget », ou « @favoris » pour le widget du moteur) et sa taille. */
+export interface BoardEntry {
+  key: string;
+  size: WidgetSize;
+}
+
 /** Un paramètre qu'un plugin déclare : le moteur en fait un champ des Paramètres, dans l'onglet du plugin. */
 export type ParameterManifest = {
   id: string;
@@ -130,6 +151,8 @@ export interface PluginManifest {
   source: "integre" | "installe" | "utilisateur";
   apps: AppManifest[];
   pages: PageManifest[];
+  /** Widgets que l'utilisateur peut poser sur l'accueil. */
+  widgets: WidgetManifest[];
   /** Paramètres déclarés ; leurs valeurs se règlent dans Paramètres → <plugin>. */
   parameters: ParameterManifest[];
 }

@@ -2,9 +2,9 @@ import { api, type PluginSource } from "$lib/api";
 import { ICONS, type IconName } from "$lib/icons";
 import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
 import { settings } from "$lib/state/settings.svelte";
-import { appsDe, cheminRelatif, fonctionsDe, pagesDe, parametresDe, raisonDeRefus } from "./manifeste";
+import { appsDe, cheminRelatif, fonctionsDe, pagesDe, parametresDe, raisonDeRefus, widgetsDe } from "./manifeste";
 import { majeure } from "./permissions";
-import type { AppManifest, PageManifest, PluginManifest, PluginSettingsPage, RefusedPlugin } from "$lib/types";
+import type { AppManifest, PageManifest, PluginManifest, PluginSettingsPage, RefusedPlugin, WidgetManifest } from "$lib/types";
 
 /**
  * Plugins installés : remplis au démarrage par `loadPlugins()`, puis rechargés après chaque
@@ -56,7 +56,8 @@ function normalize(raw: unknown, official: boolean, source: PluginSource): Plugi
   if (refus) return { id, name: text(m.name, id), reason: refus };
 
   const apps = appsDe(m.apps);
-  const pages = pagesDe(m.pages, apps);  const settingsPages: PluginSettingsPage[] = (Array.isArray(m.settings) ? m.settings : [])
+  const pages = pagesDe(m.pages, apps);
+  const settingsPages: PluginSettingsPage[] = (Array.isArray(m.settings) ? m.settings : [])
     .filter(
       (s): s is Record<string, unknown> =>
         typeof s === "object" && s !== null && typeof s.id === "string" && /^[a-z0-9-]+$/.test(s.id) && typeof s.entry === "string",
@@ -84,6 +85,7 @@ function normalize(raw: unknown, official: boolean, source: PluginSource): Plugi
     source,
     apps,
     pages,
+    widgets: widgetsDe(m.widgets, apps),
     parameters: parametresDe(m.parameters),
   };
 }
@@ -128,6 +130,29 @@ export function getPage(pluginId: string, pageId: string): PageRef | undefined {
 export function getPageByKey(key: string): PageRef | undefined {
   const [pluginId = "", pageId = ""] = key.split("/");
   return getPage(pluginId, pageId);
+}
+
+/** Un widget avec son plugin et l'app qu'il affiche. */
+export interface WidgetRef {
+  plugin: PluginManifest;
+  widget: WidgetManifest;
+  app: AppManifest;
+}
+
+/** Identifiant global d'un widget sur l'accueil : « plugin/widget ». */
+export const widgetKey = (pluginId: string, widgetId: string): string => `${pluginId}/${widgetId}`;
+
+export function getWidgetByKey(key: string): WidgetRef | undefined {
+  const [pluginId = "", widgetId = ""] = key.split("/");
+  const plugin = getPlugin(pluginId);
+  const widget = plugin?.widgets.find((w) => w.id === widgetId);
+  const app = widget ? plugin?.apps.find((a) => a.id === widget.app) : undefined;
+  return plugin && widget && app ? { plugin, widget, app } : undefined;
+}
+
+/** Tous les widgets des plugins installés. */
+export function allWidgets(): WidgetRef[] {
+  return PLUGINS.flatMap((plugin) => plugin.widgets.flatMap((w) => getWidgetByKey(widgetKey(plugin.id, w.id)) ?? []));
 }
 
 /** Toutes les pages des plugins installés, dans l'ordre où chaque plugin les déclare. */

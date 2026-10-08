@@ -1,9 +1,10 @@
 <script lang="ts">
   import { api } from "$lib/api";
   import AppCard from "$lib/components/AppCard.svelte";
+  import Board from "$lib/components/Board.svelte";
   import Icon from "$lib/components/Icon.svelte";
   import SearchBox from "$lib/components/SearchBox.svelte";
-  import { allPages, getPageByKey, pageKey, type PageRef } from "$lib/plugins/registry.svelte";
+  import { allPages, pageKey, type PageRef } from "$lib/plugins/registry.svelte";
   import { installation } from "$lib/state/installation.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -18,15 +19,13 @@
 
   const available = (ref: PageRef | undefined): ref is PageRef => !!ref && settings.isPluginEnabled(ref.plugin.id);
 
-  const favorites = $derived(settings.favorites.map(getPageByKey).filter(available));
-
   const searching = $derived(query.trim().length > 0);
   const results = $derived(
     searching
       ? allPages()
           .filter(available)
           .filter((r) => normalize(`${r.page.title} ${r.plugin.name}`).includes(normalize(query.trim())))
-      : favorites,
+      : [],
   );
 
   function open(ref: PageRef, event: MouseEvent): void {
@@ -63,22 +62,22 @@
 
   <SearchBox big focus={focusSearch} bind:value={query} placeholder="Rechercher une page…" />
 
-  <section class="section">
-    <h2>{searching ? `Résultats (${results.length})` : "Favoris"}</h2>
-    {#if results.length}
-      <div class="grid">
-        {#each results as ref, i (pageKey(ref.plugin.id, ref.page.id))}
-          <AppCard plugin={ref.plugin} page={ref.page} index={i} showPlugin onopen={(e) => open(ref, e)} />
-        {/each}
-      </div>
-    {:else}
-      <p class="empty">
-        {searching
-          ? "Aucune page ne correspond."
-          : "Aucun favori pour l'instant. Ajoutez-en avec l'étoile d'une page."}
-      </p>
-    {/if}
-  </section>
+  {#if searching}
+    <section class="section">
+      <h2>Résultats ({results.length})</h2>
+      {#if results.length}
+        <div class="grid">
+          {#each results as ref, i (pageKey(ref.plugin.id, ref.page.id))}
+            <AppCard plugin={ref.plugin} page={ref.page} index={i} showPlugin onopen={(e) => open(ref, e)} />
+          {/each}
+        </div>
+      {:else}
+        <p class="empty">Aucune page ne correspond.</p>
+      {/if}
+    </section>
+  {:else}
+    <Board />
+  {/if}
 
 </div>
 {/if}
