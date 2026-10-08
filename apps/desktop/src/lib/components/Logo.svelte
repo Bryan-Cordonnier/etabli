@@ -1,11 +1,18 @@
 <script lang="ts">
   // Logo Établi, même dessin que l'icône de l'application (src-tauri/icons/source.svg).
+  import { distribution } from "$lib/distribution";
+
   let { size = 32 }: { size?: number } = $props();
 </script>
 
 <span class="logo" style:--size="{size}px" aria-hidden="true">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M4 18h16M6 18V9l6-4 6 4v9" />
+    {#if distribution.logo}
+      <!-- Dessin de la distribution, validé à la lecture (formes SVG simples seulement). -->
+      {@html distribution.logo}
+    {:else}
+      <path d="M4 18h16M6 18V9l6-4 6 4v9" />
+    {/if}
   </svg>
 </span>
 

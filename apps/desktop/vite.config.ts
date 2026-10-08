@@ -11,6 +11,9 @@ const host = process.env.TAURI_DEV_HOST;
 // Dossier des plugins de l'aperçu navigateur : `ETABLE_PLUGINS_DIR` pour une distribution (Quotidien…), sinon `plugins/` du dépôt.
 const PLUGINS_DIR = process.env.ETABLE_PLUGINS_DIR ?? fileURLToPath(new URL("../../plugins", import.meta.url));
 
+// Configuration de la distribution (nom, thèmes fixes, logo, page Plugins) : un fichier JSON désigné par ETABLE_DISTRIBUTION, lu à la compilation.
+const DISTRIBUTION: unknown = process.env.ETABLE_DISTRIBUTION && existsSync(process.env.ETABLE_DISTRIBUTION) ? JSON.parse(readFileSync(process.env.ETABLE_DISTRIBUTION, "utf-8").replace(/^\uFEFF/, "")) : null;
+
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -71,6 +74,7 @@ export default defineConfig({
   resolve: {
     alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) },
   },
+  define: { __DISTRIBUTION__: JSON.stringify(DISTRIBUTION) },
   clearScreen: false,
   server: {
     port: 1420,

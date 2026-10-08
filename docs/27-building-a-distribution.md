@@ -58,3 +58,18 @@ Things learnt on the emulator (Android 14), now covered by the code:
 
 - Signing and updating a distribution (updater key, Android release key).
 - Replacing the engine's browser-based isolation tests by a test of the real WebView (a Windows CI run of the app driven over CDP).
+
+## What a distribution can change in the interface
+
+A distribution may ship a `distribution.json`; the build reads the file named by `ETABLE_DISTRIBUTION` (`scripts/tauri.mjs` sets it, and
+so does the preview configuration) and `vite.config.ts` bakes it into the app (`__DISTRIBUTION__`). Everything is optional and read
+defensively (`lib/distribution.ts`, tested): a missing or invalid field keeps Etable's value.
+
+| Field | Effect |
+| --- | --- |
+| `name` | Name shown at the top of the sidebar |
+| `pluginsPage` | `false` removes the *Plugins* entry from the sidebar and the command palette. The plugins stay manageable in *Settings → Installed plugins*. For distributions with a fixed set of plugins |
+| `themes` | A list of full themes (`id`, `name`, `base`, all colour tokens). The user then chooses among them and *Like Windows* (which picks the light or the dark one and follows Windows live); importing and copying themes is hidden. A theme saved from another build falls back to *Like Windows* |
+| `logo` | Shapes of the logo (`path`, `circle`, `rect`, `line`, `polyline`, `polygon`, `ellipse`, stroke `currentColor`, 24x24). Anything else is refused |
+
+The application icon is separate: the distribution's `bundle.icon` in its Tauri configuration.

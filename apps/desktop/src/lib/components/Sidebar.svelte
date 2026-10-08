@@ -2,6 +2,7 @@
   // Colonne des pages (docs/28) : ce que les plugins déclarent dans `pages`, dans l'ordre choisi par l'utilisateur.
   import { api } from "$lib/api";
   import { categorieDe, deplacerCategorie, grouper } from "$lib/categories";
+  import { distribution } from "$lib/distribution";
   import { allPages, pageKey, type PageRef } from "$lib/plugins/registry.svelte";
   import { shortcutHint } from "$lib/shortcuts";
   import { settings } from "$lib/state/settings.svelte";
@@ -143,7 +144,7 @@
   <div class="brand-row">
     <button class="brand" onclick={(e) => go({ kind: "home" }, e)} title="Accueil">
       <Logo size={32} />
-      <span class="label">Établi</span>
+      <span class="label">{distribution.name}</span>
     </button>
     <!-- Zone vide de la barre de titre : elle déplace la fenêtre. -->
     <div class="drag" data-tauri-drag-region></div>
@@ -161,7 +162,7 @@
       <Tile color="var(--muted)" icon="home" variant="plain" />
       <span class="label">Accueil</span>
     </button>
-    {#if api.capacites.plugins}
+    {#if api.capacites.plugins && distribution.pluginsPage}
       <button
         class="item"
         class:active={view?.kind === "plugins"}

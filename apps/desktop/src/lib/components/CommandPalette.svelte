@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { distribution } from "$lib/distribution";
   // Palette de commandes (bouton de recherche de la barre d'onglets, ou raccourci réglé dans les Paramètres) : ouvrir une page au clavier.
   import { api } from "$lib/api";
   import type { IconName } from "$lib/icons";
@@ -21,7 +22,7 @@
 
   const entries: Entry[] = [
     { label: "Accueil", detail: "Page", view: { kind: "home" }, color: "var(--accent)", icon: "home" },
-    ...(api.capacites.plugins
+    ...(api.capacites.plugins && distribution.pluginsPage
       ? [{ label: "Plugins", detail: "Installer et gérer", view: { kind: "plugins" } as const, color: "var(--accent)", icon: "puzzle" as const }]
       : []),
     { label: "Paramètres", detail: "Page", view: { kind: "settings" }, color: "var(--faint)", icon: "settings" },

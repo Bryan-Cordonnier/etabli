@@ -8,7 +8,6 @@ export type SettingsSection =
   | "general"
   | "apparence"
   | "plugins"
-  | "apercu"
   | "raccourcis"
   | "serveur"
   | "administration"
