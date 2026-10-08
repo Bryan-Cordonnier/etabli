@@ -1,12 +1,11 @@
 <script lang="ts">
   // Tuile d'icône d'un plugin ou d'une mini-app : une icône de la liste fermée (lib/icons.ts) sur la
   // couleur du plugin. Pas d'émoji : un plugin indépendant n'a qu'un nom d'icône et une couleur à fournir.
-  import type { IconName } from "$lib/icons";
   import Icon from "./Icon.svelte";
 
   interface Props {
     color: string;
-    icon: IconName;
+    icon: string;
     /** solid : icône blanche sur la couleur ; soft : icône colorée sur une teinte légère ;
      *  plain : icône neutre (Accueil). */
     variant?: "solid" | "soft" | "plain";

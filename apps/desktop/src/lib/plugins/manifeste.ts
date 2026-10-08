@@ -1,6 +1,7 @@
 // Lecture défensive des champs « appels entre plugins » d'un manifeste (docs/24, A.1.2). Fonctions pures, sans Svelte : le
 // manifeste vient d'un plugin, donc de quelqu'un qui n'est pas de confiance.
-import { ICONS, type IconName } from "../icons";
+import { distribution } from "../distribution";
+import { ICONS } from "../icons";
 import type { AppManifest, PageManifest, ParameterManifest, ParameterValue, WidgetManifest, WidgetSize } from "../types";
 import { NOM_FONCTION } from "./garde";
 
@@ -42,7 +43,8 @@ const MAX_PARAMETRES = 60;
 
 const texte = (v: unknown, repli = "", max = 200): string => (typeof v === "string" ? v.slice(0, max) : repli);
 const objet = (v: unknown): Record<string, unknown> | null => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
-const icone = (v: unknown): IconName => (typeof v === "string" && v in ICONS ? (v as IconName) : "puzzle");
+/** Une icône d'Établi ou de la distribution ; sinon le puzzle. */
+const icone = (v: unknown): string => (typeof v === "string" && (v in ICONS || Object.hasOwn(distribution.icons, v)) ? v : "puzzle");
 
 /** Apps déclarées (`apps`) : identifiant unique, page d'entrée à chemin relatif sûr. Les autres sont ignorées. */
 export function appsDe(value: unknown): AppManifest[] {

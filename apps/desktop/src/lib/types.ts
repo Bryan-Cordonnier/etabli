@@ -65,7 +65,7 @@ export interface AppManifest {
 export interface PageManifest {
   id: string;
   title: string;
-  icon: IconName;
+  icon: string;
   /** Identifiant de l'app de `apps` que la page affiche. */
   app: string;
   /** Catégorie proposée dans la colonne (« Argent », « Temps »…), ou « » : l'utilisateur peut la changer (docs/28, section 2). */
@@ -79,7 +79,7 @@ export type WidgetSize = `${1 | 2 | 3 | 4}x${1 | 2 | 3 | 4}`;
 export interface WidgetManifest {
   id: string;
   title: string;
-  icon: IconName;
+  icon: string;
   /** Identifiant de l'app de `apps` affichée ; elle sait qu'elle est un widget par `location.hash === "#widget"`. */
   app: string;
   /** Tailles que le widget sait afficher (la première est la taille de départ si `default` est absent). */

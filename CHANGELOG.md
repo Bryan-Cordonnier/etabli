@@ -17,6 +17,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Added
 
+- **A distribution can bring its own page icons.** distribution.json can define filled icons by name; the plugins of that distribution can use them for their pages and widgets.
 - **A distribution can set its own interface.** A distribution.json can change the name in the sidebar, remove the *Plugins* entry (plugins stay manageable in Settings), impose fixed themes (no importing; *Like Windows* picks the light or the dark one) and draw its own logo. See docs/27.
 - **Categories in the sidebar.** A new appearance setting, *Sort pages into categories*, groups the left column by category (for example *Argent*, *Temps*). A page can propose its category in the manifest (`category` on a page); the user drags a page into another category, folds a category, and moves a whole category with its arrows; the user's choices win. Off by default: the column stays a flat list. `valider-plugin` checks `category`.
 - **Home board of widgets.** The home page is now a grid you edit: *Edit* lets you add widgets from a gallery, move them, change their size (`1x1` to `4x4` cells) and remove them; the choice is kept. A plugin declares `widgets` in its manifest (an app, the sizes it supports and a default) and the widget is told it is one by `location.hash === "#widget"`. The engine provides a *Favourites* widget, shown by default. `valider-plugin` checks `widgets`.

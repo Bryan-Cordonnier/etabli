@@ -71,5 +71,6 @@ defensively (`lib/distribution.ts`, tested): a missing or invalid field keeps Et
 | `pluginsPage` | `false` removes the *Plugins* entry from the sidebar and the command palette. The plugins stay manageable in *Settings → Installed plugins*. For distributions with a fixed set of plugins |
 | `themes` | A list of full themes (`id`, `name`, `base`, all colour tokens). The user then chooses among them and *Like Windows* (which picks the light or the dark one and follows Windows live); importing and copying themes is hidden. A theme saved from another build falls back to *Like Windows* |
 | `logo` | Shapes of the logo (`path`, `circle`, `rect`, `line`, `polyline`, `polygon`, `ellipse`, stroke `currentColor`, 24x24). Anything else is refused |
+| `icons` | Icons of the distribution by name (`calendrier`…), same shapes as the logo but filled (`currentColor`). A plugin of the distribution can then give a page `icon: "calendrier"`; the validator accepts these names when `ETABLE_DISTRIBUTION` is set |
 
 The application icon is separate: the distribution's `bundle.icon` in its Tauri configuration.
