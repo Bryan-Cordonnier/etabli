@@ -9,8 +9,7 @@ export { default as Result } from "./Result.svelte";
 export { default as Segmented } from "./Segmented.svelte";
 export { default as SelectField } from "./SelectField.svelte";
 export { evaluate, format, isExpression, parsePasted } from "./calc";
-export { MiniAppDocument } from "./document.svelte";
-export { PluginSettings, onIncoming, saveFile, sendTo } from "./host.svelte";
+export { PluginParameters, PluginSettings, onIncoming, saveFile, sendTo } from "./host.svelte";
 export { COLORS, colorOf } from "./colors";
 export { cheminAire, cheminLigne, echelle, graduations, plusProche, regrouper, secteurs } from "./charts";
 // Argent (centimes entiers) et dates civiles : `money.formatEuros(...)`, `civil.ajouterMois(...)`. Pour une page sans interface (un

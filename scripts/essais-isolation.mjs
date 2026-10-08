@@ -218,29 +218,24 @@ async function ouvrirDansLApplication(page, ouvrir, hoteAttendu) {
   return cadre;
 }
 
-/** Recharge l'application : elle rouvre ses onglets ; si le cadre de agenda n'en fait pas partie, on ouvre sa première mini-app. */
-// Ouvre un plugin depuis la barre : si son onglet est déjà ouvert (session restaurée), il n'y a pas de page du plugin à passer.
+// Ouvre la première page d'un plugin depuis la colonne de gauche (les pages sont listées, pas les plugins).
 async function ouvrirPlugin(page, id) {
-  await page.locator(`button[data-plugin="${id}"]`).click();
-  const bouton = page.locator("button.open").first();
-  if (await bouton.waitFor({ timeout: 3000 }).then(() => true, () => false)) await bouton.click();
+  await page.locator(`button[data-page^="${id}/"]`).first().click();
 }
+/** Recharge l'application : elle rouvre ses onglets ; si le cadre de agenda n'en fait pas partie, on ouvre sa première page. */
 async function rouvrirAgenda(page) {
   await page.reload();
-  await page.locator('button[data-plugin="agenda"]').waitFor({ timeout: 15_000 });
+  await page.locator('button[data-page^="agenda/"]').first().waitFor({ timeout: 15_000 });
   // L'application rouvre ses onglets de façon asynchrone : on attend qu'un cadre d'application soit revenu avant de naviguer,
   // sinon la reprise de session écraserait notre clic (l'onglet gardé peut être celui d'un autre plugin).
   await attendre(() => page.frames().some((f) => estCadreApp(f, "agenda.localhost") || estCadreApp(f, "finances.localhost")), 8000);
   if (page.frames().some((f) => estCadreApp(f, "agenda.localhost"))) return;
-  // La reprise de session peut encore écraser un clic trop tôt : on réessaie jusqu'à voir la page du plugin.
+  // La reprise de session peut encore écraser un clic trop tôt : on réessaie jusqu'à voir le cadre du plugin.
   for (let essaiNo = 0; essaiNo < 8; essaiNo++) {
-    await page.locator('button[data-plugin="agenda"]').click();
-    const vue = await page.locator("button.open").first().waitFor({ timeout: 2500 }).then(() => true, () => false);
-    if (vue) break;
+    await page.locator('button[data-page^="agenda/"]').first().click();
+    if (await attendre(() => page.frames().some((f) => estCadreApp(f, "agenda.localhost")), 2500)) break;
   }
-  await page.locator("button.open").first().click();
 }
-
 /** Cadre d'une mini-app (/apps/…) sur l'hôte d'un plugin : pas la page discrète qui enregistre le service worker. */
 function estCadreApp(cadre, hote) {
   try {
@@ -314,7 +309,7 @@ async function essaisDansLApplication(navigateurPlaywright) {
   await page.locator("input[type=text]").fill("essai");
   await page.locator("input[type=password]").fill(MOT_DE_PASSE);
   await page.getByRole("button", { name: "Se connecter" }).click();
-  await page.locator('button[data-plugin="finances"]').waitFor({ timeout: 15_000 });
+  await page.locator('button[data-page^="finances/"]').first().waitFor({ timeout: 15_000 });
   const jetonApp = await page.evaluate(() => JSON.stringify({ ...localStorage }));
   essai("l'application garde bien une session dans son propre stockage (cible à protéger)", jetonApp.length > 10, jetonApp);
 

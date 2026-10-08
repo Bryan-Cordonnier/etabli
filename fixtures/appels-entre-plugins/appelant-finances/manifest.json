@@ -2,7 +2,7 @@
   "id": "appelant-finances",
   "name": "Appelant de Finances",
   "version": "1.0.0",
-  "apiVersion": "^2",
+  "apiVersion": "^3",
   "author": "Établi (essai, non distribué)",
   "description": "Fixture de test : appelle le service finances@1 du vrai plugin Finances (scripts/essai-appels.mjs).",
   "color": "#6b7280",
@@ -17,15 +17,23 @@
   "services": {
     "finances": "^1"
   },
-  "miniApps": [
+  "apps": [
     {
       "id": "essai",
       "name": "Essai de Finances",
-      "description": "Page d'essai sans interface",
-      "icon": "puzzle",
       "entry": "essai/index.html",
-      "dataVersion": 1,
-      "plannedFor": "v1"
+      "accepts": []
+    }
+  ],
+  "pages": [
+    {
+      "id": "essai",
+      "title": "Essai de Finances",
+      "icon": "puzzle",
+      "layout": {
+        "type": "app",
+        "app": "essai"
+      }
     }
   ]
 }

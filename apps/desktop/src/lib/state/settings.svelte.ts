@@ -25,11 +25,11 @@ interface Persisted {
   textScale: number;
   sidebarCollapsed: boolean;
   sidebarWidth: number;
-  /** Mini-apps favorites, sous la forme « plugin/mini-app ». */
+  /** Pages favorites, sous la forme « plugin/page ». */
   favorites: string[];
   disabledPlugins: string[];
-  /** Ordre des plugins dans la colonne, choisi par glisser-déposer. */
-  pluginOrder: string[];
+  /** Ordre des pages dans la colonne (« plugin/page »), choisi par glisser-déposer. */
+  pageOrder: string[];
   /** Raccourci global de l'aperçu rapide (le seul réglé par défaut). */
   quickShortcut: Shortcut;
   /** Raccourcis dans l'application, par action (voir shortcuts.ts). Aucun par défaut. */
@@ -48,7 +48,7 @@ const DEFAULTS: Persisted = {
   sidebarWidth: 232,
   favorites: [],
   disabledPlugins: [],
-  pluginOrder: [],
+  pageOrder: [],
   quickShortcut: DEFAULT_SHORTCUT,
   shortcuts: {},
   closeToTray: true,
@@ -64,7 +64,7 @@ class Settings {
   sidebarWidth = $state(DEFAULTS.sidebarWidth);
   favorites = $state<string[]>([]);
   disabledPlugins = $state<string[]>([]);
-  pluginOrder = $state<string[]>([]);
+  pageOrder = $state<string[]>([]);
   quickShortcut = $state<Shortcut>(DEFAULTS.quickShortcut);
   shortcuts = $state<Record<string, Shortcut>>({});
   closeToTray = $state(DEFAULTS.closeToTray);
@@ -85,7 +85,7 @@ class Settings {
     this.sidebarWidth = saved.sidebarWidth;
     this.favorites = saved.favorites;
     this.disabledPlugins = saved.disabledPlugins;
-    this.pluginOrder = saved.pluginOrder;
+    this.pageOrder = saved.pageOrder;
     this.quickShortcut = saved.quickShortcut;
     this.shortcuts = saved.shortcuts;
     this.closeToTray = saved.closeToTray;
@@ -102,7 +102,7 @@ class Settings {
       sidebarWidth: this.sidebarWidth,
       favorites: $state.snapshot(this.favorites),
       disabledPlugins: $state.snapshot(this.disabledPlugins),
-      pluginOrder: $state.snapshot(this.pluginOrder),
+      pageOrder: $state.snapshot(this.pageOrder),
       quickShortcut: $state.snapshot(this.quickShortcut),
       shortcuts: $state.snapshot(this.shortcuts),
       closeToTray: this.closeToTray,
@@ -171,8 +171,8 @@ class Settings {
     this.#save();
   }
 
-  setPluginOrder(ids: string[], persist = true): void {
-    this.pluginOrder = ids;
+  setPageOrder(ids: string[], persist = true): void {
+    this.pageOrder = ids;
     if (persist) this.#save();
   }
 

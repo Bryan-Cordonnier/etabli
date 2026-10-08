@@ -1,4 +1,4 @@
-// Crée un plugin prêt à compiler, avec une mini-app d'exemple, ses tests et son journal des changements :
+// Crée un plugin prêt à compiler, avec une page d'exemple, ses tests et son journal des changements :
 //
 //   node scripts/nouveau-plugin.mjs soudage "Soudage"
 //   node scripts/nouveau-plugin.mjs soudage "Soudage" --couleur "#d9480f" --icone flame
@@ -82,7 +82,7 @@ import { fileURLToPath } from "node:url";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vite";
 
-// Une page HTML par mini-app${reglages ? " (et une pour la page de réglages)" : ""}. Le dossier public/ (manifest.json) est copié tel quel dans dist/.
+// Une page HTML par app${reglages ? " (et une pour la page de réglages)" : ""}. Le dossier public/ (manifest.json) est copié tel quel dans dist/.
 const page = (chemin: string) => fileURLToPath(new URL(\`./\${chemin}/index.html\`, import.meta.url));
 
 export default defineConfig({
@@ -108,27 +108,19 @@ export default defineConfig({
     id,
     name: nom,
     version: "0.1.0",
-    apiVersion: "^2",
+    apiVersion: "^3",
     author: "Votre nom",
     description: "Une phrase qui dit ce que fait le plugin (elle s'affiche dans la page des plugins).",
     color: couleur,
     icon: icone,
     permissions: ["presse-papiers"],
     ...(reglages ? { settings: [{ id: "reglages", title: nom, entry: "reglages/index.html" }] } : {}),
-    miniApps: [
-      {
-        id: "exemple",
-        name: "Exemple : rectangle",
-        description: "Aire et périmètre d'un rectangle (à remplacer par votre mini-app)",
-        icon: icone,
-        dataVersion: 1,
-        plannedFor: "v1",
-        entry: "apps/exemple/index.html",
-        accepts: [],
-      },
-    ],
-  };
-  files["public/manifest.json"] = `${JSON.stringify(manifeste, null, 2)}\n`;
+    // Une app est une page HTML isolée ; une page est ce que la colonne de gauche liste et qu'un onglet affiche.
+    apps: [{ id: "exemple", name: "Exemple : rectangle", entry: "apps/exemple/index.html", accepts: [] }],
+    pages: [{ id: "exemple", title: "Exemple : rectangle", icon: icone, layout: { type: "app", app: "exemple" } }],
+    // Les paramètres déclarés ont leur onglet dans Paramètres : aucun écran de réglages à écrire.
+    parameters: [{ id: "decimales", label: "Décimales affichées", type: "number", default: 0, min: 0, max: 3, step: 1, group: "Affichage", hint: "pour l'aire" }],
+  };  files["public/manifest.json"] = `${JSON.stringify(manifeste, null, 2)}\n`;
 
   files["CHANGELOG.md"] = `# ${nom} : journal des changements
 
@@ -143,7 +135,7 @@ Première version.
 
 ### Ajouté
 
-- Une mini-app d'exemple (aire et périmètre d'un rectangle), à remplacer par les vôtres.
+- Une page d'exemple (aire et périmètre d'un rectangle), à remplacer par les vôtres.
 `;
 
   files["README.md"] = `# ${nom}
@@ -217,38 +209,30 @@ mount(Exemple, { target: document.getElementById("app")! });
 `;
 
   files["apps/exemple/Exemple.svelte"] = `<script lang="ts">
-  // Exemple : aire et périmètre d'un rectangle. Remplacez les champs, le calcul (src/exemple.ts) et le résumé.
-  import { Card, Field, MiniAppDocument, Result, evaluate, format } from "@etabli/ui";
+  // Exemple : aire et périmètre d'un rectangle. Remplacez les champs et le calcul (src/exemple.ts).
+  // PluginSettings enregistre la saisie dans les données du plugin ; PluginParameters lit le paramètre « decimales »
+  // déclaré dans le manifeste (réglé par l'utilisateur dans Paramètres).
+  import { Card, Field, PluginParameters, PluginSettings, Result, evaluate } from "@etabli/ui";
   import { rectangle } from "../../src/exemple";
 
-  interface Data {
-    a: string; // texte saisi : les calculs (« 1200 - 2*15 ») sont acceptés par Field
-    b: string;
-  }
+  const saisie = new PluginSettings({ a: "", b: "" }); // texte saisi : les calculs (« 1200 - 2*15 ») sont acceptés par Field
+  const params = new PluginParameters({ decimales: 0 });
 
   const nombre = (texte: string) => (texte.trim() === "" ? Number.NaN : evaluate(texte));
-  const calculer = (d: Data) => rectangle(nombre(d.a), nombre(d.b));
-
-  // Les données de l'écran : enregistrées automatiquement par Établi, dès que l'utilisateur change quelque chose.
-  // Le résumé s'affiche dans la liste des anciens calculs.
-  const doc = new MiniAppDocument<Data>({ a: "", b: "" }, (d) => {
-    const r = calculer(d);
-    return typeof r === "string" ? "Rectangle" : \`aire = \${format(r.aire, 0)} mm²\`;
-  });
-
-  const resultat = $derived(calculer(doc.data));
+  const resultat = $derived(rectangle(nombre(saisie.data.a), nombre(saisie.data.b)));
   const r = $derived(typeof resultat === "string" ? null : resultat);
 </script>
 
+<header class="entete"><h1>Exemple : rectangle</h1></header>
 <div class="split">
   <Card title="Entrées">
-    <Field label="Côté a" unit="mm" bind:value={doc.data.a} />
-    <Field label="Côté b" unit="mm" bind:value={doc.data.b} />
+    <Field label="Côté a" unit="mm" bind:value={saisie.data.a} />
+    <Field label="Côté b" unit="mm" bind:value={saisie.data.b} />
   </Card>
   <Card title="Résultats">
     {#if r}
-      <Result label="Aire" value={r.aire} unit="mm²" decimals={0} big oncopy={doc.copy} />
-      <Result label="Périmètre" value={r.perimetre} unit="mm" oncopy={doc.copy} />
+      <Result label="Aire" value={r.aire} unit="mm²" decimals={Number(params.values.decimales)} big />
+      <Result label="Périmètre" value={r.perimetre} unit="mm" />
     {:else}
       <p class="empty">{resultat}</p>
     {/if}
@@ -256,6 +240,10 @@ mount(Exemple, { target: document.getElementById("app")! });
 </div>
 
 <style>
+  .entete h1 {
+    margin: 0 0 14px;
+    font-size: 22px;
+  }
   .split {
     display: grid;
     grid-template-columns: 340px 1fr;
@@ -276,7 +264,6 @@ mount(Exemple, { target: document.getElementById("app")! });
   }
 </style>
 `;
-
   if (reglages) {
     files["reglages/index.html"] = `<!doctype html>
 <html lang="fr">
@@ -307,7 +294,7 @@ mount(Reglages, { target: document.getElementById("app")! });
   const reglages = new PluginSettings({ nom: "" });
 </script>
 
-<p class="intro">Réglages du plugin ${nom}. Ils sont partagés par toutes ses mini-apps.</p>
+<p class="intro">Réglages du plugin ${nom}. Ils sont partagés par toutes ses pages.</p>
 <Field label="Un réglage d'exemple" numeric={false} bind:value={reglages.data.nom} />
 
 <style>
@@ -376,7 +363,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     console.log("  1. npm install                       (lie le nouveau plugin au dépôt)");
     console.log("  2. npm run dev                       (lance Établi avec votre plugin)");
     console.log(`  3. npm run valider -- ${id}          (vérifie le manifeste et le contenu)`);
-    console.log(`  4. Éditez plugins/${id}/public/manifest.json (auteur, description) et remplacez la mini-app d'exemple.`);
+    console.log(`  4. Éditez plugins/${id}/public/manifest.json (auteur, description) et remplacez la page d'exemple.`);
   } catch (err) {
     console.error(err.message);
     process.exit(1);

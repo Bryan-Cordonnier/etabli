@@ -5,7 +5,7 @@
   import Icon from "$lib/components/Icon.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
-  import { PLUGINS, getPlugin } from "$lib/plugins/registry.svelte";
+  import { PLUGINS, REFUSES, getPlugin } from "$lib/plugins/registry.svelte";
   import { installation } from "$lib/state/installation.svelte";
   import { lifecycle } from "$lib/state/lifecycle.svelte";
   import { settings } from "$lib/state/settings.svelte";
@@ -21,7 +21,7 @@
   <header class="head">
     <div>
       <h1>Plugins</h1>
-      <p class="sub">Les plugins installés. Chaque plugin apporte ses mini-apps, ses réglages ou ses services.</p>
+      <p class="sub">Les plugins installés. Chaque plugin apporte ses pages, ses paramètres ou ses services.</p>
       <span class="trust"><Icon name="shield" size={14} /> Signature vérifiée avant chaque installation</span>
     </div>
     {#if api.capacites.plugins}
@@ -42,7 +42,7 @@
           </div>
           <p>{plugin.description}</p>
           <div class="chips">
-            {#each plugin.miniApps as app (app.id)}<span class="chip">{app.name}</span>{/each}
+            {#each plugin.pages as page (page.id)}<span class="chip">{page.title}</span>{/each}
             {#each plugin.settings as page (page.id)}<span class="chip setting">Réglages : {page.title}</span>{/each}
           </div>
           {#if Object.keys(plugin.dependencies).length || Object.keys(plugin.optionalDependencies).length}
@@ -52,9 +52,9 @@
             </p>
           {/if}
           <div class="meta">
-            {plugin.miniApps.length
-              ? `${plugin.miniApps.length} mini-app${plugin.miniApps.length > 1 ? "s" : ""}`
-              : "Réglages ou services pour d'autres plugins"} · {origin(plugin.source)}
+            {plugin.pages.length
+              ? `${plugin.pages.length} page${plugin.pages.length > 1 ? "s" : ""}`
+              : "Services ou paramètres pour d'autres plugins"} · {origin(plugin.source)}
           </div>
         </div>
         <div class="actions">
@@ -72,9 +72,32 @@
     {/each}
   </div>
 
-  <p class="hint">Désinstaller un plugin garde vos calculs.</p>
+  {#if REFUSES.length}
+    <section class="refuses" aria-label="Plugins refusés">
+      <h2>Plugins non chargés</h2>
+      {#each REFUSES as refuse (refuse.id)}
+        <p><b>{refuse.name}</b> : {refuse.reason}</p>
+      {/each}
+    </section>
+  {/if}
+
+  <p class="hint">Désinstaller un plugin garde vos données.</p>
 </div>
 <style>
+  .refuses {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--warn) 12%, transparent);
+    padding: 12px 16px;
+  }
+  .refuses h2 {
+    margin: 0 0 6px;
+    font-size: 14px;
+  }
+  .refuses p {
+    margin: 4px 0;
+    font-size: 13px;
+  }
   .head {
     display: flex;
     flex-wrap: wrap;

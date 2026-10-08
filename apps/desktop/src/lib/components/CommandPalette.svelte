@@ -1,8 +1,8 @@
 <script lang="ts">
-  // Palette de commandes (bouton de recherche de la barre d'onglets, ou raccourci réglé dans les Paramètres) : ouvrir une page, un plugin ou une mini-app au clavier.
+  // Palette de commandes (bouton de recherche de la barre d'onglets, ou raccourci réglé dans les Paramètres) : ouvrir une page au clavier.
   import { api } from "$lib/api";
   import type { IconName } from "$lib/icons";
-  import { allMiniApps, pluginsWithApps } from "$lib/plugins/registry.svelte";
+  import { allPages } from "$lib/plugins/registry.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -25,24 +25,15 @@
       ? [{ label: "Plugins", detail: "Installer et gérer", view: { kind: "plugins" } as const, color: "var(--accent)", icon: "puzzle" as const }]
       : []),
     { label: "Paramètres", detail: "Page", view: { kind: "settings" }, color: "var(--faint)", icon: "settings" },
-    ...pluginsWithApps().map((p) => ({
-      label: p.name,
-      detail: "Plugin",
-      view: { kind: "plugin", pluginId: p.id } as const,
-      color: p.color,
-      icon: p.icon,
-    })),
-    ...allMiniApps().map(({ plugin, app }) => ({
-      label: app.name,
+    ...allPages().map(({ plugin, page }) => ({
+      label: page.title,
       detail: plugin.name,
-      view: { kind: "app", pluginId: plugin.id, appId: app.id } as const,
+      view: { kind: "page", pluginId: plugin.id, pageId: page.id } as const,
       color: plugin.color,
-      icon: app.icon,
-    })),
-  ];
+      icon: page.icon,
+    })),  ];
 
-  const enabled = (entry: Entry) =>
-    entry.view.kind === "plugin" || entry.view.kind === "app" ? settings.isPluginEnabled(entry.view.pluginId) : true;
+  const enabled = (entry: Entry) => (entry.view.kind === "page" ? settings.isPluginEnabled(entry.view.pluginId) : true);
 
   let query = $state("");
   let selected = $state(0);

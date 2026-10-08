@@ -6,6 +6,7 @@
   import { lireConnexion } from "$lib/connexion";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
+  import ParametresPlugin from "$lib/components/ParametresPlugin.svelte";
   import PluginProblems from "$lib/components/PluginProblems.svelte";
   import AdministrationSection from "./AdministrationSection.svelte";
   import AlarmesSection from "./AlarmesSection.svelte";
@@ -14,7 +15,7 @@
   import ShortcutRecorder from "$lib/components/ShortcutRecorder.svelte";
   import Switch from "$lib/components/Switch.svelte";
   import Tile from "$lib/components/Tile.svelte";
-  import { PLUGINS, getMiniAppByKey, pluginUrl } from "$lib/plugins/registry.svelte";
+  import { PLUGINS, getPageByKey, pluginUrl } from "$lib/plugins/registry.svelte";
   import { openPluginSettings, pluginSection } from "$lib/pluginSettings";
   import { ACTIONS, actionUsing } from "$lib/shortcuts";
   import { lifecycle } from "$lib/state/lifecycle.svelte";
@@ -28,6 +29,8 @@
   let { section = "general", hash }: { section?: SettingsSection; hash?: string } = $props();
 
   type FixedSection = Exclude<SettingsSection, `plugin:${string}`>;
+  /** Identifiant de la page « paramètres » que le moteur fait pour chaque plugin qui en déclare. */
+  const PARAMETRES = "parametres";
 
   // Chaque page a un titre et une phrase qui dit à quoi elle sert ; le menu est rangé par thèmes.
   const SECTION_INFO: Record<FixedSection, { label: string; title: string; lead: string }> = {
@@ -90,11 +93,17 @@
     { title: "Aide", sections: ["a-propos"] },
   ];
 
-  /** Pages de réglages ajoutées par les plugins installés et activés. */
+  /**
+   * Pages de réglages des plugins installés et activés : d'abord l'onglet de leurs paramètres déclarés (fait par le
+   * moteur, nommé comme le plugin), puis les pages HTML qu'ils ajoutent eux-mêmes.
+   */
   const PAGES = $derived(
-    PLUGINS.filter((p) => settings.isPluginEnabled(p.id)).flatMap((plugin) =>
-      plugin.settings.map((page) => ({ section: pluginSection(plugin.id, page.id), plugin, page })),
-    ),
+    PLUGINS.filter((p) => settings.isPluginEnabled(p.id)).flatMap((plugin) => [
+      ...(plugin.parameters.length
+        ? [{ section: pluginSection(plugin.id, PARAMETRES), plugin, page: undefined, title: plugin.name }]
+        : []),
+      ...plugin.settings.map((page) => ({ section: pluginSection(plugin.id, page.id), plugin, page, title: page.title })),
+    ]),
   );
   const pluginPage = $derived(PAGES.find((p) => p.section === section));
   /** Page affichée : une section inconnue (ancienne version, plugin désinstallé) revient à Général. */
@@ -103,7 +112,12 @@
   );
   const head = $derived(
     pluginPage
-      ? { title: pluginPage.page.title, lead: `Réglages ajoutés par le plugin « ${pluginPage.plugin.name} ».` }
+      ? {
+          title: pluginPage.title,
+          lead: pluginPage.page
+            ? `Réglages ajoutés par le plugin « ${pluginPage.plugin.name} ».`
+            : `Paramètres déclarés par le plugin « ${pluginPage.plugin.name} ». Ils s'appliquent tout de suite.`,
+        }
       : SECTION_INFO[active as FixedSection],
   );
 
@@ -270,7 +284,7 @@
         {/each}
         {#if group.title === "Plugins"}
           {#each PAGES as entry (entry.section)}
-            <button class:on={active === entry.section} onclick={() => goto(entry.section)}>{entry.page.title}</button>
+            <button class:on={active === entry.section} onclick={() => goto(entry.section)}>{entry.title}</button>
           {/each}
         {/if}
       {/each}
@@ -284,16 +298,20 @@
 
       {#if pluginPage}
         <PluginProblems plugin={pluginPage.plugin} />
-        <div class="plugin-frame">
-          <MiniAppFrame
-            src={pluginUrl(pluginPage.plugin.id, pluginPage.page.entry) + (hash ? `#${hash}` : "")}
-            title={pluginPage.page.title}
-            pluginId={pluginPage.plugin.id}
-            appId={`reglages-${pluginPage.page.id}`}
-            initial={noDocument}
-            onmessage={onPluginMessage}
-          />
-        </div>
+        {#if pluginPage.page}
+          <div class="plugin-frame">
+            <MiniAppFrame
+              src={pluginUrl(pluginPage.plugin.id, pluginPage.page.entry) + (hash ? `#${hash}` : "")}
+              title={pluginPage.page.title}
+              pluginId={pluginPage.plugin.id}
+              appId={`reglages-${pluginPage.page.id}`}
+              initial={noDocument}
+              onmessage={onPluginMessage}
+            />
+          </div>
+        {:else}
+          <ParametresPlugin plugin={pluginPage.plugin} />
+        {/if}
       {:else if active === "serveur"}
         <ServeurSection />
       {:else if active === "alarmes"}
@@ -410,9 +428,9 @@
                     <b>{plugin.name} {#if plugin.official}<span class="pill">officiel</span>{/if}</b>
                     <small>
                       {plugin.description} · v{plugin.version} ·
-                      {plugin.miniApps.length
-                        ? `${plugin.miniApps.length} mini-app${plugin.miniApps.length > 1 ? "s" : ""}`
-                        : `réglages : ${plugin.settings.map((s) => s.title).join(", ") || "aucun"}`}
+                      {plugin.pages.length
+                        ? `${plugin.pages.length} page${plugin.pages.length > 1 ? "s" : ""}`
+                        : "service ou réglages pour d'autres plugins"}
                     </small>
                     {#if needs.length}
                       <small>A besoin de : {needs.map((id) => PLUGINS.find((p) => p.id === id)?.name ?? id).join(", ")}</small>
@@ -425,7 +443,7 @@
             {/each}
             {#if !PLUGINS.length}<p class="hint">Aucun plugin installé : installez-en un depuis un fichier, sur la page des plugins.</p>{/if}
           </div>
-          <p class="hint">Pour changer l'ordre des plugins, faites-les glisser dans la colonne de gauche.</p>
+          <p class="hint">Pour changer l'ordre des pages, faites-les glisser dans la colonne de gauche.</p>
         </div>
       {:else if active === "apercu"}
         <div class="box">
@@ -446,12 +464,12 @@
           {#if settings.favorites.length}
             <ol class="favorites">
               {#each settings.favorites as key, i (key)}
-                {@const ref = getMiniAppByKey(key)}
+                {@const ref = getPageByKey(key)}
                 <li>
                   <span class="num">{i + 1}</span>
                   {#if ref}
-                    <Tile color={ref.plugin.color} icon={ref.app.icon} variant="soft" size={28} />
-                    <span class="text"><b>{ref.app.name}</b><small>{ref.plugin.name}</small></span>
+                    <Tile color={ref.plugin.color} icon={ref.page.icon} variant="soft" size={28} />
+                    <span class="text"><b>{ref.page.title}</b><small>{ref.plugin.name}</small></span>
                   {:else}
                     <span class="text"><b>{key}</b><small>Plugin absent ou désactivé</small></span>
                   {/if}
@@ -464,7 +482,7 @@
           {:else}
             <p class="hint">Aucun favori.</p>
           {/if}
-          <p class="hint">Ajoutez une mini-app avec l'étoile de sa tuile. Les 9 premières ont un accès direct par les touches 1 à 9.</p>
+          <p class="hint">Ajoutez une page avec l'étoile de sa tuile. Les 9 premières ont un accès direct par les touches 1 à 9.</p>
         </div>
       {:else if active === "raccourcis"}
         <div class="box">

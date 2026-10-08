@@ -79,14 +79,92 @@ test("permissions : doublon refusé, appel non déclaré refusé, déclaré acce
   assert.deepEqual(avec.erreurs, []);
 });
 
-test("un plugin de contrat ^1 reçoit un avertissement, pas une erreur", () => {
-  const { erreurs, avertissements } = valider(({ dossier, ecrire }) =>
+test("un plugin d'un contrat plus ancien que ^3 est refusé : pas de mode de compatibilité", () => {
+  for (const ancien of ["^1", "^2"]) {
+    const { erreurs } = valider(({ dossier, ecrire }) =>
+      modifierManifeste(ecrire, dossier, (m) => {
+        m.apiVersion = ancien;
+      }),
+    );
+    assert.ok(contient(erreurs, /doit demander le contrat « \^3 »/), ancien);
+  }
+});
+
+test("miniApps n'existe plus, pages et apps sont exigées", () => {
+  const ancien = valider(({ dossier, ecrire }) =>
     modifierManifeste(ecrire, dossier, (m) => {
-      m.apiVersion = "^1";
+      m.miniApps = m.apps;
+      delete m.apps;
+      delete m.pages;
+    }),
+  );
+  assert.ok(contient(ancien.erreurs, /« miniApps » n'existe plus/));
+  assert.ok(contient(ancien.erreurs, /« apps » doit être une liste/));
+  assert.ok(contient(ancien.erreurs, /« pages » doit être une liste/));
+});
+
+test("pages : disposition, app inconnue, doublon, icône", () => {
+  const { erreurs } = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.pages = [
+        { id: "a", title: "A", icon: "puzzle", layout: { type: "columns", apps: ["exemple"] } },
+        { id: "b", title: "B", icon: "puzzle", layout: { type: "app", app: "fantome" } },
+        { id: "b", title: "B", icon: "licorne", layout: { type: "app", app: "exemple" } },
+      ];
+    }),
+  );
+  assert.ok(contient(erreurs, /page « a » : « layout » doit valoir/));
+  assert.ok(contient(erreurs, /« layout\.app » \("fantome"\) n'est pas une app déclarée/));
+  assert.ok(contient(erreurs, /page « b » : identifiant utilisé deux fois/));
+  assert.ok(contient(erreurs, /page « b » : « icon » absente ou hors liste/));
+});
+
+test("un plugin sans interface déclare « pages »: [] et « apps »: []", () => {
+  const { erreurs } = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.apps = [];
+      m.pages = [];
     }),
   );
   assert.deepEqual(erreurs, []);
-  assert.ok(contient(avertissements, /permissions ne sont pas contrôlées/));
+});
+
+test("paramètres : types, valeur par défaut et bornes", () => {
+  const bons = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.parameters = [
+        { id: "ifm", label: "Indemnité", type: "number", default: 10, min: 0, max: 100 },
+        { id: "lever", label: "Lever", type: "time", default: "08:00" },
+        { id: "report", label: "Report", type: "boolean", default: false },
+        { id: "nom", label: "Nom", type: "text", default: "" },
+        { id: "jour", label: "Jour", type: "select", default: "6", options: [{ value: "6", label: "samedi" }] },
+      ];
+    }),
+  );
+  assert.deepEqual(bons.erreurs, []);
+  const mauvais = valider(({ dossier, ecrire }) =>
+    modifierManifeste(ecrire, dossier, (m) => {
+      m.parameters = [
+        { id: "A", label: "x", type: "number", default: 1 },
+        { id: "haut", label: "x", type: "number", default: 500, max: 100 },
+        { id: "heure", label: "x", type: "time", default: "25:00" },
+        { id: "choix", label: "x", type: "select", default: "z", options: [{ value: "a", label: "A" }] },
+        { id: "couleur", label: "x", type: "couleur", default: "#fff" },
+        { id: "haut", label: "doublon", type: "number", default: 1 },
+      ];
+    }),
+  );
+  assert.ok(contient(mauvais.erreurs, /« A » : « id » absent ou invalide/));
+  assert.ok(contient(mauvais.erreurs, /« haut » : « default » sort des bornes/));
+  assert.ok(contient(mauvais.erreurs, /« heure » : « default » doit être une heure/));
+  assert.ok(contient(mauvais.erreurs, /« choix » : « default » n'est pas l'une des options/));
+  assert.ok(contient(mauvais.erreurs, /« couleur » : « type » doit être/));
+  assert.ok(contient(mauvais.erreurs, /« haut » est déclaré deux fois/));
+});
+
+test("les documents n'existent plus : MiniAppDocument est refusé", () => {
+  const { erreurs } = valider(({ ecrire }) => ecrire("src/ancien.ts", "import { MiniAppDocument } from '@etabli/ui';\nnew MiniAppDocument({}, () => '');\n"));
+  assert.ok(contient(erreurs, /les documents n'existent plus/));
 });
 
 test("dépendances : plages, auto-dépendance, doublon, services", () => {
@@ -149,13 +227,13 @@ test("sources : une adresse externe est un avertissement, un espace de noms XML 
   assert.ok(!contient(avertissements, /w3\.org/));
 });
 
-test("mini-app dont l'entrée est absolue ou sort du plugin", () => {
+test("app dont l'entrée est absolue ou sort du plugin", () => {
   const { erreurs } = valider(({ dossier, ecrire }) =>
     modifierManifeste(ecrire, dossier, (m) => {
-      m.miniApps[0].entry = "../autre/index.html";
+      m.apps[0].entry = "../autre/index.html";
     }),
   );
-  assert.ok(contient(erreurs, /« entry » invalide/));
+  assert.ok(contient(erreurs, /« entry » absent ou invalide/));
 });
 
 // ——— Appels entre plugins (docs/24, A.1.2) ———
@@ -179,7 +257,7 @@ test("appels : un appelant et un fournisseur bien déclarés sont valides", () =
   assert.deepEqual(erreurs, []);
 });
 
-test("appels : permission mal écrite, en double ou en contrat ^1", () => {
+test("appels : permission mal écrite ou en double", () => {
   const { erreurs } = valider(({ dossier, ecrire }) =>
     modifierManifeste(ecrire, dossier, (m) => {
       m.permissions = ["appelle:finances:tout", "appelle:Finances:lecture", "appelle:agenda:lecture", "appelle:agenda:lecture"];
@@ -188,13 +266,6 @@ test("appels : permission mal écrite, en double ou en contrat ^1", () => {
   assert.ok(contient(erreurs, /« appelle:finances:tout » n'existe pas/));
   assert.ok(contient(erreurs, /« appelle:Finances:lecture » n'existe pas/));
   assert.ok(contient(erreurs, /« appelle:agenda:lecture » est écrite deux fois/));
-  const ancien = valider(({ dossier, ecrire }) =>
-    modifierManifeste(ecrire, dossier, (m) => {
-      appelant(m);
-      m.apiVersion = "^1";
-    }),
-  );
-  assert.ok(contient(ancien.erreurs, /n'a d'effet que pour un plugin de contrat \^2/));
 });
 
 test("appels : la plage de contrat et la dépendance sont exigées avec la permission", () => {

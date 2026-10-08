@@ -1,22 +1,22 @@
 <script lang="ts">
-  import { appKey } from "$lib/plugins/registry.svelte";
+  import { pageKey } from "$lib/plugins/registry.svelte";
   import { settings } from "$lib/state/settings.svelte";
-  import type { MiniAppManifest, PluginManifest } from "$lib/types";
+  import type { PageManifest, PluginManifest } from "$lib/types";
   import Icon from "./Icon.svelte";
   import Tile from "./Tile.svelte";
 
   interface Props {
     plugin: PluginManifest;
-    app: MiniAppManifest;
+    page: PageManifest;
     index?: number;
     /** Affiche le nom du plugin (Accueil, favoris), inutile dans la grille d'un plugin. */
     showPlugin?: boolean;
     onopen: (event: MouseEvent) => void;
   }
 
-  let { plugin, app, index = 0, showPlugin = false, onopen }: Props = $props();
+  let { plugin, page, index = 0, showPlugin = false, onopen }: Props = $props();
 
-  const key = $derived(appKey(plugin.id, app.id));
+  const key = $derived(pageKey(plugin.id, page.id));
   const favorite = $derived(settings.isFavorite(key));
 </script>
 
@@ -27,18 +27,16 @@
     onauxclick={(e) => e.button === 1 && onopen(e)}
     onmousedown={(e) => e.button === 1 && e.preventDefault()}
   >
-    <Tile color={plugin.color} icon={app.icon} variant="soft" />
-    <span class="name">{app.name}</span>
+    <Tile color={plugin.color} icon={page.icon} variant="soft" />
+    <span class="name">{page.title}</span>
     {#if showPlugin}<span class="from">{plugin.name}</span>{/if}
-    <span class="desc">{app.description}</span>
   </button>
-  {#if app.plannedFor === "v2"}<span class="pill v2">v2</span>{/if}
   <button
     class="star"
     class:on={favorite}
     onclick={() => settings.toggleFavorite(key)}
     aria-pressed={favorite}
-    aria-label={favorite ? `Retirer ${app.name} des favoris` : `Ajouter ${app.name} aux favoris`}
+    aria-label={favorite ? `Retirer ${page.title} des favoris` : `Ajouter ${page.title} aux favoris`}
     title={favorite ? "Retirer des favoris" : "Ajouter aux favoris (aperçu rapide)"}
   >
     <Icon name="star" size={16} fill={favorite ? "currentColor" : "none"} />
@@ -82,15 +80,6 @@
     font-weight: 600;
     color: var(--c);
     margin-top: -6px;
-  }
-  .desc {
-    color: var(--muted);
-    font-size: 12.5px;
-  }
-  .pill {
-    position: absolute;
-    top: 14px;
-    right: 42px;
   }
   .star {
     position: absolute;

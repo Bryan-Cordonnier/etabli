@@ -19,14 +19,12 @@ export type SettingsSection =
 /** Page affichée dans un onglet. */
 export type View =
   | { kind: "home" }
-  | { kind: "plugin"; pluginId: string }
   | {
-      kind: "app";
+      /** Une page déclarée par un plugin (`pages` du manifeste, docs/28). */
+      kind: "page";
       pluginId: string;
-      appId: string;
-      /** Document ouvert ; absent pour un nouveau calcul pas encore enregistré. */
-      docId?: string;
-      /** Change à chaque ouverture : l'écran est recréé, mais pas quand le calcul reçoit son identifiant. */
+      pageId: string;
+      /** Change à chaque ouverture : l'écran est recréé. */
       nonce?: number;
     }
   | {
@@ -42,7 +40,7 @@ export type View =
     }
   | { kind: "plugins" };
 
-export type AppView = Extract<View, { kind: "app" }>;
+export type PageView = Extract<View, { kind: "page" }>;
 
 export interface Tab {
   id: number;
@@ -51,29 +49,45 @@ export interface Tab {
   history: View[];
 }
 
-/** Ligne de la liste « Anciens calculs » d'une mini-app. */
-export interface PastCalc {
-  id: string;
-  title: string;
-  /** Résumé du résultat, par exemple « 5 barres de 6 m · 88 % ». */
-  summary: string;
-  date: string;
-}
-
-export interface MiniAppManifest {
+/** Une app d'un plugin : une page HTML isolée que les pages du plugin affichent (`apps` du manifeste). */
+export interface AppManifest {
   id: string;
   name: string;
-  description: string;
-  icon: IconName;
-  /** Page de la mini-app dans le plugin ; absente tant que la mini-app n'est pas développée. */
-  entry?: string;
-  /** Version du format des données enregistrées par la mini-app. */
-  dataVersion: number;
-  /** Version de l'application où la mini-app est prévue. */
-  plannedFor: "v1" | "v2";
-  /** Types de données que la mini-app sait recevoir d'une autre (« piece-plate »…). */
+  /** Page de l'app dans le plugin (« apps/courbe/index.html »). */
+  entry: string;
+  /** Types de données que l'app sait recevoir d'une autre (« piece-plate »…). */
   accepts: string[];
 }
+
+/**
+ * Une page : ce que la colonne de gauche liste et qu'un onglet affiche (`pages` du manifeste, docs/28).
+ * Première version : une page montre une seule app, sur toute la zone (`layout.type: "app"`).
+ */
+export interface PageManifest {
+  id: string;
+  title: string;
+  icon: IconName;
+  /** Identifiant de l'app de `apps` que la page affiche. */
+  app: string;
+}
+
+/** Un paramètre qu'un plugin déclare : le moteur en fait un champ des Paramètres, dans l'onglet du plugin. */
+export type ParameterManifest = {
+  id: string;
+  label: string;
+  /** Titre de groupe dans l'onglet du plugin ; les paramètres consécutifs du même groupe sont réunis. */
+  group: string;
+  /** Phrase d'aide sous le libellé (« légal : 10 % »). */
+  hint: string;
+} & (
+  | { type: "number"; default: number; unit: string; min: number | null; max: number | null; step: number }
+  | { type: "text"; default: string }
+  | { type: "boolean"; default: boolean }
+  | { type: "time"; default: string }
+  | { type: "select"; default: string; options: { value: string; label: string }[] }
+);
+
+export type ParameterValue = number | string | boolean;
 
 /** Page de réglages ajoutée par un plugin dans Paramètres → Plugins. */
 export interface PluginSettingsPage {
@@ -114,5 +128,15 @@ export interface PluginManifest {
   official: boolean;
   /** Livré avec l'application, installé depuis un fichier signé (désinstallable), ou déposé à la main. */
   source: "integre" | "installe" | "utilisateur";
-  miniApps: MiniAppManifest[];
+  apps: AppManifest[];
+  pages: PageManifest[];
+  /** Paramètres déclarés ; leurs valeurs se règlent dans Paramètres → <plugin>. */
+  parameters: ParameterManifest[];
+}
+
+/** Un plugin que le moteur a refusé de charger, et pourquoi (affiché dans la page des plugins). */
+export interface RefusedPlugin {
+  id: string;
+  name: string;
+  reason: string;
 }

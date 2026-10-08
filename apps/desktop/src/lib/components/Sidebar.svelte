@@ -1,30 +1,28 @@
 <script lang="ts">
-  // Colonne des plugins (cahier des charges, section 5.2).
+  // Colonne des pages (docs/28) : ce que les plugins déclarent dans `pages`, dans l'ordre choisi par l'utilisateur.
   import { api } from "$lib/api";
-  import { pluginsWithApps } from "$lib/plugins/registry.svelte";
+  import { allPages, pageKey, type PageRef } from "$lib/plugins/registry.svelte";
   import { shortcutHint } from "$lib/shortcuts";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
-  import type { PluginManifest, View } from "$lib/types";
+  import type { View } from "$lib/types";
   import Icon from "./Icon.svelte";
   import Logo from "./Logo.svelte";
   import Tile from "./Tile.svelte";
 
-  /** Plugins actifs, dans l'ordre choisi par glisser-déposer (les nouveaux à la fin). */
-  const plugins = $derived.by(() => {
-    const order = settings.pluginOrder;
-    const rank = (id: string) => {
-      const index = order.indexOf(id);
+  /** Pages des plugins actifs, dans l'ordre choisi par glisser-déposer (les nouvelles à la fin, dans l'ordre du plugin). */
+  const pages = $derived.by(() => {
+    const order = settings.pageOrder;
+    const rank = (key: string) => {
+      const index = order.indexOf(key);
       return index < 0 ? Number.MAX_SAFE_INTEGER : index;
     };
-    return pluginsWithApps()
-      .filter((p) => settings.isPluginEnabled(p.id))
-      .map((plugin, index) => ({ plugin, index }))
-      .sort((a, b) => rank(a.plugin.id) - rank(b.plugin.id) || a.index - b.index)
-      .map(({ plugin }) => plugin);
+    return allPages()
+      .filter((p) => settings.isPluginEnabled(p.plugin.id))
+      .map((ref, index) => ({ ref, index, key: pageKey(ref.plugin.id, ref.page.id) }))
+      .sort((a, b) => rank(a.key) - rank(b.key) || a.index - b.index);
   });
-
   let nav: HTMLElement;
   let drag: { id: string; startY: number; moved: boolean } | null = null;
   let dragging = $state<string | null>(null);
@@ -42,36 +40,32 @@
     if (!drag.moved && Math.abs(event.clientY - drag.startY) < 6) return;
     drag.moved = true;
     dragging = drag.id;
-    const items = [...nav.querySelectorAll<HTMLElement>("[data-plugin]")];
+    const items = [...nav.querySelectorAll<HTMLElement>("[data-page]")];
     const target = items.findIndex((el) => {
       const rect = el.getBoundingClientRect();
       return event.clientY >= rect.top && event.clientY <= rect.bottom;
     });
-    const ids = plugins.map((p) => p.id);
+    const ids = pages.map((p) => p.key);
     const from = ids.indexOf(drag.id);
     if (target < 0 || target === from) return;
     ids.splice(target, 0, ...ids.splice(from, 1));
-    settings.setPluginOrder(ids, false);
+    settings.setPageOrder(ids, false);
   }
 
   function endDrag(): void {
     if (drag?.moved) {
       justDragged = true;
-      settings.setPluginOrder([...settings.pluginOrder]);
+      settings.setPageOrder([...settings.pageOrder]);
     }
     drag = null;
     dragging = null;
   }
 
   const view = $derived(tabs.active?.view);
-  const activePluginId = $derived(view?.kind === "plugin" || view?.kind === "app" ? view.pluginId : undefined);
+  const isActive = (ref: PageRef): boolean =>
+    view?.kind === "page" && view.pluginId === ref.plugin.id && view.pageId === ref.page.id;
 
-  /** Un plugin qui n'a qu'une mini-app l'ouvre directement. */
-  function pluginView(plugin: PluginManifest): View {
-    const only = plugin.miniApps.length === 1 ? plugin.miniApps[0] : undefined;
-    return only ? { kind: "app", pluginId: plugin.id, appId: only.id } : { kind: "plugin", pluginId: plugin.id };
-  }
-
+  const pageView = (ref: PageRef): View => ({ kind: "page", pluginId: ref.plugin.id, pageId: ref.page.id });
   function go(target: View, event: MouseEvent): void {
     ui.menuOpen = false;
     tabs.navigate(target, { newTab: event.ctrlKey || event.button === 1 });
@@ -135,7 +129,7 @@
     <div class="drag" data-tauri-drag-region></div>
   </div>
 
-  <nav class="nav" aria-label="Plugins" bind:this={nav}>
+  <nav class="nav" aria-label="Pages" bind:this={nav}>
     <button
       class="item"
       class:active={view?.kind === "home"}
@@ -161,35 +155,34 @@
       </button>
     {/if}
 
-    <div class="section-label label">Plugins</div>
-    {#if !plugins.length}
-      <p class="none label">Aucun plugin installé.</p>
+    <div class="section-label label">Pages</div>
+    {#if !pages.length}
+      <p class="none label">Aucune page : installez un plugin.</p>
     {/if}
 
-    {#each plugins as plugin (plugin.id)}
+    {#each pages as { ref, key } (key)}
       <button
         class="item"
-        class:active={activePluginId === plugin.id}
-        class:dragging={dragging === plugin.id}
-        data-plugin={plugin.id}
+        class:active={isActive(ref)}
+        class:dragging={dragging === key}
+        data-page={key}
         onclick={(e) => {
-          // Un glisser-déposer se termine par un clic : il ne doit pas ouvrir le plugin.
+          // Un glisser-déposer se termine par un clic : il ne doit pas ouvrir la page.
           if (justDragged) justDragged = false;
-          else go(pluginView(plugin), e);
+          else go(pageView(ref), e);
         }}
-        onauxclick={(e) => e.button === 1 && go(pluginView(plugin), e)}
+        onauxclick={(e) => e.button === 1 && go(pageView(ref), e)}
         onmousedown={preventAutoscroll}
-        onpointerdown={(e) => startDrag(e, plugin.id)}
+        onpointerdown={(e) => startDrag(e, key)}
         onpointermove={moveDrag}
         onpointerup={endDrag}
         onpointercancel={endDrag}
-        title={`${plugin.name} (glisser pour déplacer)`}
+        title={`${ref.page.title} (glisser pour déplacer)`}
       >
-        <Tile color={plugin.color} icon={plugin.icon} />
-        <span class="label">{plugin.name}</span>
+        <Tile color={ref.plugin.color} icon={ref.page.icon} />
+        <span class="label">{ref.page.title}</span>
       </button>
-    {/each}
-  </nav>
+    {/each}  </nav>
 
   <!-- Dépliée : les deux boutons côte à côte. Repliée : « Replier » glisse au-dessus de
        « Paramètres », en même temps que la colonne se réduit (aucun saut). -->

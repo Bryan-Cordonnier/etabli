@@ -15,6 +15,7 @@ import {
   type DocumentSnapshot,
   type HostToPlugin,
   type Incoming,
+  type Parameters,
   type PluginToHost,
   type Reminder,
   type RemindersResult,
@@ -47,6 +48,7 @@ export type {
   ColorScheme,
   DocumentSnapshot,
   Incoming,
+  Parameters,
   Reminder,
   RemindersErrorCode,
   RemindersResult,
@@ -123,6 +125,15 @@ export interface Etabli<T> {
     /** Réglages modifiés par une autre mini-app du même plugin. */
     onChange(listener: (data: unknown) => void): () => void;
   };
+  /**
+   * Paramètres que le plugin déclare dans son manifeste (`parameters`) : l'utilisateur les règle dans Paramètres, onglet du
+   * plugin. Lecture seule ; les valeurs par défaut s'appliquent tant que rien n'est réglé.
+   */
+  readonly parameters: {
+    readonly values: Parameters;
+    /** Un paramètre a été changé dans les Paramètres. */
+    onChange(listener: (values: Parameters) => void): () => void;
+  };
   /** Envoie des données à une autre mini-app (voir `Incoming`), ouverte dans un nouvel onglet. */
   send(kind: string, data: unknown): void;
   /** Enregistre un fichier (DXF, CSV…) : boîte « Enregistrer sous » de Windows, puis écriture. */
@@ -166,6 +177,8 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
   const themeListeners = new Set<(theme: ThemeTokens, scheme: ColorScheme) => void>();
   const serviceListeners = new Set<(services: Services) => void>();
   const settingsListeners = new Set<(data: unknown) => void>();
+  const parameterListeners = new Set<(values: Parameters) => void>();
+  let parameters: Parameters = {};
   let doc: DocumentSnapshot = { id: null, title: "", data: null };
   let ids = { pluginId: "", appId: "" };
   let services: Services = {};
@@ -307,6 +320,15 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         return () => settingsListeners.delete(listener);
       },
     },
+    parameters: {
+      get values() {
+        return parameters;
+      },
+      onChange(listener) {
+        parameterListeners.add(listener);
+        return () => parameterListeners.delete(listener);
+      },
+    },
     send(kind, data) {
       send({ type: "send", kind, data: JSON.parse(JSON.stringify(data)) });
     },
@@ -336,6 +358,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         services = message.services ?? {};
         pluginData = message.pluginData ?? null;
         incoming = message.incoming ?? null;
+        parameters = message.parameters ?? {};
         shortcuts = message.shortcuts ?? [];
         applyTheme(message.theme, message.colorScheme);
         resolve(api);
@@ -352,6 +375,10 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "pluginData":
         pluginData = message.data;
         for (const listener of settingsListeners) listener(pluginData);
+        break;
+      case "parameters":
+        parameters = message.values;
+        for (const listener of parameterListeners) listener(parameters);
         break;
       case "shortcuts":
         shortcuts = message.shortcuts;

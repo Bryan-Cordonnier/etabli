@@ -2,7 +2,7 @@
   "id": "finances",
   "name": "Finances",
   "version": "0.1.0",
-  "apiVersion": "^2",
+  "apiVersion": "^3",
   "author": "Bryan Cordonnier",
   "description": "Votre argent réel : comptes, écritures qui ne se suppriment pas (une erreur s'annule), soldes à une date, courbe et dépenses du mois.",
   "color": "#0f766e",
@@ -46,16 +46,23 @@
       }
     }
   },
-  "miniApps": [
+  "apps": [
     {
       "id": "tableau",
       "name": "Tableau de bord",
-      "description": "Solde, dernières écritures, courbe du solde, dépenses du mois",
-      "icon": "wallet",
-      "dataVersion": 1,
-      "plannedFor": "v1",
       "entry": "apps/tableau/index.html",
       "accepts": []
+    }
+  ],
+  "pages": [
+    {
+      "id": "tableau",
+      "title": "Tableau de bord",
+      "icon": "wallet",
+      "layout": {
+        "type": "app",
+        "app": "tableau"
+      }
     }
   ]
 }

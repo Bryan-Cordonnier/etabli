@@ -88,13 +88,14 @@ function manifeste(id) {
     id,
     name: `Sonde ${id.slice(-1).toUpperCase()}`,
     version: "1.0.0",
-    apiVersion: "^2",
+    apiVersion: "^3",
     author: "Essai",
     description: "Sonde hostile de l'essai d'isolation",
     color: "#cc0000",
     icon: "sigma",
     permissions: [],
-    miniApps: [{ id: "sonde", name: "Sonde", description: "Essai", icon: "triangle", entry: "apps/sonde/index.html", dataVersion: 1 }],
+    apps: [{ id: "sonde", name: "Sonde", entry: "apps/sonde/index.html", accepts: [] }],
+    pages: [{ id: "sonde", title: "Sonde", icon: "triangle", layout: { type: "app", app: "sonde" } }],
   };
 }
 
@@ -150,9 +151,7 @@ function limite(nom, detail) {
 }
 
 async function ouvrirSonde(page, id) {
-  await page.locator(`button[data-plugin="${id}"]`).click();
-  // Un plugin qui n'a qu'une mini-app l'ouvre directement ; sinon on clique sur la première carte.
-  await page.locator("button.open").first().click({ timeout: 1500 }).catch(() => {});
+  await page.locator(`button[data-page^="${id}/"]`).first().click();
   const cadre = await attendreCadre(page, id);
   await cadre.waitForFunction(() => Boolean(window.__sonde), null, { timeout: 8000 });
   return cadre;
@@ -233,7 +232,7 @@ async function jouer(navigateur, { nom, cors, opaque }) {
     else if (vuDeB.startsWith("réussi: VU")) limite("la sonde B voit le stockage de la sonde A", vuDeB);
 
     // Un vrai plugin du dépôt reste utilisable dans ce mode (modules, styles, polices, politique de sécurité).
-    await page.locator('button[data-plugin="agenda"]').click();
+    await page.locator('button[data-page^="agenda/"]').first().click();
     await page.locator("button.open").first().click();
     const agenda = await attendreCadre(page, "agenda");
     const rendu = await agenda

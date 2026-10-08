@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Aperçu rapide : les mini-apps favorites, utilisables directement par-dessus n'importe quel
+  // Aperçu rapide : les pages favorites, utilisables directement par-dessus n'importe quel
   // logiciel. Flèches pour choisir, Entrée pour ouvrir, Échap pour revenir puis fermer.
   import type { PluginToHost } from "@etabli/sdk/protocol";
   import { onMount, tick } from "svelte";
@@ -10,8 +10,8 @@
   import Tile from "$lib/components/Tile.svelte";
   import ServiceHost from "$lib/components/ServiceHost.svelte";
   import Toast from "$lib/components/Toast.svelte";
-  import { DocumentSession } from "$lib/documents.svelte";
-  import { appKey, getMiniAppByKey, loadPlugins, pluginUrl, type MiniAppRef } from "$lib/plugins/registry.svelte";
+  import { ui } from "$lib/state/ui.svelte";
+  import { getPageByKey, loadPlugins, pageKey, pluginUrl, type PageRef } from "$lib/plugins/registry.svelte";
   import { services } from "$lib/state/services.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { reloadStorage } from "$lib/storage";
@@ -19,7 +19,9 @@
   /** Durée des fondus d'ouverture et de fermeture (voir le CSS). */
   const FADE = 150;
 
-  let session = $state<DocumentSession | null>(null);
+  /** Les pages n'ont pas de calcul à ouvrir ni à enregistrer : le cadre reçoit un document vide. */
+  const noDocument = { id: null, title: "", data: null };
+  let current = $state<PageRef | null>(null);
   let selected = $state(0);
   let grid = $state<HTMLElement>();
   let openedAt = 0;
@@ -39,10 +41,9 @@
 
   const favorites = $derived(
     settings.favorites
-      .map(getMiniAppByKey)
-      .filter((ref): ref is MiniAppRef => !!ref && settings.isPluginEnabled(ref.plugin.id)),
+      .map(getPageByKey)
+      .filter((ref): ref is PageRef => !!ref && settings.isPluginEnabled(ref.plugin.id)),
   );
-  const current = $derived(session ? getMiniAppByKey(appKey(session.pluginId, session.appId)) : undefined);
 
   $effect(() => applyAppearance());
 
@@ -68,11 +69,8 @@
     };
   });
 
-  async function leaveApp(): Promise<void> {
-    if (!session) return;
-    const leaving = session;
-    session = null;
-    await leaving.saveNow();
+  function leavePage(): void {
+    current = null;
   }
 
   async function close(): Promise<void> {
@@ -81,30 +79,25 @@
     shown = false;
     await new Promise((resolve) => setTimeout(resolve, FADE));
     await system.closeQuick();
-    await leaveApp();
+    leavePage();
   }
 
-  async function openApp(ref: MiniAppRef): Promise<void> {
-    const next = new DocumentSession(ref);
-    await next.load();
-    session = next;
+  function openPage(ref: PageRef): void {
+    current = ref;
   }
 
   async function backToGrid(): Promise<void> {
-    await leaveApp();
+    leavePage();
     await tick();
     focusSelected();
   }
 
-  /** Ouvre l'application complète, avec le calcul en cours dans un nouvel onglet s'il y en a un. */
+  /** Ouvre l'application complète, avec la page en cours dans un nouvel onglet s'il y en a une. */
   async function openInEtabli(): Promise<void> {
-    if (session) {
-      await session.saveNow();
-      await system.openInMain({ kind: "app", pluginId: session.pluginId, appId: session.appId, docId: session.meta?.id });
-    }
+    if (current) await system.openInMain({ kind: "page", pluginId: current.plugin.id, pageId: current.page.id });
     shown = false;
     await system.showMain();
-    session = null;
+    current = null;
   }
 
   function focusSelected(): void {
@@ -119,7 +112,7 @@
   }
 
   function onEscape(): void {
-    if (session) void backToGrid();
+    if (current) void backToGrid();
     else void close();
   }
 
@@ -129,7 +122,7 @@
       onEscape();
       return;
     }
-    if (session || !favorites.length) return;
+    if (current || !favorites.length) return;
 
     const count = favorites.length;
     const moves: Record<string, number> = {
@@ -146,27 +139,27 @@
     } else if (event.key === "Enter") {
       event.preventDefault();
       const ref = favorites[selected];
-      if (ref) void openApp(ref);
+      if (ref) openPage(ref);
     } else if (/^[1-9]$/.test(event.key)) {
       const ref = favorites[Number(event.key) - 1];
       if (ref) {
         event.preventDefault();
         selected = Number(event.key) - 1;
-        void openApp(ref);
+        openPage(ref);
       }
     }
   }
 
   function onmessage(message: PluginToHost): void {
-    if (session?.handle(message)) return;
     if (message.type === "shortcut" && message.key === "Escape") onEscape();
+    else if (message.type === "notify") ui.notify(message.text);
     else if (message.type === "openSettings") void openSettings(message.plugin, message.hash);
     else if (message.type === "send") void send(message);
   }
 
   /** L'envoi ouvre un nouvel onglet : le calcul passe dans l'Établi, qui ouvre la mini-app cible. */
   async function send({ kind, data }: { kind: string; data: unknown }): Promise<void> {
-    const from = current?.app.name ?? "";
+    const from = current?.page.title ?? "";
     await openInEtabli();
     await system.requestSend({ kind, data, from });
   }
@@ -184,12 +177,12 @@
 <div class="scrim" class:shown onpointerdown={(e) => e.target === e.currentTarget && void close()}>
     <div class="panel" role="dialog" aria-modal="true" aria-label="Aperçu rapide">
       <header class="head">
-        {#if session && current}
+        {#if current}
           <button class="back" onclick={backToGrid} aria-label="Retour aux favoris" title="Retour (Échap)">
             <Icon name="back" size={18} />
           </button>
-          <Tile color={current.plugin.color} icon={current.app.icon} variant="soft" size={32} />
-          <h1>{current.app.name}</h1>
+          <Tile color={current.plugin.color} icon={current.page.icon} variant="soft" size={32} />
+          <h1>{current.page.title}</h1>
           <span class="pill">{current.plugin.name}</span>
           <button class="btn primary open" onclick={openInEtabli}>Ouvrir dans l'Établi</button>
         {:else}
@@ -200,32 +193,28 @@
       </header>
 
       <div class="body">
-        {#if session && current}
-          {#if current.app.entry && session.initial}
-            <MiniAppFrame
-              src={pluginUrl(current.plugin.id, current.app.entry)}
-              title={current.app.name}
-              pluginId={current.plugin.id}
-              appId={current.app.id}
-              initial={session.initial}
-              forward={false}
-              {onmessage}
-            />
-          {:else}
-            <p class="empty">« {current.app.name} » n'est pas encore développée.</p>
-          {/if}
+        {#if current}
+          <MiniAppFrame
+            src={pluginUrl(current.plugin.id, current.app.entry)}
+            title={current.page.title}
+            pluginId={current.plugin.id}
+            appId={current.app.id}
+            initial={noDocument}
+            forward={false}
+            {onmessage}
+          />
         {:else if favorites.length}
           <div class="grid" bind:this={grid}>
-            {#each favorites as ref, i (appKey(ref.plugin.id, ref.app.id))}
+            {#each favorites as ref, i (pageKey(ref.plugin.id, ref.page.id))}
               <button
                 class="fav"
                 class:sel={i === selected}
                 style:--c={ref.plugin.color}
-                onclick={() => void openApp(ref)}
+                onclick={() => openPage(ref)}
                 onfocus={() => (selected = i)}
               >
-                <Tile color={ref.plugin.color} icon={ref.app.icon} variant="soft" />
-                <span class="name">{ref.app.name}</span>
+                <Tile color={ref.plugin.color} icon={ref.page.icon} variant="soft" />
+                <span class="name">{ref.page.title}</span>
                 <span class="from">{ref.plugin.name}</span>
                 {#if i < 9}<kbd class="num">{i + 1}</kbd>{/if}
               </button>
@@ -233,13 +222,13 @@
           </div>
         {:else}
           <p class="empty">
-            Aucun favori pour l'instant. Dans l'Établi, cliquez sur l'étoile d'une mini-app pour l'ajouter ici.
+            Aucun favori pour l'instant. Dans l'application, cliquez sur l'étoile d'une page pour l'ajouter ici.
           </p>
         {/if}
       </div>
 
       <footer class="foot">
-        {#if session}
+        {#if current}
           <span><kbd>Tab</kbd> champ suivant</span>
           <span><kbd>Clic</kbd> sur un résultat : copier</span>
           <span><kbd>Échap</kbd> retour aux favoris</span>

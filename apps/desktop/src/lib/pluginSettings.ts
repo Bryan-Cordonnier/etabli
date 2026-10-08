@@ -3,7 +3,7 @@ import { settings } from "./state/settings.svelte";
 import { tabs } from "./state/tabs.svelte";
 import { ui } from "./state/ui.svelte";
 
-/** Section de Paramètres d'une page de réglages de plugin : « plugin:<plugin>:<page> ». */
+/** Section de Paramètres d'une page de réglages de plugin : « plugin:<plugin>:<page> » (« parametres » : les paramètres déclarés). */
 export const pluginSection = (pluginId: string, pageId: string) => `plugin:${pluginId}:${pageId}` as const;
 
 /**
@@ -13,7 +13,8 @@ export const pluginSection = (pluginId: string, pageId: string) => `plugin:${plu
  */
 export function openPluginSettings(pluginId: string, hash?: string): void {
   const plugin = getPlugin(pluginId);
-  const page = plugin?.settings[0];
+  // Les paramètres déclarés (faits par le moteur) d'abord, sinon la première page de réglages que le plugin ajoute.
+  const page = plugin?.parameters.length ? { id: "parametres" } : plugin?.settings[0];
   if (!plugin || !page || !settings.isPluginEnabled(pluginId)) {
     ui.notify(`Le plugin « ${pluginId} » n'est pas installé ou pas activé : il se règle depuis la page des plugins.`);
     tabs.navigate({ kind: "plugins" });

@@ -6,7 +6,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { estBureau } from "./plateforme";
-import type { AppView } from "./types";
+import type { PageView } from "./types";
 
 export const inTauri = isTauri();
 
@@ -57,9 +57,9 @@ export const system = {
   },
 
   /** L'aperçu rapide demande à la fenêtre principale d'ouvrir un calcul dans un onglet. */
-  openInMain: (view: AppView): Promise<void> => (inTauri ? emitTo("main", "etabli:ouvrir", view) : Promise.resolve()),
-  onOpenRequest: (handler: (view: AppView) => void): Promise<() => void> =>
-    inTauri ? listen<AppView>("etabli:ouvrir", (event) => handler(event.payload)) : Promise.resolve(() => {}),
+  openInMain: (view: PageView): Promise<void> => (inTauri ? emitTo("main", "etabli:ouvrir", view) : Promise.resolve()),
+  onOpenRequest: (handler: (view: PageView) => void): Promise<() => void> =>
+    inTauri ? listen<PageView>("etabli:ouvrir", (event) => handler(event.payload)) : Promise.resolve(() => {}),
   /** Une mini-app de l'aperçu rapide envoie des données à une autre : la fenêtre principale l'ouvre. */
   requestSend: (request: { kind: string; data: unknown; from: string }): Promise<void> =>
     inTauri ? emitTo("main", "etabli:envoyer", request) : Promise.resolve(),

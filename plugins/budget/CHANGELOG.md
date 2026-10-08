@@ -5,6 +5,10 @@ Chaque version a sa section ; elle devient les « Nouveautés » affichées dans
 
 ## [Non publié]
 
+### Modifié
+
+- **Contrat d'API 3** : le manifeste déclare `apps` et `pages` (la colonne de gauche liste les pages, le plugin dessine son propre en-tête) au lieu de `miniApps`.
+
 ## [0.1.0] — 2026-10-05
 
 Première version (version préliminaire, pas encore publiée dans le catalogue). Nécessite le plugin Finances.

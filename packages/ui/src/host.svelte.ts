@@ -67,9 +67,30 @@ export function sendTo(kind: string, data: unknown): void {
 }
 
 /**
- * Données reçues d'une autre mini-app à l'ouverture. À appeler après avoir créé le
- * `MiniAppDocument` : le calcul est chargé avant que les données reçues soient appliquées.
+ * Paramètres que le plugin déclare dans son manifeste (`parameters`), réglés par l'utilisateur dans Paramètres. En lecture
+ * seule ; `defaults` sert tant que le moteur n'a pas répondu (les mêmes valeurs que dans le manifeste).
+ *
+ *   const params = new PluginParameters({ ifm: 10, lever: "08:00" });
+ *   params.values.ifm   // réactif : l'écran suit un changement fait dans les Paramètres
  */
+export class PluginParameters<P extends Record<string, number | string | boolean>> {
+  values = $state() as P;
+  ready = $state(false);
+
+  constructor(defaults: P) {
+    this.values = { ...defaults };
+    void connect().then((host) => {
+      const lire = (recues: Record<string, number | string | boolean>) => {
+        this.values = { ...defaults, ...recues } as P;
+      };
+      lire(host.parameters.values);
+      host.parameters.onChange(lire);
+      this.ready = true;
+    });
+  }
+}
+
+/** Données reçues d'une autre page à l'ouverture (la page a été ouverte par un envoi). */
 export function onIncoming(kind: string, handler: (data: unknown, from: string) => void): void {
   void connect().then((host) => {
     if (host.incoming?.kind === kind) handler(host.incoming.data, host.incoming.from);

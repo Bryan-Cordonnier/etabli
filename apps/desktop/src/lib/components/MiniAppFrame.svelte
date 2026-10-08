@@ -7,6 +7,7 @@
     type DocumentSnapshot,
     type HostToPlugin,
     type Incoming,
+    type Parameters,
     type PluginToHost,
   } from "@etabli/sdk/protocol";
   import { api } from "$lib/api";
@@ -17,6 +18,7 @@
   import { connues, estStrict } from "$lib/plugins/permissions";
   import { getPlugin } from "$lib/plugins/registry.svelte";
   import { routeur } from "$lib/state/appels.svelte";
+  import { parametres } from "$lib/state/parametres.svelte";
   import { pluginData } from "$lib/state/pluginData.svelte";
   import { services } from "$lib/state/services.svelte";
   import { settings } from "$lib/state/settings.svelte";
@@ -81,6 +83,7 @@
   // Dernières valeurs connues de la mini-app : on ne lui renvoie pas ce qu'elle vient d'envoyer.
   let sentServices = "";
   let sentPluginData = "";
+  let sentParameters = "";
 
   async function connectFrame(): Promise<void> {
     port?.close();
@@ -147,6 +150,8 @@
     const visible = services.snapshotFor(pluginId);
     sentServices = JSON.stringify(visible);
     sentPluginData = JSON.stringify(savedData);
+    const valeurs = valeursParametres();
+    sentParameters = JSON.stringify(valeurs);
     // Origine opaque du cadre isolé : « * » est la seule cible possible, le port reste privé.
     frame.contentWindow?.postMessage({ type: CONNECT }, "*", [channel.port2]);
     send({
@@ -160,10 +165,26 @@
       pluginData: JSON.parse(sentPluginData),
       // Si le cadre se recharge, les données reçues ne sont pas appliquées une seconde fois.
       incoming: incoming && !incomingSent ? JSON.parse(JSON.stringify(incoming)) : null,
+      parameters: valeurs,
       shortcuts: forward ? frameShortcuts() : [],
     });
     incomingSent = true;
   }
+
+  /** Valeurs des paramètres que déclare le plugin de ce cadre (vide s'il n'en déclare pas). */
+  function valeursParametres(): Parameters {
+    const manifeste = getPlugin(pluginId);
+    return manifeste ? $state.snapshot(parametres.valeurs(manifeste)) : {};
+  }
+
+  // Un paramètre réglé dans les Paramètres du moteur pendant que la mini-app est ouverte.
+  $effect(() => {
+    const valeurs = valeursParametres();
+    const json = JSON.stringify(valeurs);
+    if (!port || json === sentParameters) return;
+    sentParameters = json;
+    send({ type: "parameters", values: valeurs });
+  });
 
   // Raccourcis modifiés dans les Paramètres pendant que la mini-app est ouverte.
   $effect(() => {
