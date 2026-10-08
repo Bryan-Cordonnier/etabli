@@ -11,9 +11,11 @@ export interface Distribution {
   themes: Theme[] | null;
   /** Dessin du logo (contenu d'un SVG 24x24, trait `currentColor`), ou `null` : celui d'Établi. */
   logo: string | null;
+  /** Icônes propres à la distribution, par nom (« calendrier ») : un plugin de la distribution peut les donner à ses pages. Même forme que le logo, mais remplies (`currentColor`). */
+  icons: Record<string, string>;
 }
 
-export const DISTRIBUTION_DEFAUT: Distribution = { name: "Établi", pluginsPage: true, themes: null, logo: null };
+export const DISTRIBUTION_DEFAUT: Distribution = { name: "Établi", pluginsPage: true, themes: null, logo: null, icons: {} };
 
 const objet = (v: unknown): Record<string, unknown> | null => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
 const COULEUR = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i;
@@ -34,6 +36,17 @@ function lireTheme(brut: unknown): Theme | null {
   return { id: t.id, name: t.name.trim().slice(0, 40), author: typeof t.author === "string" ? t.author.slice(0, 60) : "", base: t.base, colors };
 }
 
+/** Au plus 40 icônes, au nom en minuscules, dont le dessin passe le même contrôle que le logo. */
+function lireIcones(brut: unknown): Record<string, string> {
+  const o = objet(brut);
+  const sortie: Record<string, string> = {};
+  if (!o) return sortie;
+  for (const [nom, dessin] of Object.entries(o).slice(0, 40)) {
+    if (/^[a-z][a-z0-9-]{0,30}$/.test(nom) && typeof dessin === "string" && dessin.length <= 2000 && LOGO.test(dessin)) sortie[nom] = dessin.trim();
+  }
+  return sortie;
+}
+
 export function lireDistribution(brut: unknown): Distribution {
   const o = objet(brut);
   if (!o) return { ...DISTRIBUTION_DEFAUT };
@@ -45,6 +58,7 @@ export function lireDistribution(brut: unknown): Distribution {
     // Au moins un thème clair ou sombre valable, sans doublon d'identifiant ; sinon les thèmes d'Établi.
     themes: themes.length > 0 && ids.size === themes.length ? themes : null,
     logo: typeof o.logo === "string" && o.logo.length <= 2000 && LOGO.test(o.logo) ? o.logo.trim() : null,
+    icons: lireIcones(o.icons),
   };
 }
 

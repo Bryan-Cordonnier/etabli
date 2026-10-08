@@ -2,7 +2,6 @@
   import { distribution } from "$lib/distribution";
   // Palette de commandes (bouton de recherche de la barre d'onglets, ou raccourci réglé dans les Paramètres) : ouvrir une page au clavier.
   import { api } from "$lib/api";
-  import type { IconName } from "$lib/icons";
   import { allPages } from "$lib/plugins/registry.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -17,7 +16,7 @@
     detail: string;
     view: View;
     color: string;
-    icon: IconName;
+    icon: string;
   }
 
   const entries: Entry[] = [

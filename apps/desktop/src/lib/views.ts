@@ -1,10 +1,9 @@
-import type { IconName } from "./icons";
 import { getPage } from "./plugins/registry.svelte";
 import type { View } from "./types";
 
 export interface ViewInfo {
   title: string;
-  icon: IconName;
+  icon: string;
   color: string;
 }
 

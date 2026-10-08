@@ -96,7 +96,18 @@ function* fichiers(dossier, ignorer = new Set()) {
 export function iconesConnues(racine = RACINE) {
   const source = readFileSync(join(racine, "apps", "desktop", "src", "lib", "icons.ts"), "utf8");
   const bloc = /export const ICONS = \{([\s\S]*?)\n\};/.exec(source)?.[1] ?? "";
-  return new Set([...bloc.matchAll(/^\s+"?([a-z0-9-]+)"?\s*:/gm)].map((m) => m[1]));
+  const noms = new Set([...bloc.matchAll(/^\s+"?([a-z0-9-]+)"?\s*:/gm)].map((m) => m[1]));
+  // Les icônes propres à la distribution (distribution.json, désigné par ETABLE_DISTRIBUTION) sont acceptées aussi.
+  const distribution = process.env.ETABLE_DISTRIBUTION;
+  if (distribution && existsSync(distribution)) {
+    try {
+      const icones = JSON.parse(readFileSync(distribution, "utf8").replace(/^﻿/, "")).icons;
+      for (const nom of Object.keys(icones && typeof icones === "object" ? icones : {})) noms.add(nom);
+    } catch {
+      // un distribution.json illisible est signalé ailleurs ; ici, on garde la liste d'Établi
+    }
+  }
+  return noms;
 }
 
 function plageValide(plage) {

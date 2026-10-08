@@ -30,6 +30,12 @@ describe("lireDistribution", () => {
     expect(lireDistribution({ themes: [] }).themes).toBeNull();
   });
 
+  it("lit des icônes propres à la distribution et refuse les autres", () => {
+    const d = lireDistribution({ icons: { calendrier: '<rect x="3" y="5" width="18" height="16" rx="4"/>', "Mauvais Nom": '<path d="M0 0"/>', piege: '<script>x()</script>' } });
+    expect(Object.keys(d.icons)).toEqual(["calendrier"]);
+    expect(lireDistribution({ icons: "x" }).icons).toEqual({});
+  });
+
   it("la page Plugins reste visible tant qu'on ne la retire pas explicitement", () => {
     expect(lireDistribution({ pluginsPage: "non" }).pluginsPage).toBe(true);
     expect(lireDistribution({}).pluginsPage).toBe(true);
