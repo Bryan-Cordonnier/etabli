@@ -70,10 +70,20 @@ A secondary hint shows the days since the last recalibration.
 Food is **its own plugin**, not a setting of Mes finances. It sets a **weekly budget** (shopping is usually done once a week); on the shopping day the amount is deducted, and the forecast shows it ahead of time.
 Later it can look up prices through APIs. It announces its planned spending to Mes finances, like Travail announces income.
 
-## 5. Accounts counted in the forecast (Bryan)
+## 5. Accounts (Bryan)
 
-Settable per account: **counted as the money I live on**, counted as a **safety margin** (savings, a future PEA: shown separately and optionally added to the survival date), or **excluded**.
-Whether a safety-margin account counts toward survival is a switch the user can flip; both results are shown.
+- **As many accounts as the user wants**, each with a **role**: *I live on it* (counts in "Argent actuel" and in the survival date), *safety money* (an account I could use in case of need:
+  savings, a future PEA; counts in the survival date), or *outside the calculation* (cash, a business account...). The role is changed at any time in the plugin's settings.
+- "Argent actuel" is the sum of the *I live on* accounts; "Tenu" counts *I live on* + *safety*; the curve states which accounts it counts.
+- **Quick +/− and recalibration apply to the first *I live on* account** (the main one); a transfer moves money between any two accounts.
+- **Linked accounts (later, Bryan):** an account that **comes from another application**, typically the **business account** of the ERP: money that Bryan pays himself (a salary
+  from the company, seen as expected income) or money he sends there to invest. Requirements to settle before building: it must be **secure and consented**
+  (explicit link, read-only by default, each direction of money an explicit transfer); and it is a **cross-application** link, so it needs the server and its organisations (two separate
+  apps cannot share plugin services). Until then, a business account can simply be an ordinary account entered by hand, with the role *outside the calculation*.
+
+## 6. The forecast curve stops 30 days after the break point (decision taken for Bryan)
+
+The red part after the break point is kept for 30 days only: beyond that the figures are money that will not exist, and they squash the scale of the useful part.
 
 ## Still open
 
