@@ -143,6 +143,7 @@
     background: var(--surface);
   }
   .view {
+    height: 100%;
     animation: fade-in 0.18s ease-out;
   }
   .voile {

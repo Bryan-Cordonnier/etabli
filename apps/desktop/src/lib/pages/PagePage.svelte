@@ -44,6 +44,7 @@
     <div class="problems"><PluginProblems plugin={found.plugin} /></div>
   {:else}
     <MiniAppFrame
+      fill
       src={pluginUrl(pluginId, found.app.entry)}
       title={found.page.title}
       {pluginId}

@@ -8,7 +8,8 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 // et le dossier Rust exclu de la surveillance des fichiers.
 const host = process.env.TAURI_DEV_HOST;
 
-const PLUGINS_DIR = fileURLToPath(new URL("../../plugins", import.meta.url));
+// Dossier des plugins de l'aperçu navigateur : `ETABLE_PLUGINS_DIR` pour une distribution (Quotidien…), sinon `plugins/` du dépôt.
+const PLUGINS_DIR = process.env.ETABLE_PLUGINS_DIR ?? fileURLToPath(new URL("../../plugins", import.meta.url));
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
