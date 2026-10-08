@@ -1,35 +1,13 @@
 // Thèmes : chaque thème redéfinit les variables CSS de app.css (cahier des charges, section 4).
 // « Comme Windows » n'applique rien : app.css suit alors prefers-color-scheme.
 
-/** Variables de couleur d'un thème, transmises aussi aux mini-apps. */
-export const THEME_TOKENS = [
-  "page",
-  "surface",
-  "surface-2",
-  "field",
-  "border",
-  "text",
-  "muted",
-  "faint",
-  "accent",
-  "accent-soft",
-  "accent-text",
-  "scrim",
-] as const;
-
-export type ThemeColors = Record<(typeof THEME_TOKENS)[number], string>;
-
-export interface Theme {
-  id: string;
-  name: string;
-  author: string;
-  base: "light" | "dark";
-  colors: ThemeColors;
-}
+export { THEME_TOKENS, type Theme, type ThemeColors } from "./themeTokens";
+import { distribution } from "./distribution";
+import { THEME_TOKENS, type Theme, type ThemeColors } from "./themeTokens";
 
 export const SYSTEM_THEME = "systeme";
 
-export const THEMES: Theme[] = [
+const THEMES_ETABLI: Theme[] = [
   {
     id: "clair",
     name: "Clair",
@@ -112,12 +90,22 @@ export const THEMES: Theme[] = [
   },
 ];
 
+/** Les thèmes proposés : ceux de la distribution si elle en impose, sinon ceux d'Établi. */
+export const THEMES: Theme[] = distribution.themes ?? THEMES_ETABLI;
+
+/** Une distribution à thèmes fixes : « Comme Windows » choisit parmi eux le clair ou le sombre selon Windows. */
+function themeDuSysteme(): Theme | undefined {
+  const sombre = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches;
+  return THEMES.find((t) => t.base === (sombre ? "dark" : "light")) ?? THEMES[0];
+}
+
 export function applyTheme(id: string, custom: Theme[] = []): void {
   const root = document.documentElement;
   for (const token of THEME_TOKENS) root.style.removeProperty(`--${token}`);
   root.style.removeProperty("color-scheme");
 
-  const theme = [...THEMES, ...custom].find((t) => t.id === id);
+  // Thèmes fixes : pas de thème importé, et un choix inconnu (enregistré avant, ailleurs) retombe sur « Comme Windows ».
+  const theme = distribution.themes ? (THEMES.find((t) => t.id === id) ?? themeDuSysteme()) : [...THEMES, ...custom].find((t) => t.id === id);
   if (!theme) return;
   for (const [token, value] of Object.entries(theme.colors)) {
     root.style.setProperty(`--${token}`, value);
@@ -144,7 +132,7 @@ export function parseTheme(text: string): Theme {
   const name = typeof t.name === "string" ? t.name.trim() : "";
   if (!name) throw new Error("Le champ « name » est obligatoire.");
   const base = t.base === "dark" ? "dark" : "light";
-  const fallback = THEMES.find((theme) => theme.id === (base === "dark" ? "sombre" : "clair"))!;
+  const fallback = THEMES_ETABLI.find((theme) => theme.id === (base === "dark" ? "sombre" : "clair"))!;
 
   const colors = { ...fallback.colors };
   const given = typeof t.colors === "object" && t.colors !== null ? (t.colors as Record<string, unknown>) : {};

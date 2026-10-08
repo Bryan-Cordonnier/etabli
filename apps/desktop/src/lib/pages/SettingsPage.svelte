@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { distribution } from "$lib/distribution";
   // Paramètres (cahier des charges, section 5.10). Les plugins peuvent y ajouter leurs propres pages
   // de réglages (agenda, budget…) : elles s'affichent dans le menu, sous « Plugins ».
   import type { PluginToHost } from "@etabli/sdk/protocol";
@@ -44,15 +45,10 @@
       title: "Apparence",
       lead: "Couleurs, taille du texte et animations. Les mini-apps des plugins suivent ces réglages.",
     },
-    apercu: {
-      label: "Aperçu rapide",
-      title: "Aperçu rapide",
-      lead: "La petite fenêtre qui s'ouvre par-dessus n'importe quel logiciel pour lancer un calcul sans quitter votre travail.",
-    },
     raccourcis: {
       label: "Raccourcis clavier",
       title: "Raccourcis clavier",
-      lead: "Aucun raccourci n'est réglé d'avance (sauf l'aperçu rapide) : choisissez ceux dont vous avez besoin.",
+      lead: "L'aperçu rapide (la petite fenêtre qui s'ouvre par-dessus n'importe quel logiciel) et les raccourcis de l'application. Aucun n'est réglé d'avance, sauf l'aperçu rapide.",
     },
     serveur: {
       label: "Serveur et compte",
@@ -86,7 +82,7 @@
   const estAdmin = api.id === "serveur" && connexion?.mode === "serveur" && connexion.utilisateur.role === "admin";
 
   const GROUPS: { title: string; sections: FixedSection[] }[] = [
-    { title: "Application", sections: api.capacites.fenetresNatives ? ["general", "apparence", "apercu", "raccourcis"] : ["general", "apparence"] },
+    { title: "Application", sections: api.capacites.fenetresNatives ? ["general", "apparence", "raccourcis"] : ["general", "apparence"] },
     { title: "Serveur", sections: estAdmin ? ["serveur", "administration"] : ["serveur"] },
     ...(estNatif() ? [{ title: "Téléphone", sections: ["alarmes" as const] }] : []),
     { title: "Plugins", sections: ["plugins"] },
@@ -374,10 +370,13 @@
             {#each THEMES as theme (theme.id)}
               {@render themeCard(theme, false)}
             {/each}
-            {#each settings.customThemes as theme (theme.id)}
-              {@render themeCard(theme, true)}
-            {/each}
+            {#if !distribution.themes}
+              {#each settings.customThemes as theme (theme.id)}
+                {@render themeCard(theme, true)}
+              {/each}
+            {/if}
           </div>
+          {#if !distribution.themes}
           <div class="buttons">
             <button class="btn" onclick={() => themeFile?.click()}>Importer un thème…</button>
             <button class="btn" onclick={copyTheme}>Copier le thème actuel</button>
@@ -387,6 +386,7 @@
             Un thème est un petit fichier JSON : un nom, une base claire ou sombre, et les couleurs à changer.
             Copiez le thème actuel pour partir d'un exemple.
           </p>
+          {/if}
         </div>
 
         <div class="box">
@@ -449,9 +449,9 @@
           </div>
           <p class="hint">Pour changer l'ordre des pages, faites-les glisser dans la colonne de gauche.</p>
         </div>
-      {:else if active === "apercu"}
+      {:else if active === "raccourcis"}
         <div class="box">
-          <h3>Raccourci global</h3>
+          <h3>Aperçu rapide : raccourci global</h3>
           <p class="hint">Ouvre l'aperçu rapide par-dessus n'importe quel logiciel, SolidWorks compris.</p>
           <ShortcutRecorder value={settings.quickShortcut} scope="global" name="aperçu rapide" onchange={changeShortcut} />
           {#if shortcutError}
@@ -488,15 +488,6 @@
           {/if}
           <p class="hint">Ajoutez une page avec l'étoile de sa tuile. Les 9 premières ont un accès direct par les touches 1 à 9.</p>
         </div>
-      {:else if active === "raccourcis"}
-        <div class="box">
-          <h3>Aperçu rapide (depuis n'importe quel logiciel)</h3>
-          <div class="setting">
-            {@render row("Ouvrir l'aperçu rapide", "Le seul raccourci réglé d'avance. Ses réglages sont dans « Aperçu rapide ».")}
-            <kbd>{settings.quickShortcut.label}</kbd>
-          </div>
-        </div>
-
         <div class="box">
           <div class="box-head">
             <h3>Dans la fenêtre d'Établi</h3>
