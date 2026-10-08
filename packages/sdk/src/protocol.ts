@@ -37,6 +37,9 @@ export interface ServiceSnapshot<T = unknown> {
 
 export type Services = Record<string, ServiceSnapshot>;
 
+/** Valeurs des paramètres d'un plugin, par identifiant : nombre, texte, booléen, heure (« 08:30 ») ou choix. */
+export type Parameters = Record<string, number | string | boolean>;
+
 /** Niveau d'accès d'une fonction de service : lire seulement, ou modifier des données chez le fournisseur. */
 export type ServiceAccess = "lecture" | "ecriture";
 
@@ -113,6 +116,8 @@ export type HostToPlugin =
       pluginData: unknown;
       /** Données envoyées par une autre mini-app (« Envoyer au calepinage »), ou `null`. */
       incoming: Incoming | null;
+      /** Valeurs des paramètres que le plugin déclare (`parameters` du manifeste), réglées dans les Paramètres du moteur. */
+      parameters?: Parameters;
       /**
        * Raccourcis clavier réglés par l'utilisateur dans le moteur (« Ctrl+KeyT »…, voir `matchesShortcut`) :
        * la mini-app garde le clavier, elle ne renvoie au moteur que ces combinaisons. Aucun par défaut.
@@ -122,6 +127,8 @@ export type HostToPlugin =
   | { type: "theme"; theme: ThemeTokens; colorScheme: ColorScheme }
   | { type: "services"; services: Services }
   | { type: "pluginData"; data: unknown }
+  /** Un paramètre a été réglé dans les Paramètres du moteur : toutes les valeurs, à jour. */
+  | { type: "parameters"; values: Parameters }
   | { type: "shortcuts"; shortcuts: string[] }
   /** Réponse du moteur à un `serviceCall` de cette mini-app. */
   | { type: "serviceReply"; id: string; result: ServiceResult }

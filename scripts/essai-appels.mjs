@@ -202,9 +202,8 @@ async function monter() {
 
 /** Ouvre la mini-app d'essai d'un plugin depuis l'accueil et rend son cadre, prêt à recevoir des appels. */
 async function ouvrirAppelant(page, nomPlugin, idPlugin) {
-  await page.getByRole("button", { name: new RegExp(nomPlugin) }).first().click();
-  // Un plugin à une seule mini-app s'ouvre directement sur sa liste de calculs : « Nouveau » crée le calcul et charge le cadre.
-  await page.getByRole("button", { name: "Nouveau", exact: true }).click();
+  // La colonne de gauche liste les pages : la première page du plugin charge le cadre.
+  await page.locator(`button[data-page^="${idPlugin}/"]`).first().click();
   const cadre = await attendreCadre(page, idPlugin);
   await cadre.waitForFunction(() => document.title === "prêt", null, { timeout: 15_000 });
   return cadre;

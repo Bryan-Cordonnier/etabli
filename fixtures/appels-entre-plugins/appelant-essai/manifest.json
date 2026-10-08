@@ -2,7 +2,7 @@
   "id": "appelant-essai",
   "name": "Appelant d'essai",
   "version": "1.0.0",
-  "apiVersion": "^2",
+  "apiVersion": "^3",
   "author": "Établi (essai, non distribué)",
   "description": "Fixture de test des appels entre plugins : appelle les fonctions du fournisseur d'essai.",
   "color": "#6b7280",
@@ -17,15 +17,23 @@
   "services": {
     "registre": "^1"
   },
-  "miniApps": [
+  "apps": [
     {
       "id": "essai",
       "name": "Essai d'appels",
-      "description": "Page d'essai sans interface",
-      "icon": "puzzle",
       "entry": "essai/index.html",
-      "dataVersion": 1,
-      "plannedFor": "v1"
+      "accepts": []
+    }
+  ],
+  "pages": [
+    {
+      "id": "essai",
+      "title": "Essai d'appels",
+      "icon": "puzzle",
+      "layout": {
+        "type": "app",
+        "app": "essai"
+      }
     }
   ]
 }

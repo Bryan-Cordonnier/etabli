@@ -53,7 +53,7 @@ describe("le manifeste et le service disent la même chose", () => {
   });
   it("permissions minimales : aucune (ni fichiers, ni réseau, ni appel d'un autre plugin)", () => {
     expect((manifeste as any).permissions).toEqual([]);
-    expect((manifeste as any).apiVersion).toBe("^2");
+    expect((manifeste as any).apiVersion).toBe("^3");
   });
   it("une fonction inconnue (ou un nom hérité d'Object) est introuvable", () => {
     const b = new Banc();

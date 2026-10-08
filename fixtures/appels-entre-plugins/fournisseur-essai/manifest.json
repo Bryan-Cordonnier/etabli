@@ -2,7 +2,7 @@
   "id": "fournisseur-essai",
   "name": "Fournisseur d'essai",
   "version": "3.0.0",
-  "apiVersion": "^2",
+  "apiVersion": "^3",
   "author": "Établi (essai, non distribué)",
   "description": "Fixture de test des appels entre plugins : un petit registre qui répond à des fonctions de service.",
   "color": "#6b7280",
@@ -34,5 +34,6 @@
       }
     }
   },
-  "miniApps": []
+  "apps": [],
+  "pages": []
 }

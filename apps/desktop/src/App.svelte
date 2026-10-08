@@ -9,8 +9,7 @@
   import Toast from "$lib/components/Toast.svelte";
   import UpdateBanner from "$lib/components/UpdateBanner.svelte";
   import Home from "$lib/pages/Home.svelte";
-  import MiniAppPage from "$lib/pages/MiniAppPage.svelte";
-  import PluginPage from "$lib/pages/PluginPage.svelte";
+  import PagePage from "$lib/pages/PagePage.svelte";
   import PluginsPage from "$lib/pages/PluginsPage.svelte";
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
   import { api, system } from "$lib/api";
@@ -46,7 +45,7 @@
     return () => void changed.then((stop) => stop());
   });
 
-  // « Ouvrir dans l'Établi » depuis l'aperçu rapide : le calcul arrive dans un nouvel onglet.
+  // « Ouvrir dans l'application » depuis l'aperçu rapide : la page arrive dans un nouvel onglet.
   $effect(() => {
     const unlisten = system.onOpenRequest((view) => tabs.navigate(view, { newTab: true }));
     return () => void unlisten.then((stop) => stop());
@@ -64,10 +63,8 @@
 
   const view = $derived(tabs.active?.view);
 
-  /** Change à chaque changement de page : l'écran est recréé et le fondu rejoué. Pour une mini-app,
-   *  seul le `nonce` compte : l'identifiant reçu au premier enregistrement ne recrée rien. */
+  /** Change à chaque changement de page : l'écran est recréé et le fondu rejoué. */
   function keyOf(v: View | undefined): string {
-    if (v?.kind === "app") return `app:${v.pluginId}:${v.appId}:${v.nonce}`;
     return JSON.stringify(v);
   }
   const viewKey = $derived(`${tabs.activeId}:${keyOf(view)}`);
@@ -109,10 +106,8 @@
         <div class="view">
           {#if view?.kind === "home"}
             <Home />
-          {:else if view?.kind === "plugin"}
-            <PluginPage pluginId={view.pluginId} />
-          {:else if view?.kind === "app"}
-            <MiniAppPage tabId={tabs.activeId} pluginId={view.pluginId} appId={view.appId} docId={view.docId} />
+          {:else if view?.kind === "page"}
+            <PagePage tabId={tabs.activeId} pluginId={view.pluginId} pageId={view.pageId} />
           {:else if view?.kind === "settings"}
             <SettingsPage section={view.section} hash={view.hash} />
           {:else if view?.kind === "plugins"}

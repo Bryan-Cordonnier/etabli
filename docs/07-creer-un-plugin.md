@@ -1,4 +1,4 @@
-# 07 — Créer un plugin ou une mini-app
+# 07 — Créer un plugin (pages, apps, paramètres)
 
 ## Démarrage rapide
 
@@ -9,10 +9,10 @@ npm run dev                                      # lance Établi avec votre plug
 npm run valider -- soudage                       # manifeste, journal, contenu
 ```
 
-`nouveau-plugin` crée `plugins/soudage/` : manifeste, une mini-app d'exemple (aire et périmètre d'un rectangle), son calcul
+`nouveau-plugin` crée `plugins/soudage/` : manifeste (une app, une page, un paramètre), une page d'exemple (aire et périmètre d'un rectangle), son calcul
 et ses tests, un `CHANGELOG.md`, et si vous le demandez une page de réglages. Le résultat compile, passe `npm run check` et
 `npm run valider` : modifiez-le pas à pas. Avant de proposer le plugin : [CONTRIBUTING.md](../CONTRIBUTING.md#écrire-un-plugin).
-Pour un exemple complet, lisez **`plugins/tolerie`** (petit, récent, complet).
+Pour un exemple complet, lisez un plugin de `plugins/` (par exemple `plugins/finances`) ou le modèle créé par `nouveau-plugin`.
 
 ## 1. Structure d'un plugin
 
@@ -21,9 +21,9 @@ plugins/<id>/
   package.json          "name": "@etabli/plugin-<id>", scripts build / check / test
   tsconfig.json         copie de tolerie (resolveJsonModule si tables JSON)
   svelte.config.js      vitePreprocess
-  vite.config.ts        une entrée par mini-app : input: { <app>: app("<app>") }
+  vite.config.ts        une entrée par app : input: { <app>: app("<app>") }
   public/manifest.json  copié tel quel dans dist/ (ne jamais mettre de manifest.json à la racine)
-  apps/<app>/index.html page de la mini-app (<div id="app">, script ./main.ts)
+  apps/<app>/index.html page de l'app (<div id="app">, script ./main.ts)
   apps/<app>/main.ts    import "@etabli/sdk/base.css"; mount(Composant, { target: … })
   apps/<app>/<App>.svelte
   src/<calcul>.ts       calculs purs, sans interface (testables)
@@ -35,48 +35,54 @@ plugins/<id>/
 Puis `npm install` à la racine (lie le nouveau workspace), `npm run build -w @etabli/plugin-<id>`.
 Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/manifest.json`).
 
-## 2. Manifeste
+## 2. Manifeste (contrat 3)
 
 ```json
 {
-  "id": "tolerie",
-  "name": "Tôlerie",
+  "id": "courses",
+  "name": "Courses",
   "version": "1.0.0",
-  "apiVersion": "^2",
-  "author": "Établi",
-  "description": "Pliage : développés, vé et effort de presse",
-  "color": "#ea7a1a",
-  "icon": "hammer",
-  "permissions": ["presse-papiers", "envoi"],
-  "miniApps": [
-    {
-      "id": "developpe",
-      "name": "Développé de pliage",
-      "description": "Longueur du flan, lignes de pli",
-      "icon": "bend",
-      "dataVersion": 1,
-      "plannedFor": "v1",
-      "entry": "apps/developpe/index.html",
-      "accepts": []
-    }
+  "apiVersion": "^3",
+  "author": "Votre nom",
+  "description": "Un budget par semaine, les tickets et la liste de courses",
+  "color": "#c9661a",
+  "icon": "store",
+  "permissions": ["presse-papiers"],
+  "apps": [
+    { "id": "tableau", "name": "Tableau de bord", "entry": "apps/tableau/index.html", "accepts": [] },
+    { "id": "liste", "name": "Liste de courses", "entry": "apps/liste/index.html", "accepts": [] }
+  ],
+  "pages": [
+    { "id": "courses", "title": "Courses", "icon": "store", "layout": { "type": "app", "app": "tableau" } },
+    { "id": "liste", "title": "Liste de courses", "icon": "file", "layout": { "type": "app", "app": "liste" } }
+  ],
+  "parameters": [
+    { "id": "budget", "label": "Budget par semaine", "type": "number", "default": 70, "unit": "€", "min": 0, "step": 5, "group": "Budget" },
+    { "id": "jour", "label": "Jour des courses", "type": "select", "default": "6", "options": [{ "value": "6", "label": "samedi" }, { "value": "0", "label": "dimanche" }], "group": "Budget" }
   ]
 }
 ```
 
-- `id` (plugin et mini-app) : minuscules, chiffres, tirets. **Ne jamais changer l'id d'une mini-app
-  qui a des calculs enregistrés** (ils y sont rattachés).
-- `icon` : un nom de `apps/desktop/src/lib/icons.ts` ; sinon ajoutez l'icône Lucide dans ce fichier
-  (import + entrée dans `ICONS`). Une icône inconnue devient « puzzle ». Il n'y a pas d'émoji : un
-  plugin n'a qu'un nom d'icône et une couleur à fournir, l'application dessine le reste.
-- `apiVersion` : `"^2"` pour un plugin neuf. Le moteur contrôle alors **strictement** ce que fait le plugin ; un plugin `"^1"`
-  garde ses anciens droits mais est signalé à l'installation, et `npm run valider` le signale.
+- **`apps`** : les pages HTML isolées du plugin (`entry`, chemin relatif au plugin). **`pages`** : ce que la colonne de gauche liste
+  et qu'un onglet affiche : un titre, une icône, et `layout: { "type": "app", "app": "<id d'une app>" }` (la seule disposition
+  pour l'instant). **Il n'y a pas de mode de compatibilité** : un plugin sans `pages` (ni `apps`) est refusé par `npm run valider`
+  et par le moteur, qui l'affiche dans la page *Plugins* avec sa raison. Un plugin qui n'offre qu'un service déclare `"pages": []` et `"apps": []`.
+  Le nom du plugin n'apparaît pas dans la colonne : seules les pages y sont, que l'utilisateur déplace à son gré.
+- `id` (plugin, app, page) : minuscules, chiffres, tirets. L'identifiant d'une page sert aux favoris et à l'ordre de la colonne :
+  ne le changez pas une fois le plugin distribué.
+- `icon` : un nom de `apps/desktop/src/lib/icons.ts` ; sinon ajoutez l'icône Lucide dans ce fichier (import + entrée dans `ICONS`).
+  Une icône inconnue devient « puzzle ». Il n'y a pas d'émoji : un plugin n'a qu'un nom d'icône et une couleur à fournir.
+- `apiVersion` : `"^3"`. Le moteur contrôle **strictement** ce que fait le plugin.
 - `permissions` : ce que le plugin a besoin de faire (`fichiers`, `presse-papiers`, `envoi`, `reglages`, `notifications`).
   L'utilisateur les voit avant d'installer. Déclarez le strict nécessaire ; `npm run valider` refuse l'usage d'une
   fonction sans sa permission. Détail et justification : [19](19-modele-de-menace-plugins.md).
-- `entry` absent : la mini-app s'affiche « à venir » (placeholder).
-- `dataVersion` : à incrémenter quand le format des données change (et prévoir `migrate`).
-- `accepts` : types de données que la mini-app sait recevoir (voir
-  [09-bibliotheques-fiches-envoi.md](09-bibliotheques-fiches-envoi.md)).
+- `accepts` : types de données que l'app sait recevoir (voir [09-bibliotheques-fiches-envoi.md](09-bibliotheques-fiches-envoi.md)).
+- **`parameters`** (facultatif) : réglages que **l'utilisateur** fait dans Paramètres, dans un onglet que **le moteur** construit
+  et nomme comme le plugin : aucun écran de réglages à écrire. Types : `number` (`default`, `unit`, `min`, `max`, `step`), `text`,
+  `boolean`, `time` (« 08:30 »), `select` (`options: [{ value, label }]`). Chacun a un `id` (une lettre minuscule puis lettres
+  et chiffres), un `label`, et facultativement `group` (titre de groupe) et `hint` (phrase d'aide). Le plugin les lit avec
+  `new PluginParameters({ budget: 70, jour: "6" })` du kit (`params.values.budget`, réactif) ou `etabli.parameters.values` ; il ne les
+  modifie pas. Une valeur hors bornes ou du mauvais type est refusée, la valeur par défaut s'applique.
 - `dependencies` / `optionalDependencies` (facultatifs) : plugins dont le vôtre a besoin, ou dont il
   profite s'ils sont là, avec la plage de versions acceptée (`"fournisseurs": "^1"`). Voir
   « Dépendances et services » plus bas.
@@ -84,53 +90,46 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
 - `functions` + `serviceEntry` (facultatifs) : fonctions que le plugin offre aux autres, et la page sans interface qui y répond.
   `services` + `permissions: ["appelle:<service>:<accès>"]` : côté appelant. Voir « Appeler la fonction d'un autre plugin »
   plus bas.
-- `settings` (facultatif) : pages de réglages que le plugin ajoute à Paramètres → Plugins
-  (`[{ "id": "fournisseurs", "title": "Fournisseurs", "entry": "reglages/index.html" }]`).
-- Un plugin sans mini-app (`"miniApps": []`) n'apparaît pas dans la colonne : il n'apporte que des
-  réglages ou des données (Fournisseurs, Machines).
-- Ordre dans la colonne : pour un plugin officiel, ajoutez son id à `OFFICIAL_ORDER` dans
-  `apps/desktop/src/lib/plugins/registry.ts`.
-- Distribution : le plugin n'est pas dans l'installateur ; on le publie dans le catalogue avec
-  l'étiquette `plugin-<id>-v<version>` (voir [14](14-publier-une-version.md#paquet-de-plugin-signé-et-installation)).
-  En développement, les plugins du dépôt sont chargés directement (« intégrés »).
+- `settings` (facultatif) : pages de réglages **HTML** que le plugin ajoute à Paramètres → Plugins, quand `parameters` ne suffit
+  pas (un tableau de machines, par exemple). L'identifiant `parametres` est réservé.
+- Distribution : le plugin n'est pas dans l'installateur du moteur ; il s'installe depuis un fichier `.etabli-plugin` signé, ou une
+  distribution l'embarque (voir [27](27-building-a-distribution.md)). En développement, les plugins du dépôt sont chargés directement (« intégrés »).
 
-## 3. Modèle de mini-app
+## 3. Modèle de page
+
+Une page affiche une app sur toute la zone et **dessine elle-même son en-tête** (le moteur ne met ni titre, ni « Nouveau », ni liste
+d'anciens calculs autour). Les données du plugin vivent dans `PluginSettings` (partagées par toutes ses pages, enregistrées par le
+moteur) et dans les services ; il n'y a plus de « calcul » enregistré par le moteur.
 
 ```svelte
 <script lang="ts">
-  // <Nom> (cahier des charges des plugins, section X) : ce que fait la mini-app, en une phrase.
-  import { Card, Field, MiniAppDocument, Result, evaluate, format } from "@etabli/ui";
+  // <Nom> : ce que fait la page, en une phrase.
+  import { Card, Field, PluginParameters, PluginSettings, Result, evaluate, format } from "@etabli/ui";
   import { calcule, type Resultat } from "../../src/calcul";
 
-  interface Data {
-    a: string; // texte saisi, calculs acceptés
-    b: string;
-  }
+  const saisie = new PluginSettings({ a: "", b: "" });        // enregistré par le moteur à chaque changement
+  const params = new PluginParameters({ decimales: 0 });      // réglé dans Paramètres, onglet du plugin
 
   const num = (text: string) => (text.trim() === "" ? NaN : evaluate(text));
 
-  function solve(d: Data): Resultat | string {
+  function solve(d: { a: string; b: string }): Resultat | string {
     if (d.a.trim() === "") return "Renseignez a.";           // une phrase qui dit quoi faire
     return calcule(num(d.a), num(d.b));                       // renvoie un message si impossible
   }
 
-  const doc = new MiniAppDocument<Data>({ a: "", b: "" }, (d) => {
-    const r = solve(d);
-    return typeof r === "string" ? "" : `x = ${format(r.x)} mm`; // résumé des anciens calculs
-  });
-
-  const result = $derived(solve(doc.data));
+  const result = $derived(solve(saisie.data));
   const r = $derived(typeof result === "string" ? null : result);
 </script>
 
+<h1>Mon calcul</h1>
 <div class="split">
   <Card title="Entrées">
-    <Field label="Côté a" unit="mm" bind:value={doc.data.a} />
-    <Field label="Côté b" unit="mm" bind:value={doc.data.b} placeholder={r ? format(r.b) : ""} />
+    <Field label="Côté a" unit="mm" bind:value={saisie.data.a} />
+    <Field label="Côté b" unit="mm" bind:value={saisie.data.b} placeholder={r ? format(r.b) : ""} />
   </Card>
   <Card title="Résultats">
     {#if r}
-      <Result label="x" value={r.x} unit="mm" big oncopy={doc.copy} />
+      <Result label="x" value={r.x} unit="mm" decimals={Number(params.values.decimales)} big />
     {:else}
       <p class="empty">{result}</p>
     {/if}
@@ -144,9 +143,7 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
 </style>
 ```
 
-Pour un calcul long (optimisation), calculer dans un `$effect` avec un délai (250 ms) sur un
-instantané JSON de `doc.data`, comme `plugins/economie/apps/debit-tubes/DebitTubes.svelte`.
-
+Pour un calcul long (optimisation), calculer dans un `$effect` avec un délai (250 ms) sur un instantané JSON des données.
 ## 4. Calculs et tests
 
 - Les formules vont dans `src/*.ts`, **sans Svelte** : fonctions pures qui renvoient un résultat ou
@@ -162,7 +159,6 @@ instantané JSON de `doc.data`, comme `plugins/economie/apps/debit-tubes/DebitTu
 - [ ] Valeurs calculées en filigrane (`placeholder`) dans les champs vides.
 - [ ] Un clic sur un résultat le copie (`Result`), tableaux copiables vers Excel si utile.
 - [ ] Schéma à l'échelle quand la géométrie s'y prête (SVG, couleurs du thème `var(--…)`).
-- [ ] Résumé court pour les anciens calculs.
 - [ ] Tout en français ; unités : mm, degrés, kg, N, MPa (tonnes en complément pour les presses).
 - [ ] Couleurs par variables CSS, arrondis `var(--r-sm)` / `var(--r-md)`.
 - [ ] Aucun accès réseau ni disque, aucune dépendance lourde sans chargement à la demande.

@@ -42,6 +42,7 @@ const INTERDITS = [
   [/\bdocument\.cookie\b/, "cookies"],
   [/\bwindow\.(parent|top|opener)\b/, "accès à la fenêtre du moteur : window.parent, top ou opener"],
   [/\b(parent|top)\.postMessage\b/, "message direct au moteur : le SDK sert à cela"],
+  [/\bMiniAppDocument\b|\bdocument\??\.(update|setTitle|setSummary)\s*\(/, "calcul enregistré par le moteur : les documents n'existent plus (contrat 3), utilisez PluginSettings ou etabli.settings"],
 ];
 
 /**
@@ -168,27 +169,69 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
       else declarees.add(permission);
     }
   }
-  if (!strict) avertir("« apiVersion » vaut ^1 : les permissions ne sont pas contrôlées. Passez à « ^2 » et déclarez ce que le plugin utilise.");
+  const majeureApi = typeof m.apiVersion === "string" && /\d+/.test(m.apiVersion) ? Number(/\d+/.exec(m.apiVersion)[0]) : 0;
+  if (majeureApi < 3) erreur("« apiVersion » doit demander le contrat « ^3 » : un plugin déclare ses pages (docs/28), il n'y a pas de mode de compatibilité.");
 
-  // Mini-apps
-  const miniApps = Array.isArray(m.miniApps) ? m.miniApps : null;
-  if (!miniApps) erreur("« miniApps » doit être une liste (vide `[]` pour un plugin de réglages seulement).");
+  // Apps (pages HTML isolées) et pages (ce que la colonne de gauche liste)
+  if (m.miniApps !== undefined) erreur("« miniApps » n'existe plus (contrat 3) : déclarez « apps » (les pages HTML) et « pages » (ce que la colonne liste).");
+  const apps = Array.isArray(m.apps) ? m.apps : null;
+  if (!apps) erreur("« apps » doit être une liste (vide `[]` pour un plugin sans interface).");
   const pages = [];
   const idsApps = new Set();
-  for (const app of miniApps ?? []) {
+  for (const app of apps ?? []) {
     const nom = app?.id ?? "?";
-    if (typeof app?.id !== "string" || !ID.test(app.id)) erreur(`mini-app « ${nom} » : « id » absent ou invalide.`);
-    else if (idsApps.has(app.id)) erreur(`mini-app « ${nom} » : identifiant utilisé deux fois.`);
+    if (typeof app?.id !== "string" || !ID.test(app.id)) erreur(`app « ${nom} » : « id » absent ou invalide.`);
+    else if (idsApps.has(app.id)) erreur(`app « ${nom} » : identifiant utilisé deux fois.`);
     else idsApps.add(app.id);
-    if (typeof app?.name !== "string" || app.name.trim() === "") erreur(`mini-app « ${nom} » : « name » absent.`);
-    if (typeof app?.icon !== "string" || !icones.has(app.icon)) erreur(`mini-app « ${nom} » : « icon » absente ou hors liste.`);
-    if (app?.emoji !== undefined) avertir(`mini-app « ${nom} » : « emoji » n'existe plus, retirez ce champ.`);
-    if (app?.entry === undefined) avertir(`mini-app « ${nom} » : pas de « entry » : elle s'affichera « à venir ».`);
-    else if (typeof app.entry !== "string" || app.entry.startsWith("/") || app.entry.includes("..")) erreur(`mini-app « ${nom} » : « entry » invalide (chemin relatif au plugin, sans « .. »).`);
-    else pages.push(["mini-app " + nom, app.entry]);
-    if (app?.dataVersion !== undefined && !Number.isInteger(app.dataVersion)) erreur(`mini-app « ${nom} » : « dataVersion » doit être un entier.`);
+    if (typeof app?.entry !== "string" || app.entry.startsWith("/") || app.entry.includes("..") || app.entry.includes("\\")) erreur(`app « ${nom} » : « entry » absent ou invalide (chemin relatif au plugin, sans « .. »).`);
+    else pages.push(["app " + nom, app.entry]);
+    if (app?.dataVersion !== undefined || app?.plannedFor !== undefined || app?.description !== undefined || app?.icon !== undefined) {
+      avertir(`app « ${nom} » : « dataVersion », « plannedFor », « description » et « icon » n'existent plus dans une app (l'icône et le titre sont ceux de la page).`);
+    }
+  }
+  const listePages = Array.isArray(m.pages) ? m.pages : null;
+  if (!listePages) erreur("« pages » doit être une liste (vide `[]` pour un plugin qui n'offre qu'un service).");
+  const idsPages = new Set();
+  for (const page of listePages ?? []) {
+    const nom = page?.id ?? "?";
+    if (typeof page?.id !== "string" || !ID.test(page.id)) erreur(`page « ${nom} » : « id » absent ou invalide.`);
+    else if (idsPages.has(page.id)) erreur(`page « ${nom} » : identifiant utilisé deux fois.`);
+    else idsPages.add(page.id);
+    if (typeof page?.title !== "string" || page.title.trim() === "") erreur(`page « ${nom} » : « title » absent.`);
+    if (typeof page?.icon !== "string" || !icones.has(page.icon)) erreur(`page « ${nom} » : « icon » absente ou hors liste (apps/desktop/src/lib/icons.ts).`);
+    const disposition = page?.layout;
+    if (disposition?.type !== "app") erreur(`page « ${nom} » : « layout » doit valoir { "type": "app", "app": "<id d'une app>" } (la seule disposition pour l'instant).`);
+    else if (typeof disposition.app !== "string" || !idsApps.has(disposition.app)) erreur(`page « ${nom} » : « layout.app » (${JSON.stringify(disposition.app)}) n'est pas une app déclarée dans « apps ».`);
   }
 
+  // Paramètres déclarés : le moteur en fait un onglet dans Paramètres
+  const TYPES_PARAMETRE = ["number", "text", "boolean", "time", "select"];
+  if (m.parameters !== undefined) {
+    if (!Array.isArray(m.parameters)) erreur("« parameters » doit être une liste de paramètres.");
+    else {
+      const vus = new Set();
+      if (m.parameters.length > 60) erreur("« parameters » : 60 paramètres au plus.");
+      for (const p of m.parameters) {
+        const nom = p?.id ?? "?";
+        if (typeof p?.id !== "string" || !/^[a-z][A-Za-z0-9]{0,31}$/.test(p.id)) erreur(`parameters : « ${nom} » : « id » absent ou invalide (une lettre minuscule puis lettres et chiffres, 32 caractères au plus).`);
+        else if (vus.has(p.id)) erreur(`parameters : « ${nom} » est déclaré deux fois.`);
+        else vus.add(p.id);
+        if (typeof p?.label !== "string" || p.label.trim() === "") erreur(`parameters : « ${nom} » n'a pas de « label ».`);
+        if (!TYPES_PARAMETRE.includes(p?.type)) erreur(`parameters : « ${nom} » : « type » doit être ${TYPES_PARAMETRE.join(", ")}.`);
+        else if (p.type === "number") {
+          if (typeof p.default !== "number" || !Number.isFinite(p.default)) erreur(`parameters : « ${nom} » : « default » doit être un nombre.`);
+          else if ((typeof p.min === "number" && p.default < p.min) || (typeof p.max === "number" && p.default > p.max)) erreur(`parameters : « ${nom} » : « default » sort des bornes « min » et « max ».`);
+        } else if (p.type === "boolean" && typeof p.default !== "boolean") erreur(`parameters : « ${nom} » : « default » doit être vrai ou faux.`);
+        else if (p.type === "time" && !/^([01]\d|2[0-3]):[0-5]\d$/.test(p.default ?? "")) erreur(`parameters : « ${nom} » : « default » doit être une heure « 08:30 ».`);
+        else if (p.type === "text" && typeof p.default !== "string") erreur(`parameters : « ${nom} » : « default » doit être un texte.`);
+        else if (p.type === "select") {
+          const valeurs = Array.isArray(p.options) ? p.options.map((o) => o?.value) : [];
+          if (valeurs.length === 0 || valeurs.some((v) => typeof v !== "string" || v === "")) erreur(`parameters : « ${nom} » : « options » doit être une liste non vide de { "value", "label" }.`);
+          else if (!valeurs.includes(p.default)) erreur(`parameters : « ${nom} » : « default » n'est pas l'une des options.`);
+        }
+      }
+    }
+  }
   // Dépendances, services, réglages
   for (const champ of ["dependencies", "optionalDependencies"]) {
     const valeur = m[champ];
@@ -267,7 +310,8 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
     else {
       const vus = new Set();
       for (const page of m.settings) {
-        if (typeof page?.id !== "string" || !ID.test(page.id)) erreur("settings : une page a un « id » absent ou invalide.");
+        if (page?.id === "parametres") erreur("settings : « parametres » est réservé (c'est le nom de l'onglet que le moteur fait pour les paramètres déclarés).");
+        else if (typeof page?.id !== "string" || !ID.test(page.id)) erreur("settings : une page a un « id » absent ou invalide.");
         else if (vus.has(page.id)) erreur(`settings : la page « ${page.id} » est déclarée deux fois.`);
         else vus.add(page.id);
         if (typeof page?.title !== "string" || page.title.trim() === "") erreur(`settings : la page « ${page?.id} » n'a pas de « title ».`);
@@ -300,7 +344,7 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
 
   // ——— Tests ———
   const tests = [...fichiers(join(dossier, "src"))].filter((f) => /\.test\.[cm]?[jt]s$/.test(f));
-  if (tests.length === 0 && (miniApps?.length ?? 0) > 0) avertir("aucun test (src/*.test.ts) : chaque formule doit avoir au moins trois cas vérifiés.");
+  if (tests.length === 0 && (apps?.length ?? 0) > 0) avertir("aucun test (src/*.test.ts) : chaque formule doit avoir au moins trois cas vérifiés.");
 
   // ——— Sources : appels interdits ———
   for (const sousDossier of ["apps", "src", "reglages", "service"]) {

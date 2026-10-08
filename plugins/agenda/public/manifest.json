@@ -2,12 +2,15 @@
   "id": "agenda",
   "name": "Agenda",
   "version": "0.1.0",
-  "apiVersion": "^2",
+  "apiVersion": "^3",
   "author": "Bryan Cordonnier",
   "description": "Votre temps : calendrier, événements qui se répètent, heures de départ, réveil et coucher calculées à rebours, alertes de repos légal, rappels sur le téléphone, export .ics.",
   "color": "#7c3aed",
   "icon": "clock",
-  "permissions": ["fichiers", "notifications"],
+  "permissions": [
+    "fichiers",
+    "notifications"
+  ],
   "provides": {
     "agenda": "1",
     "rappels": "1"
@@ -15,37 +18,63 @@
   "serviceEntry": "service/index.html",
   "functions": {
     "agenda": {
-      "evenements.liste": { "acces": "lecture" },
-      "plages.occupees": { "acces": "lecture" },
-      "evenements.remplacer": { "acces": "ecriture" },
-      "evenements.supprimer": { "acces": "ecriture" }
+      "evenements.liste": {
+        "acces": "lecture"
+      },
+      "plages.occupees": {
+        "acces": "lecture"
+      },
+      "evenements.remplacer": {
+        "acces": "ecriture"
+      },
+      "evenements.supprimer": {
+        "acces": "ecriture"
+      }
     },
     "rappels": {
-      "rappels.remplacer": { "acces": "ecriture" },
-      "rappels.annuler": { "acces": "ecriture" },
-      "rappels.etat": { "acces": "lecture" }
+      "rappels.remplacer": {
+        "acces": "ecriture"
+      },
+      "rappels.annuler": {
+        "acces": "ecriture"
+      },
+      "rappels.etat": {
+        "acces": "lecture"
+      }
     }
   },
-  "miniApps": [
+  "apps": [
     {
       "id": "calendrier",
       "name": "Calendrier",
-      "description": "Mois, événements, chronologie du jour à rebours, alertes de repos, export .ics",
-      "icon": "clock",
-      "dataVersion": 1,
-      "plannedFor": "v1",
       "entry": "apps/calendrier/index.html",
       "accepts": []
     },
     {
       "id": "rappels",
       "name": "Rappels",
-      "description": "Notifications du téléphone : état, rappels des autres plugins, pars maintenant et coucher, essai",
-      "icon": "clock",
-      "dataVersion": 1,
-      "plannedFor": "v1",
       "entry": "apps/rappels/index.html",
       "accepts": []
+    }
+  ],
+  "pages": [
+    {
+      "id": "calendrier",
+      "title": "Calendrier",
+      "icon": "clock",
+      "layout": {
+        "type": "app",
+        "app": "calendrier"
+      }
+    },
+    {
+      "id": "rappels",
+      "title": "Rappels",
+      "icon": "clock",
+      "layout": {
+        "type": "app",
+        "app": "rappels"
+      }
     }
   ]
 }

@@ -2,9 +2,8 @@
   import { api } from "$lib/api";
   import AppCard from "$lib/components/AppCard.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import RecentDocs from "$lib/components/RecentDocs.svelte";
   import SearchBox from "$lib/components/SearchBox.svelte";
-  import { allMiniApps, appKey, getMiniAppByKey, pluginsWithApps, type MiniAppRef } from "$lib/plugins/registry.svelte";
+  import { allPages, getPageByKey, pageKey, type PageRef } from "$lib/plugins/registry.svelte";
   import { installation } from "$lib/state/installation.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -17,36 +16,31 @@
   const focusSearch = ui.focusSearch;
   ui.focusSearch = false;
 
-  const available = (ref: MiniAppRef | undefined): ref is MiniAppRef =>
-    !!ref && settings.isPluginEnabled(ref.plugin.id);
+  const available = (ref: PageRef | undefined): ref is PageRef => !!ref && settings.isPluginEnabled(ref.plugin.id);
 
-  const favorites = $derived(settings.favorites.map(getMiniAppByKey).filter(available));
+  const favorites = $derived(settings.favorites.map(getPageByKey).filter(available));
 
   const searching = $derived(query.trim().length > 0);
   const results = $derived(
     searching
-      ? allMiniApps()
+      ? allPages()
           .filter(available)
-          .filter((r) => normalize(`${r.app.name} ${r.app.description} ${r.plugin.name}`).includes(normalize(query.trim())))
+          .filter((r) => normalize(`${r.page.title} ${r.plugin.name}`).includes(normalize(query.trim())))
       : favorites,
   );
 
-  function open(ref: MiniAppRef, event: MouseEvent): void {
-    tabs.navigate(
-      { kind: "app", pluginId: ref.plugin.id, appId: ref.app.id },
-      { newTab: event.ctrlKey || event.button === 1 },
-    );
+  function open(ref: PageRef, event: MouseEvent): void {
+    tabs.navigate({ kind: "page", pluginId: ref.plugin.id, pageId: ref.page.id }, { newTab: event.ctrlKey || event.button === 1 });
   }
 </script>
-
-{#if !pluginsWithApps().length}
+{#if !allPages().length}
   <!-- Premier lancement (l'installateur ne contient aucun plugin) : bienvenue et installation depuis un fichier. -->
   <div class="page">
     <div class="welcome">
       <div class="mark"><Icon name="store" size={30} /></div>
       <h1>Bienvenue dans Établi</h1>
       <p>
-        Établi est un moteur de plugins : chaque plugin ajoute ses mini-apps et ses réglages. Installez ceux dont vous
+        Établi est un moteur de plugins : chaque plugin ajoute ses pages et ses réglages. Installez ceux dont vous
         avez besoin, depuis un fichier signé.
       </p>
       {#if api.capacites.plugins}
@@ -64,32 +58,28 @@
 <div class="page">
   <header>
     <h1>Bonjour</h1>
-    <p class="sub">Que voulez-vous calculer ?</p>
+    <p class="sub">Que voulez-vous ouvrir ?</p>
   </header>
 
-  <SearchBox big focus={focusSearch} bind:value={query} placeholder="Rechercher une mini-app…" />
+  <SearchBox big focus={focusSearch} bind:value={query} placeholder="Rechercher une page…" />
 
   <section class="section">
     <h2>{searching ? `Résultats (${results.length})` : "Favoris"}</h2>
     {#if results.length}
       <div class="grid">
-        {#each results as ref, i (appKey(ref.plugin.id, ref.app.id))}
-          <AppCard plugin={ref.plugin} app={ref.app} index={i} showPlugin onopen={(e) => open(ref, e)} />
+        {#each results as ref, i (pageKey(ref.plugin.id, ref.page.id))}
+          <AppCard plugin={ref.plugin} page={ref.page} index={i} showPlugin onopen={(e) => open(ref, e)} />
         {/each}
       </div>
     {:else}
       <p class="empty">
         {searching
-          ? "Aucune mini-app ne correspond."
-          : "Aucun favori pour l'instant. Ajoutez-en avec l'étoile d'une mini-app."}
+          ? "Aucune page ne correspond."
+          : "Aucun favori pour l'instant. Ajoutez-en avec l'étoile d'une page."}
       </p>
     {/if}
   </section>
 
-  <section class="section">
-    <h2>Documents récents</h2>
-    <RecentDocs empty="Vos calculs récents apparaîtront ici." />
-  </section>
 </div>
 {/if}
 

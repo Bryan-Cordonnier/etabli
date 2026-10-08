@@ -2,18 +2,23 @@ import { api, type PluginSource } from "$lib/api";
 import { ICONS, type IconName } from "$lib/icons";
 import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
 import { settings } from "$lib/state/settings.svelte";
-import { cheminRelatif, fonctionsDe } from "./manifeste";
-import type { MiniAppManifest, PluginManifest, PluginSettingsPage } from "$lib/types";
+import { appsDe, cheminRelatif, fonctionsDe, pagesDe, parametresDe, raisonDeRefus } from "./manifeste";
+import { majeure } from "./permissions";
+import type { AppManifest, PageManifest, PluginManifest, PluginSettingsPage, RefusedPlugin } from "$lib/types";
 
 /**
  * Plugins installés : remplis au démarrage par `loadPlugins()`, puis rechargés après chaque
  * installation ou désinstallation (liste réactive : l'interface suit sans redémarrer).
  */
 export const PLUGINS = $state<PluginManifest[]>([]);
+/** Plugins que le moteur n'a pas chargés (contrat trop ancien, pages absentes…), avec la raison. */
+export const REFUSES = $state<RefusedPlugin[]>([]);
 
-export interface MiniAppRef {
+/** Une page avec son plugin et l'app qu'elle affiche. */
+export interface PageRef {
   plugin: PluginManifest;
-  app: MiniAppManifest;
+  page: PageManifest;
+  app: AppManifest;
 }
 
 /**
@@ -22,37 +27,36 @@ export interface MiniAppRef {
  */
 export async function loadPlugins(): Promise<void> {
   const raw = await api.pluginsList().catch(() => []);
-  const plugins = raw
-    .map(({ manifest, official, source }) => normalize(manifest, official, source ?? (official ? "integre" : "utilisateur")))
-    .filter((p) => p !== null);
-  plugins.sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  PLUGINS.splice(0, PLUGINS.length, ...plugins);
+  const acceptes: PluginManifest[] = [];
+  const refuses: RefusedPlugin[] = [];
+  for (const { manifest, official, source } of raw) {
+    const resultat = normalize(manifest, official, source ?? (official ? "integre" : "utilisateur"));
+    if (resultat === null) continue;
+    if ("reason" in resultat) refuses.push(resultat);
+    else acceptes.push(resultat);
+  }
+  acceptes.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  PLUGINS.splice(0, PLUGINS.length, ...acceptes);
+  REFUSES.splice(0, REFUSES.length, ...refuses);
 }
 
 const text = (value: unknown, fallback = ""): string => (typeof value === "string" ? value : fallback);
 const icon = (value: unknown): IconName => (typeof value === "string" && value in ICONS ? (value as IconName) : "puzzle");
 
-/** Valide un manifeste et complète les champs facultatifs. Renvoie null s'il est inutilisable. */
-function normalize(raw: unknown, official: boolean, source: PluginSource): PluginManifest | null {
+/**
+ * Valide un manifeste et complète les champs facultatifs. Renvoie null s'il est illisible (pas d'identifiant),
+ * un refus avec sa raison si le contrat n'est pas le bon, sinon le plugin.
+ */
+function normalize(raw: unknown, official: boolean, source: PluginSource): PluginManifest | RefusedPlugin | null {
   if (typeof raw !== "object" || raw === null) return null;
   const m = raw as Record<string, unknown>;
   const id = text(m.id);
-  if (!id || !Array.isArray(m.miniApps)) return null;
+  if (!id) return null;
+  const refus = raisonDeRefus(m, majeure(text(m.apiVersion, "^1")));
+  if (refus) return { id, name: text(m.name, id), reason: refus };
 
-  const miniApps: MiniAppManifest[] = m.miniApps
-    .filter((a): a is Record<string, unknown> => typeof a === "object" && a !== null && typeof a.id === "string")
-    .map((a) => ({
-      id: text(a.id),
-      name: text(a.name, text(a.id)),
-      description: text(a.description),
-      icon: icon(a.icon),
-      entry: typeof a.entry === "string" ? a.entry : undefined,
-      dataVersion: typeof a.dataVersion === "number" ? a.dataVersion : 1,
-      plannedFor: a.plannedFor === "v2" ? "v2" : "v1",
-      accepts: Array.isArray(a.accepts) ? a.accepts.filter((k): k is string => typeof k === "string") : [],
-    }));
-
-  const settingsPages: PluginSettingsPage[] = (Array.isArray(m.settings) ? m.settings : [])
+  const apps = appsDe(m.apps);
+  const pages = pagesDe(m.pages, apps);  const settingsPages: PluginSettingsPage[] = (Array.isArray(m.settings) ? m.settings : [])
     .filter(
       (s): s is Record<string, unknown> =>
         typeof s === "object" && s !== null && typeof s.id === "string" && /^[a-z0-9-]+$/.test(s.id) && typeof s.entry === "string",
@@ -64,7 +68,7 @@ function normalize(raw: unknown, official: boolean, source: PluginSource): Plugi
     name: text(m.name, id),
     description: text(m.description),
     version: text(m.version, "0.0.0"),
-    apiVersion: text(m.apiVersion, "^1"),
+    apiVersion: text(m.apiVersion, "^3"),
     author: text(m.author),
     color: text(m.color, "#6b7280"),
     icon: icon(m.icon),
@@ -78,7 +82,9 @@ function normalize(raw: unknown, official: boolean, source: PluginSource): Plugi
     settings: settingsPages,
     official,
     source,
-    miniApps,
+    apps,
+    pages,
+    parameters: parametresDe(m.parameters),
   };
 }
 
@@ -105,36 +111,29 @@ export function pluginUrl(pluginId: string, path: string): string {
   return `${base}/${encodeURIComponent(pluginId)}/${encoded}`;
 }
 
-/** Identifiant global d'une mini-app, utilisé pour les favoris : « plugin/mini-app ». */
-export const appKey = (pluginId: string, appId: string): string => `${pluginId}/${appId}`;
+/** Identifiant global d'une page, utilisé pour les favoris et l'ordre de la colonne : « plugin/page ». */
+export const pageKey = (pluginId: string, pageId: string): string => `${pluginId}/${pageId}`;
 
 export function getPlugin(id: string): PluginManifest | undefined {
   return PLUGINS.find((p) => p.id === id);
 }
 
-export function getMiniApp(pluginId: string, appId: string): MiniAppRef | undefined {
+export function getPage(pluginId: string, pageId: string): PageRef | undefined {
   const plugin = getPlugin(pluginId);
-  const app = plugin?.miniApps.find((a) => a.id === appId);
-  return plugin && app ? { plugin, app } : undefined;
+  const page = plugin?.pages.find((p) => p.id === pageId);
+  const app = page ? plugin?.apps.find((a) => a.id === page.app) : undefined;
+  return plugin && page && app ? { plugin, page, app } : undefined;
 }
 
-export function getMiniAppByKey(key: string): MiniAppRef | undefined {
-  const [pluginId = "", appId = ""] = key.split("/");
-  return getMiniApp(pluginId, appId);
+export function getPageByKey(key: string): PageRef | undefined {
+  const [pluginId = "", pageId = ""] = key.split("/");
+  return getPage(pluginId, pageId);
 }
 
-export function allMiniApps(): MiniAppRef[] {
-  return PLUGINS.flatMap((plugin) => plugin.miniApps.map((app) => ({ plugin, app })));
+/** Toutes les pages des plugins installés, dans l'ordre où chaque plugin les déclare. */
+export function allPages(): PageRef[] {
+  return PLUGINS.flatMap((plugin) => plugin.pages.flatMap((page) => getPage(plugin.id, page.id) ?? []));
 }
-
-/**
- * Plugins qui ont des mini-apps : les seuls qui apparaissent dans la colonne, l'accueil et la
- * palette. Un plugin qui n'apporte que des réglages ou un service (Finances) n'y figure pas.
- */
-export function pluginsWithApps(): PluginManifest[] {
-  return PLUGINS.filter((p) => p.miniApps.length > 0);
-}
-
 /** Les plugins installés tels que les voit la résolution des dépendances. */
 export function installedNodes(): InstalledNode[] {
   return PLUGINS.map((p) => ({

@@ -26,23 +26,18 @@ function sameView(a: View, b: View): boolean {
     case "home":
     case "plugins":
       return true;
-    case "plugin":
-      return b.kind === "plugin" && a.pluginId === b.pluginId;
     case "settings":
       return b.kind === "settings" && a.section === b.section;
-    case "app":
-      return b.kind === "app" && a.pluginId === b.pluginId && a.appId === b.appId && a.docId === b.docId;
+    case "page":
+      return b.kind === "page" && a.pluginId === b.pluginId && a.pageId === b.pageId;
   }
 }
 
-/** Accueil, grille d'un plugin et Paramètres sont des pages de navigation ; une mini-app contient du travail. */
-const isNavigation = (view: View): boolean => view.kind !== "app";
-
 let nonce = Date.now();
 
-/** Chaque ouverture d'une mini-app (ou d'une page de réglages avec intention) reçoit un nouveau `nonce` : l'écran est recréé. */
+/** Chaque ouverture d'une page de plugin (ou d'une page de réglages avec intention) reçoit un nouveau `nonce` : l'écran est recréé. */
 const fresh = (view: View): View =>
-  view.kind === "app" || (view.kind === "settings" && view.hash !== undefined) ? { ...view, nonce: ++nonce } : view;
+  view.kind === "page" || (view.kind === "settings" && view.hash !== undefined) ? { ...view, nonce: ++nonce } : view;
 
 class Tabs {
   list = $state<Tab[]>([]);
@@ -55,7 +50,12 @@ class Tabs {
   constructor() {
     const session = load<Session | null>("session", null);
     // Une session enregistrée par une version qui avait un catalogue rouvre la page des plugins.
-    const views = session?.views.length ? session.views.map((v) => ((v.kind as string) === "catalogue" ? ({ kind: "plugins" } as View) : v)) : [HOME];
+    // Une session enregistrée par une version plus ancienne (catalogue, plugin, app) rouvre une page qui existe aujourd'hui.
+    const ancien = (v: View): View => {
+      const kind = v.kind as string;
+      return kind === "catalogue" ? { kind: "plugins" } : kind === "plugin" || kind === "app" ? HOME : v;
+    };
+    const views = session?.views.length ? session.views.map(ancien) : [HOME];
     for (const view of views) this.#create(fresh(view));
     const restored = this.list[Math.min(session?.active ?? 0, this.list.length - 1)];
     this.activeId = restored?.id ?? 0;
@@ -104,8 +104,8 @@ class Tabs {
 
   /** Règles de navigation du cahier des charges (section 5.7). */
   navigate(view: View, options: { newTab?: boolean } = {}): void {
-    // Un document déjà ouvert : on bascule sur son onglet.
-    if (view.kind === "app" && view.docId) {
+    // Une page de plugin déjà ouverte : on bascule sur son onglet.
+    if (view.kind === "page") {
       const open = this.list.find((t) => sameView(t.view, view));
       if (open) {
         this.activeId = open.id;
@@ -123,31 +123,14 @@ class Tabs {
     }
 
     const tab = this.active;
-    // Ne jamais remplacer un travail en cours : une mini-app ouverte reste dans son onglet.
-    if (options.newTab || !tab || !isNavigation(tab.view)) {
+    // Une page enregistre ses données au fil de l'eau : changer de page dans l'onglet ne perd rien.
+    if (options.newTab || !tab) {
       this.open(view);
       return;
     }
     if (sameView(tab.view, view)) return;
     tab.history.push(withoutHash($state.snapshot(tab.view)));
     tab.view = fresh(view);
-  }
-
-  /** Remplace la page de l'onglet actif (autre calcul de la même mini-app, nouveau calcul). */
-  replace(view: View): void {
-    const tab = this.active;
-    if (!tab) {
-      this.open(view);
-      return;
-    }
-    tab.history.push(withoutHash($state.snapshot(tab.view)));
-    tab.view = fresh(view);
-  }
-
-  /** Le calcul vient d'être enregistré : l'onglet retient son identifiant, sans recréer l'écran. */
-  setDocId(tabId: number, docId: string): void {
-    const tab = this.list.find((t) => t.id === tabId);
-    if (tab?.view.kind === "app") tab.view = { ...tab.view, docId };
   }
 
   back(): void {

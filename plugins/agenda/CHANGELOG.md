@@ -5,6 +5,10 @@ Chaque version a sa section ; elle devient les « Nouveautés » affichées dans
 
 ## [Non publié]
 
+### Modifié
+
+- **Contrat d'API 3** : le manifeste déclare `apps` et `pages` (la colonne de gauche liste les pages, le plugin dessine son propre en-tête) au lieu de `miniApps`.
+
 ### Ajouté
 
 - **Rappels sur le téléphone** : de simples notifications (pas d'alarme), jamais sur PC. « Pars dans 5 min » et « Pars maintenant » avant chaque événement avec trajet, rappel de coucher la veille ; tous les délais se règlent.

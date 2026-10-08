@@ -13,6 +13,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Added
 
+- **Plugins declare pages (API contract 3).** A manifest lists `apps` (isolated HTML pages) and `pages` (what the left column lists and a tab shows: an id, a title, an icon and `layout: { type: "app", app }`). The sidebar lists pages, not plugins, and the user drags them into the order they want (`pageOrder` in the settings). A plugin without `pages` is refused, with its reason shown on the *Plugins* page; there is no compatibility mode. The shell no longer draws a title, *New*, *Duplicate*, *Export*, *Delete* or a history of old calculations around a page: each page draws its own header.
+- **Plugin parameters.** A manifest can declare `parameters` (number, text, switch, time, choice, with default, bounds, unit, hint and group). The engine makes a tab for them in *Settings*, named after the plugin, and sends the values to the plugin (`etabli.parameters`, and `PluginParameters` in `@etabli/ui`) when a page opens and on every change. A plugin needs no settings screen for them.
 - **Android on Tauri mobile.** The engine now builds for Android from the same Rust core as Windows (`npm run android:init` then `npm run android:build` in `apps/desktop`; CI workflow *Android*). Windows-only parts (quick preview, global shortcut, tray, autostart, updater) are compiled out; scheduled reminders use the Tauri notification plugin; documents live in the app's private storage. The native bridge is closed to plugin frames by a Kotlin fix applied by `src-tauri/android/appliquer-correctifs.mjs` (see docs/26).
 - **Distributions ship their own plugins.** Set `ETABLE_PLUGINS_DIR` when compiling: the plugin folders it contains are packed into the binary and written to the `integres` folder at start-up, on Windows and Android alike. The engine alone ships none.
 
@@ -24,6 +26,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Removed
 
+- **Calculations (documents) are no longer part of the shell.** `MiniAppDocument` and the engine-side autosave of a "calculation" are gone from the page view, with the home page's *Recent documents*, the *Old calculations* list and the plugin page that listed apps as cards. A plugin keeps its data in `etabli.settings` (`PluginSettings`) and in services. `npm run valider` refuses `MiniAppDocument` and `document.update`.
 - **The Capacitor Android project is removed** (`apps/mobile`, its Java origin-per-plugin code, the Capacitor npm packages and probes, the Android spike): Android now runs on Tauri mobile.
 - **The seven metalworking plugins** (Maths, Economy, Sheet metal, Layout, Materials, Suppliers, Machines) are no longer in this repository: the project is moving to a plugin-free open-source engine (Etable). The last state is kept under the Git tag `legacy/etabli-0.5-chaudronnerie`.
 - **Domain code of those plugins is removed from the engine**: the `Libraries` service (suppliers and machines, message `libraries`, `addMachine`), workshop sheets (message `print`, permission `impression`, `printFiche`), DXF export (`toDxf`), templates (`gabaritPages`) and the "Workshop sheets" setting (author name). A plugin still sending `print` or `addMachine` is refused like any unknown message.
