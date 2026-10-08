@@ -1,0 +1,216 @@
+/* Kit d'interface des pages de plugin (Quotidien, ERP…) : à importer une fois par page (`import "@etabli/ui/kit.css"`), après base.css.
+   Tout vient des couleurs du moteur (--surface, --border, --accent…) : un thème change tout le monde. */
+.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.petit {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.etiquette {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.positif {
+  color: var(--ok);
+}
+.negatif {
+  color: var(--err);
+}
+
+/* Page : colonne centrée, espacée. */
+.page-plugin {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px 28px;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .page-plugin {
+    padding: 16px 14px 22px;
+  }
+}
+
+/* Bloc : un cadre, du blanc autour. */
+.bloc {
+  min-width: 0;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+.bloc-titre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.bloc-titre h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.grille-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+.grille-2-1 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+@media (max-width: 860px) {
+  .grille-2,
+  .grille-2-1 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Boutons. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.btn.primary:hover:not(:disabled) {
+  filter: brightness(0.94);
+  background: var(--accent);
+}
+.btn.danger {
+  color: var(--err);
+}
+.btn.sm {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.btn.grand {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 14.5px;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Champs de saisie (texte, date, heure, choix). */
+.saisie {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--field);
+  font-size: 14px;
+}
+.saisie.num {
+  text-align: right;
+}
+.groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.groupe > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.deux {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.trois {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 560px) {
+  .deux,
+  .trois {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tableaux de liste. */
+.tableau {
+  width: 100%;
+  overflow-x: auto;
+}
+.tableau table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tableau th {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.tableau td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.tableau tr:last-child td {
+  border-bottom: 0;
+}
+.tableau .droite {
+  text-align: right;
+}
+
+/* Message vide. */
+.vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-lg);
+  color: var(--muted);
+  text-align: center;
+}

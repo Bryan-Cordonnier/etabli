@@ -42,10 +42,15 @@
      * Faux dans l'aperçu rapide, qui n'a pas d'onglets à piloter.
      */
     forward?: boolean;
+    /**
+     * Remplir toute la zone de la page (la page défile elle-même) au lieu de prendre la hauteur de son contenu. Une page de plugin
+     * le fait : ses fenêtres (fond voilé, centrées) se placent alors dans la zone visible.
+     */
+    fill?: boolean;
     onmessage: (message: PluginToHost) => void;
   }
 
-  let { src, title, pluginId, appId, initial, incoming = null, forward = true, onmessage }: Props = $props();
+  let { src, title, pluginId, appId, initial, incoming = null, forward = true, fill = false, onmessage }: Props = $props();
 
   // Avec une origine propre au plugin (serveur, ou Android : https://<id>.plugins.localhost servie par la partie native),
   // le cadre peut garder son origine : elle ne contient rien d'autre que
@@ -113,7 +118,7 @@
           ready = true;
           break;
         case "height":
-          height = Math.max(160, Math.ceil(message.value));
+          if (!fill) height = Math.max(160, Math.ceil(message.value));
           break;
         case "pluginData":
           sentPluginData = JSON.stringify(message.data);
@@ -234,7 +239,7 @@
   allow="clipboard-write"
   onload={connectFrame}
   class:ready
-  style:height="{height}px"
+  style:height={fill ? "100%" : `${height}px`}
 ></iframe>
 
 <style>

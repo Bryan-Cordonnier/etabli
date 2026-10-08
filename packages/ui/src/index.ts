@@ -1,7 +1,12 @@
 // @etabli/ui — composants communs des mini-apps (cahier des charges, section 9.2).
 export { default as Card } from "./Card.svelte";
 export { default as Check } from "./Check.svelte";
+export { default as Entete } from "./Entete.svelte";
 export { default as Field } from "./Field.svelte";
+export { default as Jauge } from "./Jauge.svelte";
+export { default as Modal } from "./Modal.svelte";
+export { default as Pastille } from "./Pastille.svelte";
+export { default as Tabs } from "./Tabs.svelte";
 export { default as DonutChart } from "./DonutChart.svelte";
 export { default as Icon } from "./Icon.svelte";
 export { default as LineChart } from "./LineChart.svelte";
