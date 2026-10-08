@@ -407,6 +407,10 @@
             </div>
           </div>
           <div class="setting">
+            {@render row("Ranger les pages par catégories", "La colonne de gauche regroupe les pages (Argent, Temps…). Glissez une page dans une autre catégorie pour l'y ranger ; les flèches d'une catégorie la déplacent.")}
+            <Switch checked={settings.sidebarCategories} label="Ranger les pages par catégories" onchange={(v) => settings.setSidebarCategories(v)} />
+          </div>
+          <div class="setting">
             {@render row("Réduire les animations", "Supprime les fondus et glissements (activé d'office si Windows le demande).")}
             <Switch checked={settings.reduceMotion} label="Réduire les animations" onchange={(v) => settings.set("reduceMotion", v)} />
           </div>

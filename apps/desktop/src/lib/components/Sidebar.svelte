@@ -1,6 +1,7 @@
 <script lang="ts">
   // Colonne des pages (docs/28) : ce que les plugins déclarent dans `pages`, dans l'ordre choisi par l'utilisateur.
   import { api } from "$lib/api";
+  import { categorieDe, deplacerCategorie, grouper } from "$lib/categories";
   import { allPages, pageKey, type PageRef } from "$lib/plugins/registry.svelte";
   import { shortcutHint } from "$lib/shortcuts";
   import { settings } from "$lib/state/settings.svelte";
@@ -23,6 +24,16 @@
       .map((ref, index) => ({ ref, index, key: pageKey(ref.plugin.id, ref.page.id) }))
       .sort((a, b) => rank(a.key) - rank(b.key) || a.index - b.index);
   });
+  /** Les pages rangées par catégorie (colonne en mode « catégories »). */
+  const groupes = $derived(
+    grouper(
+      pages.map((p) => ({ ...p, category: p.ref.page.category })),
+      settings.categoryOf,
+      settings.categoryOrder,
+    ),
+  );
+  /** Ordre d'affichage des pages : celui de la colonne, catégories comprises. */
+  const ordreAffiche = $derived(settings.sidebarCategories ? groupes.flatMap((g) => g.items.map((p) => p.key)) : pages.map((p) => p.key));
   let nav: HTMLElement;
   let drag: { id: string; startY: number; moved: boolean } | null = null;
   let dragging = $state<string | null>(null);
@@ -45,9 +56,18 @@
       const rect = el.getBoundingClientRect();
       return event.clientY >= rect.top && event.clientY <= rect.bottom;
     });
-    const ids = pages.map((p) => p.key);
+    const ids = [...ordreAffiche];
     const from = ids.indexOf(drag.id);
     if (target < 0 || target === from) return;
+    // Une page lâchée parmi celles d'une autre catégorie rejoint cette catégorie.
+    if (settings.sidebarCategories) {
+      const cible = pages.find((p) => p.key === ids[target]);
+      const moi = pages.find((p) => p.key === drag!.id);
+      if (cible && moi) {
+        const nom = categorieDe({ key: cible.key, category: cible.ref.page.category }, settings.categoryOf);
+        settings.setCategoryOf(moi.key, nom === (moi.ref.page.category || "Autres") ? "" : nom, false);
+      }
+    }
     ids.splice(target, 0, ...ids.splice(from, 1));
     settings.setPageOrder(ids, false);
   }
@@ -160,8 +180,9 @@
       <p class="none label">Aucune page : installez un plugin.</p>
     {/if}
 
-    {#each pages as { ref, key } (key)}
+    {#snippet entree(ref: PageRef, key: string, cache: boolean)}
       <button
+        hidden={cache}
         class="item"
         class:active={isActive(ref)}
         class:dragging={dragging === key}
@@ -182,7 +203,31 @@
         <Tile color={ref.plugin.color} icon={ref.page.icon} />
         <span class="label">{ref.page.title}</span>
       </button>
-    {/each}  </nav>
+    {/snippet}
+
+    {#if settings.sidebarCategories}
+      {#each groupes as g, gi (g.name)}
+        {@const replie = settings.foldedCategories.includes(g.name)}
+        <div class="categorie">
+          <button class="cat-nom" onclick={() => settings.toggleCategoryFolded(g.name)} aria-expanded={!replie} title={replie ? "Déplier" : "Replier"}>
+            <span class="chevron" class:replie>▾</span>
+            <span class="label">{g.name}</span>
+          </button>
+          <span class="cat-outils label">
+            <button class="cat-fleche" disabled={gi === 0} aria-label={`Monter ${g.name}`} title="Monter la catégorie" onclick={() => settings.setCategoryOrder(deplacerCategorie(groupes.map((x) => x.name), g.name, -1))}>↑</button>
+            <button class="cat-fleche" disabled={gi === groupes.length - 1} aria-label={`Descendre ${g.name}`} title="Descendre la catégorie" onclick={() => settings.setCategoryOrder(deplacerCategorie(groupes.map((x) => x.name), g.name, 1))}>↓</button>
+          </span>
+        </div>
+        {#each g.items as { ref, key } (key)}
+          {@render entree(ref, key, replie)}
+        {/each}
+      {/each}
+    {:else}
+      {#each pages as { ref, key } (key)}
+        {@render entree(ref, key, false)}
+      {/each}
+    {/if}
+  </nav>
 
   <!-- Dépliée : les deux boutons côte à côte. Repliée : « Replier » glisse au-dessus de
        « Paramètres », en même temps que la colonne se réduit (aucun saut). -->
@@ -350,6 +395,61 @@
   }
   .item.active .label {
     font-weight: 600;
+  }
+  .item[hidden] {
+    display: none;
+  }
+  .categorie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 2px 8px;
+  }
+  .cat-nom {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    background: none;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+  .chevron {
+    display: inline-block;
+    transition: transform 0.12s;
+  }
+  .chevron.replie {
+    transform: rotate(-90deg);
+  }
+  .cat-outils {
+    display: none;
+    gap: 2px;
+  }
+  .categorie:hover .cat-outils,
+  .categorie:focus-within .cat-outils {
+    display: flex;
+  }
+  .collapsed .categorie {
+    display: none;
+  }
+  .cat-fleche {
+    border: 0;
+    background: none;
+    color: var(--muted);
+    width: 22px;
+    height: 22px;
+    border-radius: var(--r-xs);
+  }
+  .cat-fleche:hover:not(:disabled) {
+    background: var(--field);
+  }
+  .cat-fleche:disabled {
+    opacity: 0.3;
   }
   .item.dragging {
     background: var(--surface);

@@ -69,6 +69,8 @@ export interface PageManifest {
   icon: IconName;
   /** Identifiant de l'app de `apps` que la page affiche. */
   app: string;
+  /** Catégorie proposée dans la colonne (« Argent », « Temps »…), ou « » : l'utilisateur peut la changer (docs/28, section 2). */
+  category: string;
 }
 
 /** Taille d'un widget en cases de la grille de l'accueil : « largeur x hauteur » (« 2x1 »), de 1 à 4 cases de large et de haut. */
