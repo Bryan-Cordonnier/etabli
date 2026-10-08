@@ -199,6 +199,7 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
     else idsPages.add(page.id);
     if (typeof page?.title !== "string" || page.title.trim() === "") erreur(`page « ${nom} » : « title » absent.`);
     if (typeof page?.icon !== "string" || !icones.has(page.icon)) erreur(`page « ${nom} » : « icon » absente ou hors liste (apps/desktop/src/lib/icons.ts).`);
+    if (page?.category !== undefined && (typeof page.category !== "string" || page.category.length > 40)) erreur(`page « ${nom} » : « category » doit être un texte de 40 caractères au plus (« Argent »).`);
     const disposition = page?.layout;
     if (disposition?.type !== "app") erreur(`page « ${nom} » : « layout » doit valoir { "type": "app", "app": "<id d'une app>" } (la seule disposition pour l'instant).`);
     else if (typeof disposition.app !== "string" || !idsApps.has(disposition.app)) erreur(`page « ${nom} » : « layout.app » (${JSON.stringify(disposition.app)}) n'est pas une app déclarée dans « apps ».`);

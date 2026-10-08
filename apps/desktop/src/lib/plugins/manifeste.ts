@@ -77,7 +77,7 @@ export function pagesDe(value: unknown, apps: readonly AppManifest[]): PageManif
     const app = texte(disposition?.app, "", 64);
     if (!p || !ID.test(id) || vus.has(id) || disposition?.type !== "app" || !apps.some((a) => a.id === app)) continue;
     vus.add(id);
-    sortie.push({ id, title: texte(p.title, id, 80), icon: icone(p.icon), app });
+    sortie.push({ id, title: texte(p.title, id, 80), icon: icone(p.icon), app, category: texte(p.category, "", 40).trim() });
   }
   return sortie;
 }

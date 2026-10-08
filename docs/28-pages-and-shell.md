@@ -8,10 +8,11 @@
 | Done (contract 3) | Not yet |
 | --- | --- |
 | `apps` and `pages` in the manifest, `layout: { type: "app" }` only; a plugin without `pages` is refused, with its reason on the *Plugins* page | The other layouts (`columns`, `tabs`, `stack`) |
-| The sidebar lists pages (plugin name hidden), drag-and-drop order saved as `pageOrder`; a page already open is focused instead of duplicated | **Categories** in the sidebar |
+| The sidebar lists pages (plugin name hidden), drag-and-drop order saved as `pageOrder`; a page already open is focused instead of duplicated | Renaming and adding categories by hand (a category exists as soon as a page names it) |
 | The shell draws nothing around a page: no title, *New*, *Duplicate*, *Export*, *Delete*, old calculations, recent documents; `MiniAppDocument` is removed and refused by the validator | A documents API in the SDK for plugins that want their own *New / History* |
 | `parameters` in the manifest: the engine builds a tab in *Settings* named after the plugin; `etabli.parameters` and `PluginParameters` read the values live | The widget **recently opened**, free positioning (the board is an ordered list on a grid of 4, 2 or 1 columns) |
 | Quick preview, command palette and favourites work on pages (key `plugin/page`) | The default layout from a distribution (today: only the *Favourites* widget) |
+| **Sidebar categories** (`lib/categories.ts`, `components/Sidebar.svelte`): `category` on a page in the manifest is the default; settings `sidebarCategories` (appearance, off by default), `categoryOf` (user choice per page, wins), `categoryOrder`, `foldedCategories`. Dropping a page among another category's pages moves it there; arrows move a whole category; folded pages stay in the DOM (hidden) so drag order stays whole. Pages without a category go to *Autres* | |
 | **Home board** (`components/Board.svelte`, logic in `lib/board.ts`): *Edit* mode (add from a gallery, move, resize, remove), saved as `board` in the settings; `widgets` in the manifest (`id`, `title`, `icon`, `app`, `sizes` such as `2x1`, `default`) validated by the engine and by `valider-plugin`; a widget is an app shown in a sandboxed frame that knows it is a widget through `location.hash === "#widget"`; built-in widget *Favourites*. A widget of an uninstalled plugin shows a placeholder in edit mode and returns with the plugin | |
 ## Why
 

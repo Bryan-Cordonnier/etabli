@@ -1,4 +1,5 @@
 import { BOARD_DEFAUT, lireBoard } from "$lib/board";
+import { lireChoix, lireNoms } from "$lib/categories";
 import { load, save } from "$lib/storage";
 import { SYSTEM_THEME, type Theme } from "$lib/themes";
 import type { BoardEntry } from "$lib/types";
@@ -34,6 +35,14 @@ interface Persisted {
   pageOrder: string[];
   /** Widgets de l'accueil, dans l'ordre ; `null` tant que l'utilisateur n'a rien changé (l'accueil par défaut). */
   board: BoardEntry[] | null;
+  /** Colonne de gauche rangée par catégories (réglage d'apparence) ; sinon une liste plate de pages. */
+  sidebarCategories: boolean;
+  /** Catégorie choisie par l'utilisateur pour une page (« plugin/page » → nom) ; elle l'emporte sur celle du plugin. */
+  categoryOf: Record<string, string>;
+  /** Ordre des catégories, choisi par l'utilisateur. */
+  categoryOrder: string[];
+  /** Catégories repliées dans la colonne. */
+  foldedCategories: string[];
   /** Raccourci global de l'aperçu rapide (le seul réglé par défaut). */
   quickShortcut: Shortcut;
   /** Raccourcis dans l'application, par action (voir shortcuts.ts). Aucun par défaut. */
@@ -54,6 +63,10 @@ const DEFAULTS: Persisted = {
   disabledPlugins: [],
   pageOrder: [],
   board: null,
+  sidebarCategories: false,
+  categoryOf: {},
+  categoryOrder: [],
+  foldedCategories: [],
   quickShortcut: DEFAULT_SHORTCUT,
   shortcuts: {},
   closeToTray: true,
@@ -71,6 +84,10 @@ class Settings {
   disabledPlugins = $state<string[]>([]);
   pageOrder = $state<string[]>([]);
   board = $state<BoardEntry[] | null>(null);
+  sidebarCategories = $state(DEFAULTS.sidebarCategories);
+  categoryOf = $state<Record<string, string>>({});
+  categoryOrder = $state<string[]>([]);
+  foldedCategories = $state<string[]>([]);
   quickShortcut =$state<Shortcut>(DEFAULTS.quickShortcut);
   shortcuts = $state<Record<string, Shortcut>>({});
   closeToTray = $state(DEFAULTS.closeToTray);
@@ -93,6 +110,10 @@ class Settings {
     this.disabledPlugins = saved.disabledPlugins;
     this.pageOrder = saved.pageOrder;
     this.board = lireBoard(saved.board);
+    this.sidebarCategories = saved.sidebarCategories === true;
+    this.categoryOf = lireChoix(saved.categoryOf);
+    this.categoryOrder = lireNoms(saved.categoryOrder);
+    this.foldedCategories = lireNoms(saved.foldedCategories);
     this.quickShortcut = saved.quickShortcut;
     this.shortcuts = saved.shortcuts;
     this.closeToTray = saved.closeToTray;
@@ -111,6 +132,10 @@ class Settings {
       disabledPlugins: $state.snapshot(this.disabledPlugins),
       pageOrder: $state.snapshot(this.pageOrder),
       board: $state.snapshot(this.board),
+      sidebarCategories: this.sidebarCategories,
+      categoryOf: $state.snapshot(this.categoryOf),
+      categoryOrder: $state.snapshot(this.categoryOrder),
+      foldedCategories: $state.snapshot(this.foldedCategories),
       quickShortcut: $state.snapshot(this.quickShortcut),
       shortcuts: $state.snapshot(this.shortcuts),
       closeToTray: this.closeToTray,
@@ -187,6 +212,28 @@ class Settings {
   /** Les widgets de l'accueil : ceux que l'utilisateur a choisis, sinon l'accueil par défaut. */
   get widgets(): readonly BoardEntry[] {
     return this.board ?? BOARD_DEFAUT;
+  }
+
+  setSidebarCategories(on: boolean): void {
+    this.sidebarCategories = on;
+    this.#save();
+  }
+
+  /** Range une page dans une catégorie (« » : revenir à celle du plugin). */
+  setCategoryOf(key: string, name: string, persist = true): void {
+    const { [key]: _retire, ...reste } = this.categoryOf;
+    this.categoryOf = name ? { ...reste, [key]: name } : reste;
+    if (persist) this.#save();
+  }
+
+  setCategoryOrder(names: string[]): void {
+    this.categoryOrder = names;
+    this.#save();
+  }
+
+  toggleCategoryFolded(name: string): void {
+    this.foldedCategories = this.foldedCategories.includes(name) ? this.foldedCategories.filter((n) => n !== name) : [...this.foldedCategories, name];
+    this.#save();
   }
 
   setBoard(entries: BoardEntry[]): void {
