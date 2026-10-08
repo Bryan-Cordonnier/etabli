@@ -526,12 +526,13 @@ async function essaisDansLApplication(navigateurPlaywright) {
     const vu = await attendre(() => refus.length > avant, 4000);
     essai(`message hostile refusé par le garde : ${nom}`, Boolean(vu), "aucun refus journalisé");
   }
-  // Le moteur est toujours vivant et traite les messages permis : la hauteur est ramenée dans ses bornes.
+  // Le moteur est toujours vivant et traite les messages permis : une page remplit la zone que le moteur lui donne, une hauteur
+  // démesurée demandée par le plugin n'a donc aucun effet (le garde l'accepte, borne à 20 000 px, mais ne l'applique pas à une page).
   const avantValide = refus.length;
   await cadre.evaluate(() => window.__portHote.postMessage({ type: "height", value: 9_999_999 }));
-  const hauteurBornee = await attendre(async () => (await page.locator('iframe[src*="/apps/"]').first().evaluate((f) => f.getBoundingClientRect().height)) === 20000, 4000);
-  essai("le moteur survit aux messages hostiles et borne les hauteurs démesurées (20 000 px)", Boolean(hauteurBornee) && refus.length === avantValide);
-  await cadre.evaluate(() => window.__portHote.postMessage({ type: "height", value: 480 }));
+  await page.waitForTimeout(600);
+  const hauteurApres = await page.locator('iframe[src*="/apps/"]').first().evaluate((f) => f.getBoundingClientRect().height);
+  essai("le moteur survit aux messages hostiles et ignore une hauteur démesurée demandée par une page", hauteurApres < 5000 && refus.length === avantValide, `${hauteurApres} px`);  await cadre.evaluate(() => window.__portHote.postMessage({ type: "height", value: 480 }));
   // Messages sur window.parent (hors du port privé) : sans effet.
   await cadre.evaluate(() => window.parent.postMessage({ type: "saveFile", file: { name: "a.exe", extension: "exe", content: "", description: "" } }, "*"));
   await new Promise((r) => setTimeout(r, 500));
