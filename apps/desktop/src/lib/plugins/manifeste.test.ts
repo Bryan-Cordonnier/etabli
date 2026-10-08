@@ -1,6 +1,31 @@
 import { describe, expect, it } from "vitest";
 import type { ParameterManifest } from "../types";
-import { appsDe, pagesDe, parametresDe, raisonDeRefus, valeurValide, valeursDe } from "./manifeste";
+import { appsDe, pagesDe, parametresDe, raisonDeRefus, valeurValide, valeursDe, widgetsDe } from "./manifeste";
+
+describe("widgetsDe", () => {
+  const apps = appsDe([{ id: "resume", name: "Résumé", entry: "apps/resume/index.html" }]);
+
+  it("garde les widgets d'une app qui existe, avec des tailles valables", () => {
+    const w = widgetsDe(
+      [
+        { id: "estime", title: "Estimé", icon: "wallet", app: "resume", sizes: ["2x1", "9x9", "2x2", "2x1"], default: "2x2" },
+        { id: "sans-app", title: "x", app: "absente", sizes: ["1x1"] },
+        { id: "sans-taille", title: "x", app: "resume", sizes: ["grand"] },
+        { id: "estime", title: "Doublon", app: "resume", sizes: ["1x1"] },
+      ],
+      apps,
+    );
+    expect(w).toEqual([{ id: "estime", title: "Estimé", icon: "wallet", app: "resume", sizes: ["2x1", "2x2"], default: "2x2" }]);
+  });
+
+  it("la taille par défaut est la première si elle n'est pas dans la liste", () => {
+    expect(widgetsDe([{ id: "a", app: "resume", sizes: ["1x1", "4x2"], default: "3x3" }], apps)[0]?.default).toBe("1x1");
+  });
+
+  it("renvoie une liste vide si ce n'est pas une liste", () => {
+    expect(widgetsDe(undefined, apps)).toEqual([]);
+  });
+});
 
 describe("appsDe", () => {
   it("garde les apps à identifiant et à page d'entrée valides, sans doublon", () => {

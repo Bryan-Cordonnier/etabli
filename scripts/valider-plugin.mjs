@@ -204,6 +204,26 @@ export function validerPlugin(dossier, { dist = true, racine = RACINE } = {}) {
     else if (typeof disposition.app !== "string" || !idsApps.has(disposition.app)) erreur(`page « ${nom} » : « layout.app » (${JSON.stringify(disposition.app)}) n'est pas une app déclarée dans « apps ».`);
   }
 
+  // Widgets déclarés : de petites apps que l'accueil affiche dans sa grille
+  if (m.widgets !== undefined) {
+    if (!Array.isArray(m.widgets)) erreur("« widgets » doit être une liste.");
+    else {
+      const vus = new Set();
+      for (const w of m.widgets) {
+        const nom = w?.id ?? "?";
+        if (typeof w?.id !== "string" || !ID.test(w.id)) erreur(`widget « ${nom} » : « id » absent ou invalide.`);
+        else if (vus.has(w.id)) erreur(`widget « ${nom} » : identifiant utilisé deux fois.`);
+        else vus.add(w.id);
+        if (typeof w?.title !== "string" || w.title.trim() === "") erreur(`widget « ${nom} » : « title » absent.`);
+        if (typeof w?.icon !== "string" || !icones.has(w.icon)) erreur(`widget « ${nom} » : « icon » absente ou hors liste (apps/desktop/src/lib/icons.ts).`);
+        if (typeof w?.app !== "string" || !idsApps.has(w.app)) erreur(`widget « ${nom} » : « app » (${JSON.stringify(w?.app)}) n'est pas une app déclarée dans « apps ».`);
+        const tailles = Array.isArray(w?.sizes) ? w.sizes : [];
+        if (tailles.length === 0 || tailles.some((t) => typeof t !== "string" || !/^[1-4]x[1-4]$/.test(t))) erreur(`widget « ${nom} » : « sizes » doit lister des tailles « LxH » de 1 à 4 (« 2x1 »).`);
+        else if (w.default !== undefined && !tailles.includes(w.default)) erreur(`widget « ${nom} » : « default » doit être l'une des « sizes ».`);
+      }
+    }
+  }
+
   // Paramètres déclarés : le moteur en fait un onglet dans Paramètres
   const TYPES_PARAMETRE = ["number", "text", "boolean", "time", "select"];
   if (m.parameters !== undefined) {

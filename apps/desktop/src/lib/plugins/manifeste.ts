@@ -1,7 +1,7 @@
 // Lecture défensive des champs « appels entre plugins » d'un manifeste (docs/24, A.1.2). Fonctions pures, sans Svelte : le
 // manifeste vient d'un plugin, donc de quelqu'un qui n'est pas de confiance.
 import { ICONS, type IconName } from "../icons";
-import type { AppManifest, PageManifest, ParameterManifest, ParameterValue } from "../types";
+import type { AppManifest, PageManifest, ParameterManifest, ParameterValue, WidgetManifest, WidgetSize } from "../types";
 import { NOM_FONCTION } from "./garde";
 
 /** Service → fonction → niveau d'accès. */
@@ -78,6 +78,27 @@ export function pagesDe(value: unknown, apps: readonly AppManifest[]): PageManif
     if (!p || !ID.test(id) || vus.has(id) || disposition?.type !== "app" || !apps.some((a) => a.id === app)) continue;
     vus.add(id);
     sortie.push({ id, title: texte(p.title, id, 80), icon: icone(p.icon), app });
+  }
+  return sortie;
+}
+
+const TAILLE = /^[1-4]x[1-4]$/;
+export const estTaille = (v: unknown): v is WidgetSize => typeof v === "string" && TAILLE.test(v);
+
+/** Widgets déclarés (`widgets`) : une app qui existe, au moins une taille valide (les autres sont ignorées). */
+export function widgetsDe(value: unknown, apps: readonly AppManifest[]): WidgetManifest[] {
+  if (!Array.isArray(value)) return [];
+  const vus = new Set<string>();
+  const sortie: WidgetManifest[] = [];
+  for (const brut of value.slice(0, 20)) {
+    const w = objet(brut);
+    const id = texte(w?.id, "", 64);
+    const app = texte(w?.app, "", 64);
+    if (!w || !ID.test(id) || vus.has(id) || !apps.some((a) => a.id === app)) continue;
+    const sizes = [...new Set((Array.isArray(w.sizes) ? w.sizes : []).filter(estTaille))].slice(0, 8);
+    if (sizes.length === 0) continue;
+    vus.add(id);
+    sortie.push({ id, title: texte(w.title, id, 80), icon: icone(w.icon), app, sizes, default: estTaille(w.default) && sizes.includes(w.default) ? w.default : sizes[0]! });
   }
   return sortie;
 }

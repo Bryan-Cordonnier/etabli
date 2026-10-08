@@ -1,5 +1,7 @@
+import { BOARD_DEFAUT, lireBoard } from "$lib/board";
 import { load, save } from "$lib/storage";
 import { SYSTEM_THEME, type Theme } from "$lib/themes";
+import type { BoardEntry } from "$lib/types";
 
 export const SIDEBAR_MIN = 200;
 export const SIDEBAR_MAX = 300;
@@ -30,6 +32,8 @@ interface Persisted {
   disabledPlugins: string[];
   /** Ordre des pages dans la colonne (« plugin/page »), choisi par glisser-déposer. */
   pageOrder: string[];
+  /** Widgets de l'accueil, dans l'ordre ; `null` tant que l'utilisateur n'a rien changé (l'accueil par défaut). */
+  board: BoardEntry[] | null;
   /** Raccourci global de l'aperçu rapide (le seul réglé par défaut). */
   quickShortcut: Shortcut;
   /** Raccourcis dans l'application, par action (voir shortcuts.ts). Aucun par défaut. */
@@ -49,6 +53,7 @@ const DEFAULTS: Persisted = {
   favorites: [],
   disabledPlugins: [],
   pageOrder: [],
+  board: null,
   quickShortcut: DEFAULT_SHORTCUT,
   shortcuts: {},
   closeToTray: true,
@@ -65,7 +70,8 @@ class Settings {
   favorites = $state<string[]>([]);
   disabledPlugins = $state<string[]>([]);
   pageOrder = $state<string[]>([]);
-  quickShortcut = $state<Shortcut>(DEFAULTS.quickShortcut);
+  board = $state<BoardEntry[] | null>(null);
+  quickShortcut =$state<Shortcut>(DEFAULTS.quickShortcut);
   shortcuts = $state<Record<string, Shortcut>>({});
   closeToTray = $state(DEFAULTS.closeToTray);
   checkUpdates = $state(DEFAULTS.checkUpdates);
@@ -86,6 +92,7 @@ class Settings {
     this.favorites = saved.favorites;
     this.disabledPlugins = saved.disabledPlugins;
     this.pageOrder = saved.pageOrder;
+    this.board = lireBoard(saved.board);
     this.quickShortcut = saved.quickShortcut;
     this.shortcuts = saved.shortcuts;
     this.closeToTray = saved.closeToTray;
@@ -103,6 +110,7 @@ class Settings {
       favorites: $state.snapshot(this.favorites),
       disabledPlugins: $state.snapshot(this.disabledPlugins),
       pageOrder: $state.snapshot(this.pageOrder),
+      board: $state.snapshot(this.board),
       quickShortcut: $state.snapshot(this.quickShortcut),
       shortcuts: $state.snapshot(this.shortcuts),
       closeToTray: this.closeToTray,
@@ -174,6 +182,16 @@ class Settings {
   setPageOrder(ids: string[], persist = true): void {
     this.pageOrder = ids;
     if (persist) this.#save();
+  }
+
+  /** Les widgets de l'accueil : ceux que l'utilisateur a choisis, sinon l'accueil par défaut. */
+  get widgets(): readonly BoardEntry[] {
+    return this.board ?? BOARD_DEFAUT;
+  }
+
+  setBoard(entries: BoardEntry[]): void {
+    this.board = entries;
+    this.#save();
   }
 
   /** Ajoute ou remplace un thème importé, puis l'applique. */

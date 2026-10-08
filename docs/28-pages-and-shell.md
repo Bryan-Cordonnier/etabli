@@ -10,8 +10,9 @@
 | `apps` and `pages` in the manifest, `layout: { type: "app" }` only; a plugin without `pages` is refused, with its reason on the *Plugins* page | The other layouts (`columns`, `tabs`, `stack`) |
 | The sidebar lists pages (plugin name hidden), drag-and-drop order saved as `pageOrder`; a page already open is focused instead of duplicated | **Categories** in the sidebar |
 | The shell draws nothing around a page: no title, *New*, *Duplicate*, *Export*, *Delete*, old calculations, recent documents; `MiniAppDocument` is removed and refused by the validator | A documents API in the SDK for plugins that want their own *New / History* |
-| `parameters` in the manifest: the engine builds a tab in *Settings* named after the plugin; `etabli.parameters` and `PluginParameters` read the values live | The home **board of widgets** (the home page still lists favourite pages and search) |
-| Quick preview, command palette and favourites work on pages (key `plugin/page`) | Widgets declared by plugins, the default layout from a distribution |
+| `parameters` in the manifest: the engine builds a tab in *Settings* named after the plugin; `etabli.parameters` and `PluginParameters` read the values live | The widget **recently opened**, free positioning (the board is an ordered list on a grid of 4, 2 or 1 columns) |
+| Quick preview, command palette and favourites work on pages (key `plugin/page`) | The default layout from a distribution (today: only the *Favourites* widget) |
+| **Home board** (`components/Board.svelte`, logic in `lib/board.ts`): *Edit* mode (add from a gallery, move, resize, remove), saved as `board` in the settings; `widgets` in the manifest (`id`, `title`, `icon`, `app`, `sizes` such as `2x1`, `default`) validated by the engine and by `valider-plugin`; a widget is an app shown in a sandboxed frame that knows it is a widget through `location.hash === "#widget"`; built-in widget *Favourites*. A widget of an uninstalled plugin shows a placeholder in edit mode and returns with the plugin | |
 ## Why
 
 The engine's shell was designed for Établi, a toolbox of small calculators: the sidebar lists **plugins**, a plugin page lists its **mini-apps**
