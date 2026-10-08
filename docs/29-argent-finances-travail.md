@@ -59,9 +59,11 @@ A secondary hint shows the days since the last recalibration.
 ## 3. Travail (public, one page with apps)
 
 - Contracts: temp work (intérim), fixed-term (CDD), permanent (CDI), reservist.
-- **Agencies** with their own settings (hourly rate, meal allowances, travel allowances, weekly advances or monthly pay, pay day). The legal parts (10 % end-of-mission
-  bonus, 10 % paid-leave allowance for temp work) come from settings, never hard-coded.
-- The main page shows the **current or next mission**, and the apps (contracts, agencies, reserve, payslips) below, as in the original structure.
+- **An agency is only a name and a contribution rate** (Bryan). The hourly rate, meal and travel allowances belong to each **mission**, since they change with every client. The pay rhythm (monthly or weekly) is the only other agency field kept so far, to be confirmed. The legal parts (10 % end-of-mission
+  bonus, 10 % paid-leave allowance for temp work) come from the plugin's settings, never hard-coded.
+- **Only signed contracts** are entered; their status is automatic: *planned*, *in progress*, *finished* (never "proposed").
+- **Mockup validated in principle (Bryan, 8 October 2026):** two light blocks on top (current mission with a "days done / days total" gauge, the weekly hours in big figures with an hours/minutes spinner and a "+" to add extra time any number of times, the next pay date; next mission with "in N days" and its dates), then **one tab per contract type** (Interim, Reserve, CDD, CDI). Each tab shows the last three missions and "See all" opens the full history in a centred window over a fade veil, like the quick preview (never full screen). Each finished mission takes a **payslip** (amount received, optional PDF); the gap with the estimate feeds the **average accuracy**, which the recalibration of Mes finances reuses. Agencies are managed inside the Interim tab. Settings live in the engine's real Settings page, in a tab declared by the plugin.
+- Open: does the reserve have its own payslip or a line on the agency one (searches found nothing certain)?
 - Travail **does not write real money into Argent.** It **announces expected income** ("around 10 November, about 1 812 € net"). Mes finances shows it in the curve
   and the survival date, and records the real movement in Argent on pay day, with the amount actually received. Travail therefore works without any private plugin.
 
@@ -81,6 +83,19 @@ Later it can look up prices through APIs. It announces its planned spending to M
 2. **AI-built shopping list.** From loose wishes, the number of meals in the week and the days with more guests, it optimises the list within the budget: picks a shop, picks dishes (searching the internet), and adds the list itself.
 
 Both need the price database first; the data model of a settled list should therefore keep the article names as typed, so that a receipt can be matched to them later. Network access for the AI is an open question (the sandbox forbids it for plugins today, so it goes through an engine service).
+
+## 4 bis. Calendar (validated mockup, Bryan, 8 October 2026)
+
+Rename of the *agenda* plugin's page. Main layout: **a month of round days on the left (about two thirds)** and **the selected day on the right**, both the same height.
+
+- **Month:** the month name between two arrows, centred. Each day is a round with its number, a border on today, and a **colour per contract type** (interim, reserve/army, CDD, CDI). Only the types present are listed in the legend. No "today" label.
+- **Day:** a vertical strip from the **wake-up time to the estimated bedtime**, a name beside each block: preparation, trip, work, return trip, free time. Work shows the **contract's working time** (never computed from the strip, since the break would be counted). Arrows change the day.
+- **Events:** the "+ Event" button creates **ordinary events only** (a name, an address, hours, optional repeat); **contracts come from Travail**. The address is looked up and the outward and return trip times are computed. **If an event starts soon after another** (gap under a setting, 90 min by default), the strip shows one **direct trip** and no return home.
+- **Sleep:** a GitHub-style grid (green respects the target, red does not), the **average** in big figures, a "I am going to sleep now" button that sets the bedtime.
+- **Trip:** a small square block with **two buttons only**, "I have left" and "I have arrived". The software works out which trip is meant from the time and from what was already noted, and **refuses** "arrived" when you are meant to leave, "left" when already left or when the next trip is more than an hour away. Real times are kept, to adjust the trip estimates and the arrival margin.
+- Legal rest (48 h per week, 10 h per day, 11 h between two days) is a discreet line at the bottom.
+- **Later:** live traffic (refreshed about every 3 minutes from the wake-up time, through an API reached by an engine service, since plugins have no network) to compute the departure time automatically. Providers to compare (price, limits) before any code.
+- Open: where to edit or delete an event (a click on its block in the strip?).
 
 ## 5. Accounts (Bryan)
 
