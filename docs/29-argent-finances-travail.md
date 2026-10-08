@@ -70,6 +70,18 @@ A secondary hint shows the days since the last recalibration.
 Food is **its own plugin**, not a setting of Mes finances. It sets a **weekly budget** (shopping is usually done once a week); on the shopping day the amount is deducted, and the forecast shows it ahead of time.
 Later it can look up prices through APIs. It announces its planned spending to Mes finances, like Travail announces income.
 
+**Two pages (Bryan, mockup validated in principle):**
+
+- **Courses** (dashboard): remaining weekly budget with a gauge, quick ticket entry, next shopping day; below, the weeks (last four plus the current one) on the left and the tickets on the right. Full ticket history opens in a centred window over a fade veil.
+- **Shopping list**: a memo, one list per trip. A list can be created, edited and consulted (to shop with it) until it is **settled**. "Settle the trip" asks for the amount paid and the shop, then locks the list for good (no edit, history only) and adds the ticket to the week's budget.
+
+**Later, not to be coded now (Bryan's ideas):**
+
+1. **Receipt photo when settling.** The receipt is read; every price is kept in a local database with the exact brand and product. With it: cheapest-item estimates and a price per shop.
+2. **AI-built shopping list.** From loose wishes, the number of meals in the week and the days with more guests, it optimises the list within the budget: picks a shop, picks dishes (searching the internet), and adds the list itself.
+
+Both need the price database first; the data model of a settled list should therefore keep the article names as typed, so that a receipt can be matched to them later. Network access for the AI is an open question (the sandbox forbids it for plugins today, so it goes through an engine service).
+
 ## 5. Accounts (Bryan)
 
 - **As many accounts as the user wants**, each with a **role**: *I live on it* (counts in "Argent actuel" and in the survival date), *safety money* (an account I could use in case of need:
