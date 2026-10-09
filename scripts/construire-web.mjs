@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
 
 const racine = fileURLToPath(new URL("..", import.meta.url));
 const sortie = join(racine, "apps", "desktop", "dist-web");
-const dossierPlugins = join(racine, "plugins");
+// Une distribution (Quotidien…) donne ses propres plugins compilés par ETABLE_PLUGINS_DIR, comme pour l'aperçu et l'application.
+const dossierPlugins = process.env.ETABLE_PLUGINS_DIR || join(racine, "plugins");
 
 /** Tous les fichiers d'un dossier, en chemins relatifs avec des « / ». */
 export function listerFichiers(dossier, base = dossier) {
