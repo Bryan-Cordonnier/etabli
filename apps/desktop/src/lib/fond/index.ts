@@ -18,9 +18,31 @@ function empreinte(texte: string): string {
 }
 
 function choisir(): { fond: Fond; client: ClientApi | null } {
-  if (isTauri()) return { fond: fondTauri, client: null };
   const connexion = lireConnexion();
-  if (connexion?.mode === "serveur") {
+  if (isTauri()) {
+    if (connexion?.mode !== "serveur") return { fond: fondTauri, client: null };
+    // Application native reliée au serveur : calculs et données de plugins viennent du serveur (avec copie hors ligne) ;
+    // plugins, réglages de l'appareil (clé IA, raccourcis…), fenêtres et fichiers restent locaux.
+    const client = new ClientApi({ base: connexion.url, jeton: connexion.jeton });
+    const distant = avecCache(creerFondServeur(client), {
+      nom: `etabli-cache-${empreinte(`${connexion.url}|${connexion.utilisateur.id}`)}`,
+      rapport: synchro.rapport,
+    });
+    const fond: FondAvecCache = {
+      ...fondTauri,
+      documentsList: distant.documentsList,
+      documentRead: distant.documentRead,
+      documentSave: distant.documentSave,
+      documentDelete: distant.documentDelete,
+      dataRead: distant.dataRead,
+      dataWrite: distant.dataWrite,
+      synchroniser: distant.synchroniser,
+      nomCache: distant.nomCache,
+      enAttente: distant.enAttente,
+      arreter: distant.arreter,
+    };
+    return { fond, client };
+  }  if (connexion?.mode === "serveur") {
     const client = new ClientApi({ base: connexion.url, jeton: connexion.jeton });
     const fond = avecCache(creerFondServeur(client, connexion.urlPlugins), {
       nom: `etabli-cache-${empreinte(`${connexion.url}|${connexion.utilisateur.id}`)}`,

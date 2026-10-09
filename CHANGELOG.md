@@ -11,6 +11,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Added
+
+- **The Windows and Android apps can connect to the server.** *Settings → Server* now has the sign-in form in the apps too. Once connected, calculations and plugin data are stored on the server (with an offline copy that is sent back on reconnection); plugins, device settings (AI key, shortcuts…) and windows stay on the device.
+
 ### Fixed
 
 - **The title bar without tabs was broken**: the page icon sat above its title and was cut off, because its class clashed with the global page class. Both are now on one line.
