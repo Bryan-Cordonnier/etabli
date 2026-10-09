@@ -30,7 +30,7 @@ const PLUGIN_CSP: &str = "default-src 'none'; \
 pub enum Source {
     /// Livré avec l'application (en développement : les plugins du dépôt).
     Integre,
-    /// Installé depuis un fichier `.etabli-plugin`, signature vérifiée.
+    /// Installé depuis un fichier `.etapl`, signature vérifiée.
     Installe,
     /// Déposé à la main dans le dossier des plugins de l'utilisateur.
     Utilisateur,

@@ -1,4 +1,5 @@
 <script lang="ts">
+  const nom = distribution.name;
   import { distribution } from "$lib/distribution";
   // Paramètres (cahier des charges, section 5.10). Les plugins peuvent y ajouter leurs propres pages
   // de réglages (agenda, budget…) : elles s'affichent dans le menu, sous « Plugins ».
@@ -39,7 +40,7 @@
     general: {
       label: "Général",
       title: "Général",
-      lead: "Comment Établi se comporte avec Windows et où il enregistre vos données.",
+      lead: `Comment ${nom} se comporte avec Windows et où il enregistre vos données.`,
     },
     apparence: {
       label: "Apparence",
@@ -59,7 +60,7 @@
     serveur: {
       label: "Serveur et compte",
       title: "Serveur et compte",
-      lead: "Établi fonctionne seul sur cet appareil. Un serveur facultatif réunit vos calculs et ceux de votre équipe.",
+      lead: `${nom} fonctionne seul sur cet appareil. Un serveur facultatif réunit vos calculs et ceux de votre équipe.`,
     },
     administration: {
       label: "Administration",
@@ -79,7 +80,7 @@
     "a-propos": {
       label: "Mises à jour et à propos",
       title: "Mises à jour et à propos",
-      lead: "Version d'Établi, recherche de mises à jour et liens du projet.",
+      lead: `Version de ${nom}, recherche de mises à jour et liens du projet.`,
     },
   };
 
@@ -332,8 +333,8 @@
               aria-checked={settings.closeToTray}
               onclick={() => setCloseToTray(true)}
             >
-              <b>Établi reste en arrière-plan</b>
-              <small>La fenêtre se ferme mais Établi continue près de l'horloge : le raccourci de l'aperçu rapide reste disponible. Pour quitter, clic droit sur son icône → Quitter.</small>
+
+
             </button>
             <button
               class="choice"
@@ -342,8 +343,8 @@
               aria-checked={!settings.closeToTray}
               onclick={() => setCloseToTray(false)}
             >
-              <b>Établi se ferme complètement</b>
-              <small>Fermer la fenêtre quitte l'application. L'aperçu rapide ne répond plus tant qu'Établi n'est pas relancé.</small>
+
+
             </button>
           </div>
         </div>
@@ -352,10 +353,10 @@
           <h3>Au démarrage de Windows</h3>
           <div class="setting">
             {@render row(
-              "Lancer Établi quand j'ouvre ma session Windows",
-              "Établi démarre réduit près de l'horloge, sans ouvrir de fenêtre, prêt pour l'aperçu rapide.",
+              `Lancer ${nom} quand j'ouvre ma session Windows`,
+              `${nom} démarre réduit près de l'horloge, sans ouvrir de fenêtre, prêt pour l'aperçu rapide.`,
             )}
-            <Switch checked={autostart} label="Lancer Établi au démarrage de Windows" onchange={setAutostart} />
+
           </div>
         </div>
         {/if}
@@ -498,7 +499,7 @@
         </div>
         <div class="box">
           <div class="box-head">
-            <h3>Dans la fenêtre d'Établi</h3>
+
             <button class="btn" disabled={shortcutCount === 0} onclick={() => { for (const a of ACTIONS) settings.setShortcut(a.id, null); }}>
               Tout effacer
             </button>
@@ -552,22 +553,22 @@
       {:else}
         <div class="box">
           <h3>Mises à jour</h3>
-          <p>Version installée : Établi <b>{info?.version ?? "…"}</b></p>
+
           {#if !api.capacites.miseAJour}
             <p class="hint">Mises à jour indisponibles dans l'aperçu navigateur.</p>
           {:else if updates.status === "available" || updates.status === "downloading" || updates.status === "installing"}
             <div class="update">
-              <p><b>Établi {updates.version}</b> est disponible.</p>
+
               {#if updates.notes}<pre class="notes">{updates.notes}</pre>{/if}
               {#if updates.status === "available"}
                 <div class="buttons">
                   <button class="btn primary" onclick={() => void updates.install()}>Installer et redémarrer</button>
                 </div>
-                <p class="hint">Établi se ferme, s'installe et se relance : vos calculs sont déjà enregistrés.</p>
+
               {:else}
                 <p class="hint">
                   {updates.status === "installing"
-                    ? "Installation… Établi va redémarrer."
+                    ? `Installation… ${nom} va redémarrer.`
                     : `Téléchargement${Number.isFinite(updates.progress) ? ` : ${Math.round(updates.progress * 100)} %` : "…"}`}
                 </p>
               {/if}
@@ -579,13 +580,13 @@
               </button>
             </div>
             {#if updates.status === "uptodate"}
-              <p class="hint">Établi est à jour.</p>
+
             {:else if updates.status === "error"}
               <p class="hint">Impossible de joindre GitHub ({updates.error}). Vérifiez la connexion à Internet.</p>
             {/if}
           {/if}
           <div class="setting">
-            {@render row("Chercher au démarrage", "Quelques secondes après l'ouverture, Établi regarde sur GitHub s'il existe une nouvelle version.")}
+            {@render row("Chercher au démarrage", `Quelques secondes après l'ouverture, ${nom} regarde sur GitHub s'il existe une nouvelle version.`)}
             <Switch checked={settings.checkUpdates} label="Chercher les mises à jour au démarrage" onchange={(v) => settings.set("checkUpdates", v)} />
           </div>
         </div>

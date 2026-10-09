@@ -48,7 +48,7 @@ build et jamais modifiable par un plugin, un document ou un fichier de données.
 | Clé publique par défaut du serveur (« celle d'Établi ») | `crates/serveur`, option `--cle-publique` | `registre.cles` |
 | Dossiers `%APPDATA%\Etabli`, `Documents\Etabli`, variable `ETABLI_DATA_DIR` | `paths.rs` | dérivés de `identifiant` |
 | Base IndexedDB `etabli`, préfixe `etabli.` (localStorage), cache du service worker `etabli-…` | `fond/web.ts`, `storage.ts`, `scripts/construire-web.mjs` | dérivés de `identifiant` |
-| Extensions `.etabli`, `.etabli-plugin`, événements `etabli:*`, protocole `plugins://` | Rust et interface | **restent communs** (format du moteur, section 6) |
+| Extensions `.etabli`, `.etapl`, événements `etabli:*`, protocole `plugins://` | Rust et interface | **restent communs** (format du moteur, section 6) |
 | Icônes (`src-tauri/icons`, `public-web`), thèmes, nom dans le manifeste PWA | dossiers d'icônes | `habillage` |
 | Plugins livrés d'office, catalogue, installateur | CI, `build:plugins` | `plugins` |
 | Scripts de publication (`notes-version`, `latest-json`, `paquet-plugin`, `nouveau-plugin`) citent le dépôt | `scripts/*.mjs` | lisent la distribution |
@@ -59,7 +59,7 @@ build et jamais modifiable par un plugin, un document ou un fichier de données.
 | --- | --- |
 | nom, logo, icônes, thèmes par défaut, couleur d'accent | SDK, protocole, garde des messages, isolation des plugins ([19](19-modele-de-menace-plugins.md)) |
 | identifiant d'application, dossiers de données | format des documents `.etabli`, migrations ([08](08-documents-donnees.md)) |
-| plugins livrés d'office, catalogue et registre | format du paquet `.etabli-plugin`, signature minisign, catalogue signé, révocation |
+| plugins livrés d'office, catalogue et registre | format du paquet `.etapl`, signature minisign, catalogue signé, révocation |
 | clés de confiance et de mise à jour, adresse de mise à jour | noyau Rust (`crates/noyau`), vérifications, anti-retour-en-arrière |
 | serveur par défaut (adresse), mode par défaut (local ou serveur) | `etabli-serveur`, comptes, sessions, quotas |
 | plateformes produites (Windows, Android, web) | interface hôte Svelte, kit `@etabli/ui` |

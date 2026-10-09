@@ -27,7 +27,7 @@ that folder like any other plugin root. This works the same on Windows and Andro
 In a debug build, a run-time `ETABLE_PLUGINS_DIR` (and the repository's own `plugins/` on desktop) is read first, so plugins can be edited
 without recompiling Rust.
 
-Plugins installed by the user from a signed `.etabli-plugin` file go to `installes` and are checked against the public key of the
+Plugins installed by the user from a signed `.etapl` file go to `installes` and are checked against the public key of the
 distribution's `tauri.conf.json` (`plugins.updater.pubkey`).
 
 ## Android

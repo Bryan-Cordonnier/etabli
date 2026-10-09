@@ -1,4 +1,4 @@
-//! Paquets de plugins `.etabli-plugin` : un zip qui contient `plugin.zip` (les fichiers du plugin)
+//! Paquets de plugins `.etapl` : un zip qui contient `plugin.zip` (les fichiers du plugin)
 //! et `plugin.zip.minisig` (sa signature minisign, faite avec la clé des mises à jour de l'application).
 //!
 //! Tout se passe en mémoire : rien n'est écrit avant que la signature soit vérifiée, que chaque
@@ -92,7 +92,7 @@ fn lire_entree(
     Ok(octets)
 }
 
-/// Contrôle un paquet `.etabli-plugin` et renvoie le zip du plugin, une fois la signature vérifiée.
+/// Contrôle un paquet `.etapl` et renvoie le zip du plugin, une fois la signature vérifiée.
 pub fn ouvrir_paquet(paquet: &[u8], cle_publique: &str) -> Result<Vec<u8>, String> {
     ouvrir_paquet_parmi(paquet, &[cle_publique])
 }
@@ -106,7 +106,7 @@ pub fn ouvrir_paquet_parmi<S: AsRef<str>>(
         return Err("Paquet trop volumineux.".into());
     }
     let mut archive = ZipArchive::new(Cursor::new(paquet))
-        .map_err(|_| "Ce fichier n'est pas un plugin Établi (.etabli-plugin).".to_string())?;
+        .map_err(|_| "Ce fichier n'est pas un paquet de plugin (.etapl).".to_string())?;
     let plugin = lire_entree(&mut archive, "plugin.zip", TAILLE_MAX_PAQUET)?;
     let signature = lire_entree(&mut archive, "plugin.zip.minisig", 64 * 1024)?;
     let signature =
@@ -234,7 +234,7 @@ mod tests {
 
     /// Paquet d'essai signé avec une clé d'essai (celui des tests de l'application).
     const PAQUET: &[u8] =
-        include_bytes!("../../../apps/desktop/src-tauri/fixtures/essai-1.0.0.etabli-plugin");
+        include_bytes!("../../../apps/desktop/src-tauri/fixtures/essai-1.0.0.etapl");
     const CLE_ESSAI: &str = include_str!("../../../apps/desktop/src-tauri/fixtures/cle-essai.pub");
 
     fn zip_de(fichiers: &[(&str, &[u8])]) -> Vec<u8> {

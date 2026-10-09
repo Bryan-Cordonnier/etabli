@@ -88,7 +88,7 @@ export interface Fond {
   exporterTout?(): Promise<ExportComplet>;
 
   pluginsList(): Promise<PluginInfo[]>;
-  /** Installe un fichier .etabli-plugin choisi par l'utilisateur ; null s'il annule. */
+  /** Installe un fichier .etapl choisi par l'utilisateur ; null s'il annule. */
   pluginInstallFile(): Promise<string | null>;
   pluginUninstall(id: string): Promise<void>;
   /** Liste des plugins changée (installation, désinstallation), dans n'importe quelle fenêtre. */

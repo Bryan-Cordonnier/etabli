@@ -8,7 +8,7 @@ import { ui } from "./ui.svelte";
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 class Installation {
-  /** Installe un fichier `.etabli-plugin` choisi par l'utilisateur (boîte de dialogue native). */
+  /** Installe un fichier `.etapl` choisi par l'utilisateur (boîte de dialogue native). */
   async installFile(): Promise<void> {
     try {
       const id = await api.pluginInstallFile();

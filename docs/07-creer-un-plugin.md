@@ -92,7 +92,7 @@ Le moteur trouve le plugin tout seul au prochain lancement (`plugins/<id>/dist/m
   plus bas.
 - `settings` (facultatif) : pages de réglages **HTML** que le plugin ajoute à Paramètres → Plugins, quand `parameters` ne suffit
   pas (un tableau de machines, par exemple). L'identifiant `parametres` est réservé.
-- Distribution : le plugin n'est pas dans l'installateur du moteur ; il s'installe depuis un fichier `.etabli-plugin` signé, ou une
+- Distribution : le plugin n'est pas dans l'installateur du moteur ; il s'installe depuis un fichier `.etapl` signé, ou une
   distribution l'embarque (voir [27](27-building-a-distribution.md)). En développement, les plugins du dépôt sont chargés directement (« intégrés »).
 
 ## 3. Modèle de page

@@ -1,6 +1,6 @@
 <script lang="ts">
   // Plugins installés (maquette validée par Bryan, docs/13) : activer, désactiver, désinstaller, ou installer depuis un
-  // fichier `.etabli-plugin` signé. Le moteur n'a ni catalogue ni magasin : un plugin arrive par un fichier.
+  // fichier `.etapl` signé. Le moteur n'a ni catalogue ni magasin : un plugin arrive par un fichier.
   import { api } from "$lib/api";
   import Icon from "$lib/components/Icon.svelte";
   import Switch from "$lib/components/Switch.svelte";

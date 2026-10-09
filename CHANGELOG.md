@@ -17,6 +17,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Changed
 
+- **Plugin packages now always end in `.etapl`** (was `.etabli-plugin`): file dialogs, the administration page, the packaging script, the signed fixtures and the docs. Packages built with the old extension must be rebuilt.
+- **The application name comes from the distribution everywhere**: sign-in, settings, update banner, home, quick preview, browser tab title, installable web app name (manifest) and its icons.
 - **The AI key is no longer checked for its shape.** Google's recent keys contain a dot (`AQ.…`) and were refused; now any printable key is accepted (quotes pasted with it are removed) and Google says whether it works (*Try* button).
 - **The home board is endless and easier to use.** There is no limit to the number of widgets, and the same widget can be posed several times (each one keeps its own settings). A widget you grab follows the mouse while the others close up, and the board scrolls when you drag near its edge. Every widget shows the icon and colour of its plugin. A last *Add a widget* cell ends the grid in Edit mode.
 - **The home board edits like a phone home screen.** In *Edit* mode, click a widget to select it, drag it to move it (the others close up), drag its edges or its corner to resize it (it snaps to the nearest size it supports), remove it with its cross.
@@ -53,7 +55,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 - **The Capacitor Android project is removed** (`apps/mobile`, its Java origin-per-plugin code, the Capacitor npm packages and probes, the Android spike): Android now runs on Tauri mobile.
 - **The seven metalworking plugins** (Maths, Economy, Sheet metal, Layout, Materials, Suppliers, Machines) are no longer in this repository: the project is moving to a plugin-free open-source engine (Etable). The last state is kept under the Git tag `legacy/etabli-0.5-chaudronnerie`.
 - **Domain code of those plugins is removed from the engine**: the `Libraries` service (suppliers and machines, message `libraries`, `addMachine`), workshop sheets (message `print`, permission `impression`, `printFiche`), DXF export (`toDxf`), templates (`gabaritPages`) and the "Workshop sheets" setting (author name). A plugin still sending `print` or `addMachine` is refused like any unknown message.
-- **The plugin store is removed from the engine**: no more catalogue, signed catalogue, key rotation, revocation, rollback, API-contract stop, plugin catalogue source or channel, automatic plugin updates, nor the per-plugin publishing workflows (`publier-plugin.yml`, `catalogue-renouvellement.yml`). A plugin now installs from a signed `.etabli-plugin` file (page *Plugins* → *Install from a file*), and the engine refuses a version older than the installed one. The page *Catalogue* becomes *Plugins*. The store code is kept under the Git tag `legacy/store-before-cut` to seed Etablink.
+- **The plugin store is removed from the engine**: no more catalogue, signed catalogue, key rotation, revocation, rollback, API-contract stop, plugin catalogue source or channel, automatic plugin updates, nor the per-plugin publishing workflows (`publier-plugin.yml`, `catalogue-renouvellement.yml`). A plugin now installs from a signed `.etapl` file (page *Plugins* → *Install from a file*), and the engine refuses a version older than the installed one. The page *Catalogue* becomes *Plugins*. The store code is kept under the Git tag `legacy/store-before-cut` to seed Etablink.
 
 ### Ajouté
 
@@ -317,7 +319,7 @@ Les plugins peuvent maintenant ajouter leurs propres réglages et dépendre les 
 - **Le catalogue de plugins** : l'installateur ne contient plus aucun plugin, on installe, met à jour, active, désactive et
   désinstalle ceux dont on a besoin, sans redémarrer. Au premier lancement, Établi est vide et propose d'ouvrir le catalogue.
 - **Mises à jour automatiques des plugins** au démarrage, avec une notification. Sans réseau, rien ne s'affiche.
-- **Installer depuis un fichier** (`.etabli-plugin`), hors ligne, avec la même vérification.
+- **Installer depuis un fichier** (`.etapl`), hors ligne, avec la même vérification.
 - Reprise pour qui arrive d'une version 0.1.x : les plugins livrés avec elle sont réinstallés depuis le catalogue.
 
 ### Modifié

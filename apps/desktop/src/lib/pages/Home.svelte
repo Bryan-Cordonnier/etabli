@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { distribution } from "$lib/distribution";
+  const nom = distribution.name;
   import { api } from "$lib/api";
   import AppCard from "$lib/components/AppCard.svelte";
   import Board from "$lib/components/Board.svelte";
@@ -37,9 +39,9 @@
   <div class="page">
     <div class="welcome">
       <div class="mark"><Icon name="store" size={30} /></div>
-      <h1>Bienvenue dans Établi</h1>
+
       <p>
-        Établi est un moteur de plugins : chaque plugin ajoute ses pages et ses réglages. Installez ceux dont vous
+
         avez besoin, depuis un fichier signé.
       </p>
       {#if api.capacites.plugins}
@@ -47,7 +49,7 @@
           <Icon name="package" size={18} /> Installer un plugin depuis un fichier…
         </button>
         <button class="link" onclick={() => tabs.navigate({ kind: "plugins" })}>Ouvrir la page des plugins</button>
-        <p class="hint">Les plugins sont signés : Établi vérifie chaque installation.</p>
+
       {:else if api.id === "serveur"}
         <p class="hint">Aucun plugin n'est encore disponible sur ce serveur : demandez à l'administrateur d'en installer (Paramètres → Administration).</p>
       {/if}

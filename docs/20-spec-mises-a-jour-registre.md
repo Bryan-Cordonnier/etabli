@@ -9,7 +9,7 @@
 ## 1. Ce qui existe
 
 - **Application** : mise à jour signée (minisign) par le plugin Tauri, depuis `releases/latest/download/latest.json` sur GitHub.
-- **Plugins** : un paquet `.etabli-plugin` signé par plugin, plus `catalogue.json` dans la Release « catalogue » ; installation sans
+- **Plugins** : un paquet `.etapl` signé par plugin, plus `catalogue.json` dans la Release « catalogue » ; installation sans
   redémarrage ; signature vérifiée avant toute écriture.
 - Les adresses sont **écrites dans le code** (`catalogue.rs`, `tauri.conf.json`).
 

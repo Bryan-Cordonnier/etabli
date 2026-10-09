@@ -75,7 +75,7 @@ Toutes les réponses d'erreur sont `{ "erreur": "phrase en français" }`. Authen
 | `GET/PUT /api/donnees/{nom}` · `GET/PUT /api/reglages` | réglages de plugin et services publiés · réglages de l'application |
 | `GET /api/plugins` · `GET /plugins/{id}/{chemin}` | plugins accessibles à l'utilisateur · leurs fichiers (publics, politique sans réseau) |
 | `…/api/admin/utilisateurs` (GET, POST, PATCH, DELETE) | comptes (jamais de second administrateur ; suppression avec `?confirmer=`) |
-| `…/api/admin/plugins` (GET, POST, PATCH, DELETE) | `POST` = paquet `.etabli-plugin` tel quel ; `PATCH` = `actifGlobal`, `utilisateurs` |
+| `…/api/admin/plugins` (GET, POST, PATCH, DELETE) | `POST` = paquet `.etapl` tel quel ; `PATCH` = `actifGlobal`, `utilisateurs` |
 | `GET /api/admin/journal` · `GET /api/admin/export` | journal d'audit · copie de la base |
 
 Les formats de calcul sont ceux des fichiers `.etabli` ([08](08-documents-donnees.md)), plus un champ `version`.

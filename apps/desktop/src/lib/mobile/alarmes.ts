@@ -1,4 +1,5 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { distribution } from "../distribution";
 
 // Alarmes locales du téléphone (docs/16 §6) : notifications exactes même application fermée, via le plugin Tauri. Sert
 // d'abord à l'essai d'alarme des Paramètres (l'usage principal : rappels de départ et de coucher à l'heure près).
@@ -99,7 +100,7 @@ export async function programmerEssai(plugin: PluginNotifications, minutes: numb
     notifications: [
       {
         id: ID_ESSAI,
-        title: "Établi — essai d'alarme",
+        title: `${distribution.name} — essai d'alarme`,
         body: `Programmée pour ${at.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.`,
         channelId: CANAL,
         schedule: { at, allowWhileIdle: true },

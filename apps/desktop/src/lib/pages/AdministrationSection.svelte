@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { distribution } from "$lib/distribution";
+  const nom = distribution.name;
   // Paramètres → Administration (administrateur du serveur seulement) : utilisateurs, plugins, journal, sauvegarde.
   import { api, clientServeur } from "$lib/api";
   import { phraseErreur } from "$lib/connexion";
@@ -121,7 +123,7 @@
 </script>
 
 {#if !appels || api.id !== "serveur"}
-  <div class="box"><p>L'administration n'est disponible qu'en étant connecté à un serveur Établi avec le compte administrateur.</p></div>
+
 {:else}
   <div class="onglets" role="tablist">
     {#each ONGLETS as o (o.id)}
@@ -184,7 +186,7 @@
   {:else if onglet === "plugins"}
     <div class="box">
       <h3>Plugins installés sur le serveur</h3>
-      {#if plugins.length === 0}<p class="hint">Aucun plugin. Installez un paquet <code>.etabli-plugin</code> signé.</p>{/if}
+      {#if plugins.length === 0}<p class="hint">Aucun plugin. Installez un paquet <code>.etapl</code> signé.</p>{/if}
       {#each plugins as p (p.id)}
         <div class="plugin">
           <div class="plugin-tete">
@@ -209,10 +211,10 @@
         </div>
       {/each}
       <div class="buttons">
-        <button class="btn primary" onclick={() => fichierPlugin?.click()}>Installer un plugin (.etabli-plugin)…</button>
-        <input bind:this={fichierPlugin} type="file" accept=".etabli-plugin,application/zip" hidden onchange={installerPaquet} />
+        <button class="btn primary" onclick={() => fichierPlugin?.click()}>Installer un plugin (.etapl)…</button>
+        <input bind:this={fichierPlugin} type="file" accept=".etapl,application/zip" hidden onchange={installerPaquet} />
       </div>
-      <p class="hint">La signature est vérifiée avant toute installation. Les utilisateurs voient le plugin à leur prochaine ouverture d'Établi.</p>
+
     </div>
   {:else if onglet === "journal"}
     <div class="box">

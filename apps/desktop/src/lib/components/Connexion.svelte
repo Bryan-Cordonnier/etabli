@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { distribution } from "$lib/distribution";
+  const nomApp = distribution.name;
   // Écran affiché AVANT l'application quand il faut choisir ou rouvrir un compte (docs/16, §5) :
   // premier lancement face à un serveur, session expirée, ou installation initiale du serveur.
   import { ecrireConnexion, installerServeur, lireDerniere, normaliserAdresse, ouvrirSession, phraseErreur, sonderServeur } from "$lib/connexion";
@@ -43,7 +45,7 @@
     const sonde = await sonderServeur(r.url);
     occupe = false;
     if (!sonde) {
-      erreur = "Aucun serveur Établi ne répond à cette adresse. Vérifiez l'adresse et que le serveur autorise ce site (option --origine).";
+      erreur = `Aucun serveur ${nomApp} ne répond à cette adresse. Vérifiez l'adresse et que le serveur autorise ce site (option --origine).`;
       return;
     }
     installeTrouve = sonde.installe;
@@ -76,17 +78,17 @@
 
 <main class="ecran">
   <form class="carte" onsubmit={valider}>
-    <div class="marque"><Logo size={40} /> <span>Établi</span></div>
+
 
     {#if expiree}
       <h1>Votre session a expiré</h1>
       <p class="lead">Reconnectez-vous pour retrouver vos calculs. Ce qui n'a pas pu être envoyé est gardé sur cet appareil.</p>
     {:else if !verifie}
       <h1>Se connecter à un serveur</h1>
-      <p class="lead">Saisissez l'adresse du serveur Établi de votre atelier, de votre classe ou de votre maison.</p>
+
     {:else if installe}
       <h1>Connexion</h1>
-      <p class="lead">{memeOrigine ? "Ce serveur Établi demande un compte." : `Serveur : ${url}`}</p>
+      <p class="lead">{memeOrigine ? `Ce serveur ${nomApp} demande un compte.` : `Serveur : ${url}`}</p>
     {:else}
       <h1>Installer le serveur</h1>
       <p class="lead">Créez le compte administrateur. Le code d'installation est affiché dans la console du serveur, au premier lancement.</p>
@@ -120,7 +122,7 @@
         <button class="btn primary" type="button" disabled={occupe || !adresse.trim()} onclick={verifier}>{occupe ? "Recherche…" : "Continuer"}</button>
       {/if}
       {#if !expiree}
-        <button class="btn" type="button" onclick={utiliserSeul}>Utiliser Établi seul sur cet appareil</button>
+
       {/if}
     </div>
     <p class="hint">Sans serveur, tout reste dans ce navigateur. Vous pourrez vous connecter plus tard (Paramètres → Serveur).</p>

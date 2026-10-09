@@ -63,7 +63,7 @@ Le guide complet est [docs/07-creer-un-plugin.md](docs/07-creer-un-plugin.md). L
   [dépendances et services](docs/07-creer-un-plugin.md#dépendances-et-services), jamais directement.
 
 Le moteur n'a **ni catalogue ni magasin** : un plugin se distribue lui-même. Fabriquez le paquet signé
-(`npm run paquet -- <id>`, qui produit un fichier `.etabli-plugin`) et installez-le depuis la page « Plugins », ou
+(`npm run paquet -- <id>`, qui produit un fichier `.etapl`) et installez-le depuis la page « Plugins », ou
 déposez le dossier compilé dans `%APPDATA%\Etabli\plugins\<id>\` (voir [docs/07](docs/07-creer-un-plugin.md)).
 Une demande de fusion qui ajoute un plugin d'exemple dans `plugins/<id>/` n'est acceptée que si ce plugin sert à
 illustrer ou à tester le moteur.

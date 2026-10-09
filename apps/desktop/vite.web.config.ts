@@ -10,7 +10,7 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 function pwa(): Plugin {
   return {
     name: "etabli-pwa",
-    transformIndexHtml: () => [
+    transformIndexHtml: (html: string) => ({ html: html.replace(/<title>[^<]*<\/title>/, `<title>${nomApplication()}</title>`), tags: [
       { tag: "link", attrs: { rel: "manifest", href: "manifest.webmanifest" }, injectTo: "head" },
       { tag: "link", attrs: { rel: "icon", href: "icone-256.png" }, injectTo: "head" },
       { tag: "meta", attrs: { name: "theme-color", content: "#2b63d9" }, injectTo: "head" },
@@ -18,13 +18,19 @@ function pwa(): Plugin {
       { tag: "link", attrs: { rel: "apple-touch-icon", href: "icone-512.png" }, injectTo: "head" },
       { tag: "meta", attrs: { name: "apple-mobile-web-app-capable", content: "yes" }, injectTo: "head" },
       { tag: "meta", attrs: { name: "mobile-web-app-capable", content: "yes" }, injectTo: "head" },
-      { tag: "meta", attrs: { name: "apple-mobile-web-app-title", content: "Établi" }, injectTo: "head" },
-    ],
+      { tag: "meta", attrs: { name: "apple-mobile-web-app-title", content: nomApplication() }, injectTo: "head" },
+    ] }),
   };
 }
 
 // Configuration de la distribution (nom, thèmes, logo…) : le fichier désigné par ETABLE_DISTRIBUTION, comme pour l'application (vite.config.ts).
 const DISTRIBUTION: unknown = process.env.ETABLE_DISTRIBUTION && existsSync(process.env.ETABLE_DISTRIBUTION) ? JSON.parse(readFileSync(process.env.ETABLE_DISTRIBUTION, "utf-8").replace(/^\uFEFF/, "")) : null;
+
+/** Nom de la distribution (`name` de distribution.json), sinon celui du moteur. */
+function nomApplication(): string {
+  const nom = (DISTRIBUTION as { name?: unknown } | null)?.name;
+  return typeof nom === "string" && nom.trim() ? nom.trim().slice(0, 40) : "Établi";
+}
 
 export default defineConfig({
   base: "./",

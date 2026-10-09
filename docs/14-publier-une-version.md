@@ -27,11 +27,11 @@ Configuration : `bundle.targets = ["msi"]`, `bundle.windows.wix` (modèle, `fr-F
 ## Paquet de plugin signé et installation
 
 Depuis le 6 octobre 2026, le moteur n'a **ni catalogue, ni magasin, ni mise à jour de plugins par le réseau** : un plugin
-s'installe depuis un fichier `.etabli-plugin` (page « Plugins » → « Installer depuis un fichier… »). Le code du catalogue
+s'installe depuis un fichier `.etapl` (page « Plugins » → « Installer depuis un fichier… »). Le code du catalogue
 signé, de la rotation des clés, des révocations, de l'arrêt de contrat et de la publication par plugin est conservé sous
 l'étiquette Git `legacy/store-before-cut` : il sert de point de départ à Etablink (docs/22, section 9).
 
-- **Fabriquer un paquet** : `npm run build -w plugins/<id>` puis `node scripts/paquet-plugin.mjs <id>` → `paquets/<id>-<version>.etabli-plugin`.
+- **Fabriquer un paquet** : `npm run build -w plugins/<id>` puis `node scripts/paquet-plugin.mjs <id>` → `paquets/<id>-<version>.etapl`.
   Un paquet est un zip qui contient `plugin.zip` (le dossier `dist` du plugin) et `plugin.zip.minisig` (sa signature
   `tauri signer sign`, mêmes variables `TAURI_SIGNING_PRIVATE_KEY` et `_PASSWORD` que pour les mises à jour de l'application).
 - **Confiance** : le moteur n'installe un paquet que si sa signature correspond à la clé publique de `tauri.conf.json`

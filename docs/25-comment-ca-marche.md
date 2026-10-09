@@ -134,7 +134,7 @@ Il y a **deux voies indépendantes**, qui passent toutes deux par GitHub, avec l
 | | Application (le moteur) | Plugins |
 | --- | --- | --- |
 | **Où** | Releases GitHub du dépôt (`releases/latest`) | Release GitHub spéciale « catalogue » |
-| **Fichiers** | installateur `.msi`, sa signature, `latest.json` | un paquet `.etabli-plugin` par plugin + `catalogue.json` + sa signature |
+| **Fichiers** | installateur `.msi`, sa signature, `latest.json` | un paquet `.etapl` par plugin + `catalogue.json` + sa signature |
 | **Qui regarde** | l'application installée, au démarrage | l'application, au démarrage (et page Catalogue) |
 | **Vérification** | signature vérifiée avec la clé publique **intégrée à l'application** | idem, avant d'écrire quoi que ce soit sur le disque |
 | **Qui publie** | toi : tag de version, workflow GitHub | toi : tag `plugin-<id>-vX`, workflow GitHub |
