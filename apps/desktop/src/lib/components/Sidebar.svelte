@@ -159,7 +159,7 @@
       onmousedown={preventAutoscroll}
       title="Accueil"
     >
-      <Tile color="var(--muted)" icon="home" variant="plain" />
+      {#if distribution.accueilCouleur}<Tile color={distribution.accueilCouleur} icon="home" />{:else}<Tile color="var(--muted)" icon="home" variant="plain" />{/if}
       <span class="label">Accueil</span>
     </button>
     {#if api.capacites.plugins && distribution.pluginsPage}
