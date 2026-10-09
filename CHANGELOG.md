@@ -11,6 +11,10 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ## [Non publié]
 
+### Fixed
+
+- **The title bar without tabs was broken**: the page icon sat above its title and was cut off, because its class clashed with the global page class. Both are now on one line.
+
 ### Changed
 
 - **The AI key is no longer checked for its shape.** Google's recent keys contain a dot (`AQ.…`) and were refused; now any printable key is accepted (quotes pasted with it are removed) and Google says whether it works (*Try* button).
