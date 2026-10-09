@@ -25,9 +25,12 @@ export interface Distribution {
   tabs: boolean;
   /** Icônes propres à la distribution, par nom (« calendrier ») : un plugin de la distribution peut les donner à ses pages. Même forme que le logo, mais remplies (`currentColor`). */
   icons: Record<string, string>;
+  /** Adresse (https) du fichier latest.json de la distribution : l'application Android y cherche une nouvelle version et ouvre le téléchargement de l'APK (ndroid.url). 
+ull : pas de mise à jour sur Android. */
+  androidUpdateUrl: string | null;
 }
 
-export const DISTRIBUTION_DEFAUT: Distribution = { name: "Établi", pluginsPage: true, themes: null, logo: null, logoPlein: false, logoViewBox: "0 0 24 24", accueilCouleur: null, apercu: "favoris", ia: false, tabs: true, icons: {} };
+export const DISTRIBUTION_DEFAUT: Distribution = { name: "Établi", pluginsPage: true, themes: null, logo: null, logoPlein: false, logoViewBox: "0 0 24 24", accueilCouleur: null, apercu: "favoris", ia: false, tabs: true, icons: {}, androidUpdateUrl: null };
 
 const objet = (v: unknown): Record<string, unknown> | null => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
 const COULEUR = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i;
@@ -77,6 +80,7 @@ export function lireDistribution(brut: unknown): Distribution {
     ia: o.ia === true,
     tabs: o.tabs !== false,
     icons: lireIcones(o.icons),
+    androidUpdateUrl: typeof o.androidUpdateUrl === "string" && /^https:\/\/[^\s]{1,300}$/.test(o.androidUpdateUrl.trim()) ? o.androidUpdateUrl.trim() : null,
   };
 }
 

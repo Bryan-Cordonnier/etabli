@@ -1,13 +1,14 @@
 // Fond local de l'application : tout passe par les commandes du cœur Rust (fichiers sur le disque).
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { estBureau } from "../plateforme";
+import { distribution } from "../distribution";
+import { estAndroid, estBureau } from "../plateforme";
 import type { DocumentFile, DocumentFilter, DocumentInput, DocumentMeta, Fond, PluginInfo } from "./types";
 
 export const fondTauri: Fond = {
   id: "tauri",
   // Android : mêmes fichiers et mêmes plugins, mais ni fenêtres natives ni mises à jour par l'application.
-  capacites: { plugins: true, miseAJour: estBureau, fenetresNatives: estBureau, isolationComplete: true, journal: true },
+  capacites: { plugins: true, miseAJour: estBureau || (estAndroid && distribution.androidUpdateUrl !== null), fenetresNatives: estBureau, isolationComplete: true, journal: true },
 
   pluginsList: (): Promise<PluginInfo[]> => invoke("plugins_list"),
   pluginInstallFile: (): Promise<string | null> => invoke("plugin_installer_fichier"),
