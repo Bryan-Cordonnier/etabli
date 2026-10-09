@@ -73,6 +73,7 @@ defensively (`lib/distribution.ts`, tested): a missing or invalid field keeps Et
 | `logo` | Shapes of the logo (`path`, `circle`, `rect`, `line`, `polyline`, `polygon`, `ellipse`, stroke `currentColor`, 24x24). Anything else is refused |
 | `logoPlein` / `logoViewBox` | `logoPlein: true` : le logo a ses propres couleurs et son propre fond (celui de l'icône de l'application) et s'affiche tel quel, dans le repère `logoViewBox` (`0 0 1024 1024`), sans carré d'accent |
 | `tabs` | `false` : pas d'onglets, une seule page à la fois ; la barre de titre montre le titre de la page, la recherche et les boutons de la fenêtre |
+| `accueilCouleur` | Colour of the *Home* tile (`#4d3d99`); with it, the tile is solid like the other pages, and a distribution icon named `home` (see `icons`) replaces the house |
 | `icons` | Icons of the distribution by name (`calendrier`…), same shapes as the logo but filled (`currentColor`). A plugin of the distribution can then give a page `icon: "calendrier"`; the validator accepts these names when `ETABLE_DISTRIBUTION` is set |
 
 The application icon is separate: the distribution's `bundle.icon` in its Tauri configuration.

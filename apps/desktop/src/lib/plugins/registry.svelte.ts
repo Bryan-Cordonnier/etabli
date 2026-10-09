@@ -1,4 +1,5 @@
 import { api, type PluginSource } from "$lib/api";
+import { baseDe } from "$lib/board";
 import { ICONS, type IconName } from "$lib/icons";
 import { problemsOf, type InstalledNode, type Problem } from "@etabli/sdk/deps";
 import { settings } from "$lib/state/settings.svelte";
@@ -143,7 +144,7 @@ export interface WidgetRef {
 export const widgetKey = (pluginId: string, widgetId: string): string => `${pluginId}/${widgetId}`;
 
 export function getWidgetByKey(key: string): WidgetRef | undefined {
-  const [pluginId = "", widgetId = ""] = key.split("/");
+  const [pluginId = "", widgetId = ""] = baseDe(key).split("/");
   const plugin = getPlugin(pluginId);
   const widget = plugin?.widgets.find((w) => w.id === widgetId);
   const app = widget ? plugin?.apps.find((a) => a.id === widget.app) : undefined;

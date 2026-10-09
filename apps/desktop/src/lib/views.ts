@@ -1,4 +1,5 @@
 import { getPage } from "./plugins/registry.svelte";
+import { distribution } from "./distribution";
 import type { View } from "./types";
 
 export interface ViewInfo {
@@ -13,7 +14,7 @@ const UNKNOWN: ViewInfo = { title: "Page introuvable", icon: "puzzle", color: "v
 export function describeView(view: View): ViewInfo {
   switch (view.kind) {
     case "home":
-      return { title: "Accueil", icon: "home", color: "var(--accent)" };
+      return { title: "Accueil", icon: "home", color: distribution.accueilCouleur ?? "var(--accent)" };
     case "settings":
       return { title: "Paramètres", icon: "settings", color: "var(--faint)" };
     case "plugins":

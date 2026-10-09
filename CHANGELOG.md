@@ -13,11 +13,13 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Changed
 
+- **The home board is endless and easier to use.** There is no limit to the number of widgets, and the same widget can be posed several times (each one keeps its own settings). A widget you grab follows the mouse while the others close up, and the board scrolls when you drag near its edge. Every widget shows the icon and colour of its plugin. A last *Add a widget* cell ends the grid in Edit mode.
 - **The home board edits like a phone home screen.** In *Edit* mode, click a widget to select it, drag it to move it (the others close up), drag its edges or its corner to resize it (it snaps to the nearest size it supports), remove it with its cross.
 - **Quick preview settings moved into *Keyboard shortcuts*.** The quick preview shortcut and its favourites are no longer a separate tab in Settings.
 
 ### Added
 
+- **A distribution can colour the Home tile** (`accueilCouleur`) and give it its own icon (a distribution icon named `home`).
 - **A widget can open one of its plugin's pages** (`etabli.openPage(page)`, no permission needed), for example to open a list full screen from the home page.
 - **A distribution can remove the tab bar** (`tabs: false`): one page at a time, the title bar shows the page title. It can also show its logo in its own colours (`logoPlein`).
 - **More icons in the kit**: minus, check, arrows, expand and pencil, drawn with the same stroke as plus and cross.

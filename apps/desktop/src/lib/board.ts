@@ -5,7 +5,27 @@ import type { BoardEntry, WidgetSize } from "$lib/types";
 
 /** Clé du widget du moteur qui montre les pages favorites. */
 export const FAVORIS = "@favoris";
-export const BOARD_MAX = 40;
+/** Autant de widgets qu'on veut, en pratique : la limite n'est là que pour qu'un fichier abîmé ne fige pas l'accueil. */
+export const BOARD_MAX = 500;
+
+/** Clé d'un widget posé : « plugin/widget » pour le premier, « plugin/widget#2 », « #3 »… pour les suivants (un même widget peut être posé plusieurs fois). */
+const CLE = /^(?:@favoris|[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*)(?:#[2-9]|#[1-9]\d{1,2})?$/;
+
+/** Le widget (« plugin/widget ») que désigne une clé de widget posé. */
+export const baseDe = (key: string): string => key.split("#")[0]!;
+
+/** Numéro d'exemplaire d'une clé (1 pour le premier). Le widget le reçoit dans son adresse pour garder ses propres réglages. */
+export function exemplaireDe(key: string): number {
+  const n = Number(key.split("#")[1]);
+  return Number.isInteger(n) && n >= 2 ? n : 1;
+}
+
+/** La première clé libre pour ce widget : « base », puis « base#2 », « base#3 »… */
+export function nouvelleCle(b: readonly BoardEntry[], base: string): string {
+  const prises = new Set(b.map((e) => e.key));
+  if (!prises.has(base)) return base;
+  for (let n = 2; ; n++) if (!prises.has(`${base}#${n}`)) return `${base}#${n}`;
+}
 
 /** Ce que montre l'accueil quand l'utilisateur n'a encore rien choisi. */
 export const BOARD_DEFAUT: readonly BoardEntry[] = [{ key: FAVORIS, size: "4x2" }];
@@ -20,15 +40,18 @@ export function lireBoard(brut: unknown): BoardEntry[] | null {
   const sortie: BoardEntry[] = [];
   for (const e of brut.slice(0, BOARD_MAX)) {
     const o = typeof e === "object" && e !== null ? (e as Record<string, unknown>) : null;
-    if (!o || typeof o.key !== "string" || o.key.length > 140 || vus.has(o.key) || !estTaille(o.size)) continue;
+    if (!o || typeof o.key !== "string" || !CLE.test(o.key) || vus.has(o.key) || !estTaille(o.size)) continue;
     vus.add(o.key);
     sortie.push({ key: o.key, size: o.size });
   }
   return sortie;
 }
 
-export const ajouterWidget = (b: readonly BoardEntry[], key: string, size: WidgetSize): BoardEntry[] =>
-  b.some((e) => e.key === key) || b.length >= BOARD_MAX ? [...b] : [...b, { key, size }];
+/** Pose un widget à la fin ; le widget des favoris n'existe qu'une fois, les autres autant de fois qu'on veut. */
+export function ajouterWidget(b: readonly BoardEntry[], base: string, size: WidgetSize): BoardEntry[] {
+  if (b.length >= BOARD_MAX || (base === FAVORIS && b.some((e) => e.key === FAVORIS))) return [...b];
+  return [...b, { key: nouvelleCle(b, base), size }];
+}
 
 export const retirerWidget = (b: readonly BoardEntry[], key: string): BoardEntry[] => b.filter((e) => e.key !== key);
 

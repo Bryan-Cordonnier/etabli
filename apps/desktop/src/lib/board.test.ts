@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ajouterWidget, BOARD_MAX, colonnesPour, deplacer, dimensions, largeurEffective, lireBoard, plusProcheTaille, redimensionner, retirerWidget } from "./board";
+import { ajouterWidget, baseDe, BOARD_MAX, colonnesPour, deplacer, dimensions, exemplaireDe, largeurEffective, lireBoard, nouvelleCle, plusProcheTaille, redimensionner, retirerWidget } from "./board";
 import type { BoardEntry } from "./types";
 
 const b: BoardEntry[] = [
@@ -28,13 +28,24 @@ describe("lireBoard", () => {
   it("borne la longueur", () => {
     const beaucoup = Array.from({ length: BOARD_MAX + 10 }, (_, i) => ({ key: `p/w${i}`, size: "1x1" }));
     expect(lireBoard(beaucoup)).toHaveLength(BOARD_MAX);
+    expect(lireBoard([{ key: "a/x#2", size: "1x1" }, { key: "a/x#1", size: "1x1" }, { key: "A/x", size: "1x1" }, { key: "a/x#abc", size: "1x1" }])).toEqual([{ key: "a/x#2", size: "1x1" }]);
   });
 });
 
 describe("modifications", () => {
-  it("ajoute à la fin, une seule fois", () => {
+  it("ajoute à la fin ; un même widget peut être posé plusieurs fois, pas celui des favoris", () => {
     expect(ajouterWidget(b, "c/z", "2x2").at(-1)).toEqual({ key: "c/z", size: "2x2" });
-    expect(ajouterWidget(b, "a/x", "4x1")).toEqual(b);
+    expect(ajouterWidget(b, "a/x", "4x1").at(-1)).toEqual({ key: "a/x#2", size: "4x1" });
+    expect(ajouterWidget(ajouterWidget(b, "a/x", "1x1"), "a/x", "1x1").map((e) => e.key)).toEqual(["a/x", "b/y", "@favoris", "a/x#2", "a/x#3"]);
+    expect(ajouterWidget(b, "@favoris", "2x1")).toEqual(b);
+  });
+
+  it("reprend le premier numéro libre et retrouve le widget et l'exemplaire d'une clé", () => {
+    const liste: BoardEntry[] = [{ key: "a/x", size: "1x1" }, { key: "a/x#3", size: "1x1" }];
+    expect(nouvelleCle(liste, "a/x")).toBe("a/x#2");
+    expect(baseDe("a/x#3")).toBe("a/x");
+    expect(exemplaireDe("a/x#3")).toBe(3);
+    expect(exemplaireDe("a/x")).toBe(1);
   });
 
   it("retire et redimensionne sans toucher aux autres", () => {
