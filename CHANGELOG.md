@@ -24,6 +24,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Added
 
+- **A distribution can build its own web version**: `ETABLE_PLUGINS_DIR` and `ETABLE_DISTRIBUTION` are honoured by the web build (`vite.web.config.ts`, `scripts/construire-web.mjs`), so the server can serve Quotidien's web app.
 - **The AI can search the internet** (`etabli.ai.extraire({ …, recherche: true })`): Google Search grounding for recipes and prices. The JSON shape is then asked in the prompt only, so the plugin must validate the answer.
 - **Artificial intelligence for plugins.** A distribution can turn on *Settings → Artificial intelligence*: the user enters a personal Gemini key (kept on the machine), and plugins that declare the new `ia` permission call `etabli.ai.extraire({ instruction, images, schema })` to read a photo or write a text. The plugin never sees the key; the engine validates the request (size, photo types) and answers with the text or a French error. The distribution must allow Google's address in its CSP (docs/27).
 - **The quick preview can show the home widgets** (`apercu: `"widgets`"` in `distribution.json`), read-only: a click on a widget opens its page in the main window.
