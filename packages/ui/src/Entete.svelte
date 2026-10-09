@@ -21,7 +21,8 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: center;
     gap: 10px 16px;
   }
   h1 {
@@ -29,9 +30,11 @@
     font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.03em;
+    text-align: center;
   }
   .actions {
     display: flex;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 8px;
   }

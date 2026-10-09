@@ -13,6 +13,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Added
 
+- **A phone-first interface.** On a phone the home is a list of pages, like a messaging app (app name on top, pages in the middle, Settings at the bottom); a page opens full screen and the Android back gesture or the back button returns to the list. No side drawer, no widgets, no search button, and dialogs fill the screen.
 - **The Windows and Android apps can connect to the server.** *Settings → Server* now has the sign-in form in the apps too. Once connected, calculations and plugin data are stored on the server (with an offline copy that is sent back on reconnection); plugins, device settings (AI key, shortcuts…) and windows stay on the device.
 
 ### Fixed
@@ -21,6 +22,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Changed
 
+- **The page title is centred** (page header of the UI kit, and the title bar on PC); the title-bar search button is gone (the shortcut still works).
 - **Plugin packages now always end in `.etapl`** (was `.etabli-plugin`): file dialogs, the administration page, the packaging script, the signed fixtures and the docs. Packages built with the old extension must be rebuilt.
 - **The application name comes from the distribution everywhere**: sign-in, settings, update banner, home, quick preview, browser tab title, installable web app name (manifest) and its icons.
 - **The AI key is no longer checked for its shape.** Google's recent keys contain a dot (`AQ.…`) and were refused; now any printable key is accepted (quotes pasted with it are removed) and Google says whether it works (*Try* button).
@@ -49,6 +51,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Changed
 
+- **The page title is centred** (page header of the UI kit, and the title bar on PC); the title-bar search button is gone (the shortcut still works).
 - **Each application keeps its own data folders.** The folders under Documents and the configuration directory are named after `productName` (`Etabli` for Établi, so nothing moves for it): a distribution no longer shares its data with Établi.
 - **No update search without an address.** The application looks for updates only if `plugins.updater.endpoints` is not empty. A distribution that has no releases of its own leaves it empty instead of offering to turn itself into Établi.
 - **The repository moved** from `Bryan-Cordonnier/etabli` to `etable-project/etable` (the old address redirects, so installed copies keep finding their updates). README and ROADMAP are rewritten for the new plan (Etable, a plugin engine) and CONTRIBUTING no longer mentions a catalogue.

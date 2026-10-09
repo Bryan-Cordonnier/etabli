@@ -1,5 +1,6 @@
 <script lang="ts">
   import CommandPalette from "$lib/components/CommandPalette.svelte";
+  import MobileAccueil from "$lib/components/MobileAccueil.svelte";
   import MobileBar from "$lib/components/MobileBar.svelte";
   import PluginDialog from "$lib/components/PluginDialog.svelte";
   import SynchroBanner from "$lib/components/SynchroBanner.svelte";
@@ -25,6 +26,7 @@
   import { tabs } from "$lib/state/tabs.svelte";
   import { suivreEcran, ui } from "$lib/state/ui.svelte";
   import { updates } from "$lib/state/updates.svelte";
+  import { retourMobile } from "$lib/state/retour";
   import type { View } from "$lib/types";
 
   $effect(() => applyAppearance());
@@ -69,7 +71,27 @@
   function keyOf(v: View | undefined): string {
     return JSON.stringify(v);
   }
-  const viewKey = $derived(`${tabs.activeId}:${keyOf(view)}`);
+  /** Téléphone : l'accueil est la liste des pages ; une page s'ouvre en plein écran et le geste « retour » d'Android y revient. */
+  const accueilMobile = $derived(ui.compact && view?.kind === "home");
+  let entreeHistorique = false;
+  $effect(() => {
+    if (!ui.compact) return;
+    if (view && view.kind !== "home" && !entreeHistorique) {
+      history.pushState({ page: true }, "");
+      entreeHistorique = true;
+    } else if (view?.kind === "home") entreeHistorique = false;
+  });
+  $effect(() => {
+    if (!ui.compact) return;
+    const retour = () => {
+      entreeHistorique = false;
+      retourMobile();
+    };
+    window.addEventListener("popstate", retour);
+    return () => window.removeEventListener("popstate", retour);
+  });
+
+  const viewKey =$derived(`${tabs.activeId}:${keyOf(view)}`);
 
   function onkeydown(event: KeyboardEvent): void {
     const handled = handleShortcut({
@@ -94,19 +116,17 @@
 <svelte:window {onkeydown} {onmouseup} />
 
 <div class="shell">
-  <Sidebar />
-  {#if ui.compact && ui.menuOpen}
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="voile" onclick={() => (ui.menuOpen = false)}></div>
-  {/if}
+  {#if !ui.compact}<Sidebar />{/if}
   <section class="main">
-    {#if ui.compact}<MobileBar />{:else if distribution.tabs}<TabBar />{:else}<TitleBar />{/if}
+    {#if ui.compact}{#if !accueilMobile}<MobileBar />{/if}{:else if distribution.tabs}<TabBar />{:else}<TitleBar />{/if}
     <UpdateBanner />
     <SynchroBanner />
     <main class="content">
       {#key viewKey}
         <div class="view">
-          {#if view?.kind === "home"}
+          {#if accueilMobile}
+            <MobileAccueil />
+          {:else if view?.kind === "home"}
             <Home />
           {:else if view?.kind === "page"}
             <PagePage tabId={tabs.activeId} pluginId={view.pluginId} pageId={view.pageId} />
