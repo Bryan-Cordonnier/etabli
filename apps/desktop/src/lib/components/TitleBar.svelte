@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Barre de titre sans onglets (distribution à une page à la fois) : le titre de la page ouverte, la recherche et les boutons de la fenêtre.
+  // Barre de titre sans onglets (distribution à une page à la fois) : le titre de la page ouverte (centré) et les boutons de la fenêtre.
   import { shortcutHint } from "$lib/shortcuts";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -19,14 +19,6 @@
       <span class="titre">{info.title}</span>
     </div>
   {/if}
-  <button
-    class="find"
-    onclick={() => (ui.paletteOpen = true)}
-    title={shortcutHint("Rechercher une page", "palette")}
-    aria-label="Rechercher une page"
-  >
-    <Icon name="search" size={17} />
-  </button>
   <div class="drag" data-tauri-drag-region></div>
   <WindowControls />
 </header>
@@ -51,32 +43,22 @@
     z-index: 2;
   }
   .courant {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-50%);
+    max-width: calc(100% - 340px);
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
-    margin-right: 10px;
   }
   .titre {
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .find {
-    width: 30px;
-    height: 30px;
-    border: 0;
-    border-radius: var(--r-md);
-    background: none;
-    color: var(--muted);
-    display: grid;
-    place-items: center;
-    flex: none;
-  }
-  .find:hover {
-    background: var(--field);
-    color: var(--text);
   }
   .drag {
     flex: 1;

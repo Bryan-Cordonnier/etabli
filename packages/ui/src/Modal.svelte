@@ -88,6 +88,22 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+  /* Téléphone : jamais un cadre posé par-dessus la page, mais une page entière. */
+  @media (max-width: 640px) {
+    .voile {
+      padding: 0;
+      place-items: stretch;
+      background: var(--surface);
+    }
+    .fenetre {
+      height: 100%;
+      max-width: none !important;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      padding: calc(14px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+  }
   @keyframes fondu {
     from {
       opacity: 0;

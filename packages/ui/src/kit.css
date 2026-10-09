@@ -34,7 +34,16 @@
 }
 @media (max-width: 640px) {
   .page-plugin {
-    padding: 16px 14px 22px;
+    box-sizing: border-box;
+    width: 100%;
+    margin-inline: auto;
+    padding: 16px 14px calc(22px + env(safe-area-inset-bottom, 0px));
+    overflow-x: hidden;
+  }
+  .bloc {
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: 14px;
   }
 }
 
