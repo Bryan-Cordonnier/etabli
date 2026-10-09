@@ -183,7 +183,7 @@
               {/if}
             </div>
           {:else if w}
-            <MiniAppFrame fill src={`${pluginUrl(w.plugin.id, w.app.entry)}#widget`} title={w.widget.title} pluginId={w.plugin.id} appId={w.app.id} {initial} forward={false} onmessage={messageDe(w.plugin.id)} />
+            <MiniAppFrame fill src={`${pluginUrl(w.plugin.id, w.app.entry)}#widget=${w.widget.id}`} title={w.widget.title} pluginId={w.plugin.id} appId={w.app.id} {initial} forward={false} onmessage={messageDe(w.plugin.id)} />
           {/if}
           {#if edition}
             <!-- Couvre le widget (le cadre avale la souris) : un appui le sélectionne, un glissement le déplace. -->
