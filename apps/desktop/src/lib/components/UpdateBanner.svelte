@@ -4,6 +4,7 @@
   // Bandeau discret sous les onglets quand une nouvelle version d'Établi est disponible.
   import { updates } from "$lib/state/updates.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
+  import { estAndroid } from "$lib/plateforme";
 
   const visible = $derived(
     !updates.dismissed && (updates.status === "available" || updates.status === "downloading" || updates.status === "installing"),
@@ -17,7 +18,7 @@
 
       <button class="link" onclick={() => tabs.navigate({ kind: "settings", section: "a-propos" })}>Voir les nouveautés</button>
       <span class="spacer"></span>
-      <button class="btn primary small" onclick={() => void updates.install()}>Installer et redémarrer</button>
+      <button class="btn primary small" onclick={() => void updates.install()}>{estAndroid ? "Télécharger" : "Installer et redémarrer"}</button>
       <button class="btn small" onclick={() => (updates.dismissed = true)}>Plus tard</button>
     {:else}
       <span class="text">

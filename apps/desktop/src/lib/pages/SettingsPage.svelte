@@ -5,6 +5,7 @@
   // de réglages (agenda, budget…) : elles s'affichent dans le menu, sous « Plugins ».
   import type { PluginToHost } from "@etabli/sdk/protocol";
   import { api, system, type AppInfo } from "$lib/api";
+  import { estAndroid } from "$lib/plateforme";
   import { lireConnexion } from "$lib/connexion";
   import Icon from "$lib/components/Icon.svelte";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
@@ -562,7 +563,7 @@
               {#if updates.notes}<pre class="notes">{updates.notes}</pre>{/if}
               {#if updates.status === "available"}
                 <div class="buttons">
-                  <button class="btn primary" onclick={() => void updates.install()}>Installer et redémarrer</button>
+                  <button class="btn primary" onclick={() => void updates.install()}>{estAndroid ? "Télécharger" : "Installer et redémarrer"}</button>
                 </div>
 
               {:else}
