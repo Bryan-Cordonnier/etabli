@@ -36,4 +36,4 @@
 
 <!-- Soyez honnête : « pas testé avec l'impression », « tables recopiées mais pas recoupées »… -->
 
-<!-- Pour les mainteneurs : après relecture, le plugin est empaqueté avec `node scripts/paquet-plugin.mjs <id>` (fichier `.etabli-plugin` signé). -->
+<!-- Pour les mainteneurs : après relecture, le plugin est empaqueté avec `node scripts/paquet-plugin.mjs <id>` (fichier `.etapl` signé). -->

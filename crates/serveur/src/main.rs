@@ -99,7 +99,7 @@ async fn lancer(args: Arguments) -> Result<(), String> {
         .await
         .map_err(|e| format!("impossible d'écouter sur {} : {e}", args.ecoute))?;
     eprintln!(
-        "Établi serveur {} sur http://{}",
+        "etabli-serveur {} sur http://{}",
         env!("CARGO_PKG_VERSION"),
         args.ecoute
     );

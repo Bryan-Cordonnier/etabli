@@ -10,7 +10,7 @@ pub struct AppPaths {
     pub config: PathBuf,
     /// Plugins livrés avec la distribution, écrits ici au démarrage (voir `integres.rs`).
     pub integres: PathBuf,
-    /// Plugins installés depuis un fichier `.etabli-plugin` (un dossier par plugin).
+    /// Plugins installés depuis un fichier `.etapl` (un dossier par plugin).
     pub installes: PathBuf,
     /// Dossiers où chercher des plugins, dans l'ordre : le premier trouvé pour un identifiant gagne.
     pub plugin_roots: Vec<(PathBuf, Source)>,

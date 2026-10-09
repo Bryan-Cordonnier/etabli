@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { distribution } from "$lib/distribution";
+  const nomApp = distribution.name;
   // Paramètres → Serveur : connexion, compte, mot de passe, données (docs/16 et 17).
   import { api, clientServeur, fondServeur } from "$lib/api";
   import { compte } from "$lib/serveur/admin";
@@ -28,7 +30,7 @@
     occupe = true;
     const sonde = await sonderServeur(r.url);
     occupe = false;
-    if (!sonde) return void (erreur = "Aucun serveur Établi ne répond à cette adresse (ou il n'autorise pas ce site : option --origine).");
+    if (!sonde) return void (erreur = `Aucun serveur ${nomApp} ne répond à cette adresse (ou il n'autorise pas ce site : option --origine).`);
     installe = sonde.installe;
   }
 
@@ -85,7 +87,7 @@
     if (!clientServeur) return;
     try {
       const donnees = await compte(clientServeur).exporter();
-      void api.saveFile({ name: "etabli-mes-donnees.json", content: JSON.stringify(donnees, null, 2), extension: "json", description: "Données Établi" });
+      void api.saveFile({ name: "etabli-mes-donnees.json", content: JSON.stringify(donnees, null, 2), extension: "json", description: `Données ${nomApp}` });
     } catch (e) {
       ui.notify(phraseErreur(e));
     }
@@ -118,15 +120,15 @@
   <div class="box">
     <h3>Serveur</h3>
     <p>
-      La connexion à un serveur Établi se fait pour l'instant depuis la <b>version web</b> (navigateur ou application installée depuis
+
       le navigateur) ; sur téléphone aussi. Cette version Windows garde tout sur l'ordinateur, comme avant.
     </p>
     <p class="hint">Le serveur est facultatif : sans lui, rien ne change.</p>
   </div>
 {:else if api.id === "web"}
   <div class="box">
-    <h3>Établi seul</h3>
-    <p>Vos calculs sont gardés dans ce navigateur, sur cet appareil. Pour les retrouver partout et les partager avec une équipe, connectez-vous à un serveur Établi.</p>
+
+
     <form class="champs" onsubmit={seConnecter}>
       <label>Adresse du serveur<input class="text-input" bind:value={adresse} placeholder="https://etabli.exemple.fr" oninput={() => (installe = null)} /></label>
       {#if installe === null}
@@ -192,7 +194,7 @@
     <div class="box">
       <h3>Données de cet appareil</h3>
       <p>
-        Avant la connexion, Établi gardait sur cet appareil : <b>{a.documents} calcul(s)</b>, <b>{a.donnees} jeu(x) de réglages de plugins</b>
+
         {a.reglages ? "et vos réglages" : ""}. Vous pouvez les ajouter à votre compte.
       </p>
       <p class="hint">Rien n'est écrasé : ce qui existe déjà sur le serveur est gardé. Les données de cet appareil restent en place, comme sauvegarde.</p>

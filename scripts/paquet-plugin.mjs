@@ -1,9 +1,9 @@
 // Fabrique le paquet signé d'un plugin (docs/14) :
 //   node scripts/paquet-plugin.mjs agenda
-//     → paquets/agenda-1.0.0.etabli-plugin, à installer depuis un fichier dans Établi
+//     → paquets/agenda-1.0.0.etapl, à installer depuis un fichier dans Établi
 //   node scripts/paquet-plugin.mjs --dossier chemin/vers/dist --sortie dossier   (paquet d'essai)
 //
-// Un paquet `.etabli-plugin` est un zip qui contient :
+// Un paquet `.etapl` est un zip qui contient :
 //   plugin.zip         les fichiers du plugin compilé (son dossier dist, manifest.json à la racine)
 //   plugin.zip.minisig la signature de plugin.zip, faite par `tauri signer sign` avec la clé des
 //                      mises à jour (variables TAURI_SIGNING_PRIVATE_KEY et _PASSWORD)
@@ -61,7 +61,7 @@ const paquet = zipSync(
   { "plugin.zip": [inner, { level: 0 }], "plugin.zip.minisig": strToU8(signature) },
   { level: 0, mtime },
 );
-const fichier = `${base}.etabli-plugin`;
+const fichier = `${base}.etapl`;
 writeFileSync(join(sortie, fichier), paquet);
 console.log(`Paquet : ${join(sortie, fichier)} (${Math.round(paquet.length / 1024)} Ko, ${Object.keys(files).length} fichiers)`);
 

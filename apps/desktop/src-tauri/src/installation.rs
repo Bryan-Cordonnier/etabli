@@ -1,6 +1,6 @@
-//! Installation des plugins (docs/14) : depuis un fichier `.etabli-plugin` signé, sans réseau, sans redémarrer.
+//! Installation des plugins (docs/14) : depuis un fichier `.etapl` signé, sans réseau, sans redémarrer.
 //!
-//! Un paquet `.etabli-plugin` est un zip qui contient `plugin.zip` (les fichiers du plugin) et
+//! Un paquet `.etapl` est un zip qui contient `plugin.zip` (les fichiers du plugin) et
 //! `plugin.zip.minisig` (sa signature, faite avec la clé publique de `tauri.conf.json`, celle de l'éditeur de
 //! la distribution). Rien n'est écrit sur le disque avant que la signature soit vérifiée. Seul le moteur
 //! touche au disque, jamais une mini-app.
@@ -155,7 +155,7 @@ fn plugins_changes(app: &AppHandle) {
 
 // ——— Commandes ———
 
-/// Installe un plugin depuis un fichier `.etabli-plugin` (clé USB, réseau local).
+/// Installe un plugin depuis un fichier `.etapl` (clé USB, réseau local).
 /// Renvoie l'identifiant installé, ou `None` si l'utilisateur a annulé.
 #[tauri::command]
 pub async fn plugin_installer_fichier(app: AppHandle) -> Result<Option<String>, String> {
@@ -163,7 +163,7 @@ pub async fn plugin_installer_fichier(app: AppHandle) -> Result<Option<String>, 
         .dialog()
         .file()
         .set_title("Installer un plugin depuis un fichier")
-        .add_filter("Plugin Établi", &["etabli-plugin"])
+        .add_filter("Plugin (.etapl)", &["etapl"])
         .blocking_pick_file()
     else {
         return Ok(None);
@@ -202,7 +202,7 @@ mod tests {
     use zip::{write::SimpleFileOptions, CompressionMethod, ZipWriter};
 
     /// Paquet d'essai signé avec une clé d'essai (scripts/paquet-plugin.mjs --dossier …).
-    const PAQUET: &[u8] = include_bytes!("../fixtures/essai-1.0.0.etabli-plugin");
+    const PAQUET: &[u8] = include_bytes!("../fixtures/essai-1.0.0.etapl");
     const CLE_ESSAI: &str = include_str!("../fixtures/cle-essai.pub");
 
     fn zip_de(fichiers: &[(&str, &[u8])]) -> Vec<u8> {

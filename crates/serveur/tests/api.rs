@@ -14,8 +14,7 @@ use serde_json::{json, Value};
 use std::path::PathBuf;
 use tower::ServiceExt;
 
-const PAQUET: &[u8] =
-    include_bytes!("../../../apps/desktop/src-tauri/fixtures/essai-1.0.0.etabli-plugin");
+const PAQUET: &[u8] = include_bytes!("../../../apps/desktop/src-tauri/fixtures/essai-1.0.0.etapl");
 const CLE_ESSAI: &str = include_str!("../../../apps/desktop/src-tauri/fixtures/cle-essai.pub");
 const MDP: &str = "une phrase de passe";
 

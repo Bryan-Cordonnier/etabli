@@ -309,7 +309,7 @@ fn mettre_en_place(
     Ok(())
 }
 
-/// Installe (ou met à jour) un plugin depuis un paquet `.etabli-plugin` envoyé tel quel dans le corps.
+/// Installe (ou met à jour) un plugin depuis un paquet `.etapl` envoyé tel quel dans le corps.
 /// La signature doit correspondre à la clé publique du serveur.
 pub async fn installer_plugin(
     State(etat): State<Etat>,

@@ -29,7 +29,7 @@ by itself.
 - **Local-first.** Documents and settings are plain files on your machine. An optional server (accounts, shared spaces) exists,
   and is meant to stay minimal and self-hosted.
 - **Plugins talk to each other** through declared services, with the caller's identity enforced by the engine.
-- **No store.** The engine has no catalogue and no licence check. A plugin is a signed `.etabli-plugin` file that you install
+- **No store.** The engine has no catalogue and no licence check. A plugin is a signed `.etapl` file that you install
   from a file; the engine verifies the signature before writing anything.
 - **Windows and Android.** Both run the same Rust core (Tauri 2 and Tauri mobile); the native bridge is closed to plugin frames on
   Android (see [docs/26](docs/26-tauri-android-spike.md)).
@@ -67,7 +67,7 @@ cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 npm run nouveau-plugin -- demo "Demo"     # creates plugins/demo with an example mini-app
 npm run dev                               # runs the engine with your plugin
 npm run valider -- demo                   # checks the manifest and the content
-npm run paquet -- demo                    # builds paquets/demo-<version>.etabli-plugin (signed)
+npm run paquet -- demo                    # builds paquets/demo-<version>.etapl (signed)
 ```
 
 - Step-by-step guide: [docs/07-creer-un-plugin.md](docs/07-creer-un-plugin.md)

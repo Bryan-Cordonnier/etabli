@@ -3,7 +3,7 @@
 // Utilisation : npm run build:web (à la racine), qui compile d'abord les plugins et l'interface.
 import { createHash } from "node:crypto";
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, mkdirSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const racine = fileURLToPath(new URL("..", import.meta.url));
@@ -95,6 +95,27 @@ self.addEventListener("fetch", (event) => {
 `;
 }
 
+/**
+ * Nom et icônes de l'application installable (PWA) : ceux de la distribution (ETABLE_DISTRIBUTION), sinon ceux du moteur.
+ * Les icônes sont lues à côté du fichier de distribution : `icons/icon.png` (512) et `icons/128x128@2x.png` (256).
+ */
+export function appliquerDistribution() {
+  const fichier = process.env.ETABLE_DISTRIBUTION;
+  if (!fichier || !existsSync(fichier)) return;
+  const distribution = JSON.parse(readFileSync(fichier, "utf-8").replace(/^\uFEFF/, ""));
+  const nom = typeof distribution.name === "string" && distribution.name.trim() ? distribution.name.trim().slice(0, 40) : null;
+  const manifeste = join(sortie, "manifest.webmanifest");
+  if (nom && existsSync(manifeste)) {
+    const m = JSON.parse(readFileSync(manifeste, "utf-8"));
+    m.name = nom;
+    m.short_name = nom;
+    writeFileSync(manifeste, JSON.stringify(m, null, 2) + "\n");
+  }
+  const icones = join(dirname(fichier), "icons");
+  for (const [source, cible] of [["icon.png", "icone-512.png"], ["128x128@2x.png", "icone-256.png"]]) {
+    if (existsSync(join(icones, source))) cpSync(join(icones, source), join(sortie, cible));
+  }
+}
 export function construire() {
   if (!existsSync(join(sortie, "index.html"))) {
     throw new Error("apps/desktop/dist-web/index.html est absent : lancez « npm run build:web » à la racine.");
@@ -114,6 +135,7 @@ export function construire() {
     writeFileSync(chemin, avecCsp(readFileSync(chemin, "utf-8")));
   }
   writeFileSync(join(sortie, "_headers"), ENTETES_WEB);
+  appliquerDistribution();
   if (index.length === 0) throw new Error("Aucun plugin compilé : lancez « npm run build:plugins ».");
   writeFileSync(join(sortie, "plugins", "index.json"), JSON.stringify(index));
 

@@ -6,10 +6,12 @@ import "@fontsource/jetbrains-mono/600.css";
 import "./app.css";
 import { reportErrors } from "./lib/errors";
 import { api, system } from "./lib/api";
+import { distribution } from "./lib/distribution";
 import { decider } from "./lib/porte";
 import { initStorage } from "./lib/storage";
 
 reportErrors();
+document.title = distribution.name;
 
 // Version web construite (seule ou avec un serveur) : le service worker garde l'application pour l'utiliser hors ligne.
 if (api.id !== "tauri" && import.meta.env.PROD && "serviceWorker" in navigator) {

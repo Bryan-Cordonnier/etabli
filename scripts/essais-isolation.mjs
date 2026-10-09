@@ -140,7 +140,7 @@ async function installerLesPlugins(code) {
   etape("Administrateur et installation des plugins par l'API");
   const { jeton } = await api("/api/installation", { methode: "POST", json: { code, nom: "essai", motDePasse: MOT_DE_PASSE } });
   for (const id of PLUGINS) {
-    const paquet = readFileSync(join(tmp, "paquets", `${id}-${JSON.parse(readFileSync(join(racine, "plugins", id, "dist", "manifest.json"), "utf8")).version}.etabli-plugin`));
+    const paquet = readFileSync(join(tmp, "paquets", `${id}-${JSON.parse(readFileSync(join(racine, "plugins", id, "dist", "manifest.json"), "utf8")).version}.etapl`));
     await api("/api/admin/plugins", { methode: "POST", jeton, octets: paquet });
   }
   const liste = await api("/api/plugins", { jeton });

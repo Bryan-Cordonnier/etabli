@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { distribution } from "$lib/distribution";
+  const nom = distribution.name;
   // Bandeau discret sous les onglets quand une nouvelle version d'Établi est disponible.
   import { updates } from "$lib/state/updates.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
@@ -12,14 +14,14 @@
 {#if visible}
   <div class="banner" role="status">
     {#if updates.status === "available"}
-      <span class="text"><b>Établi {updates.version}</b> est disponible.</span>
+
       <button class="link" onclick={() => tabs.navigate({ kind: "settings", section: "a-propos" })}>Voir les nouveautés</button>
       <span class="spacer"></span>
       <button class="btn primary small" onclick={() => void updates.install()}>Installer et redémarrer</button>
       <button class="btn small" onclick={() => (updates.dismissed = true)}>Plus tard</button>
     {:else}
       <span class="text">
-        {updates.status === "installing" ? "Installation… Établi va redémarrer." : `Téléchargement d'Établi ${updates.version}${percent === null ? "…" : ` : ${percent} %`}`}
+        {updates.status === "installing" ? `Installation… ${nom} va redémarrer.` : `Téléchargement de ${nom} ${updates.version}${percent === null ? "…" : ` : ${percent} %`}`}
       </span>
       <span class="bar"><span style:width="{updates.status === 'installing' ? 100 : (percent ?? 30)}%"></span></span>
     {/if}

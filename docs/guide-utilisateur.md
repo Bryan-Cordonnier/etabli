@@ -32,7 +32,7 @@ Windows 10 et 11 sont pris en charge (il faut le composant WebView2 de Microsoft
 ## Premier lancement
 
 Établi est **vide** : il ne contient aucun outil. Cliquez sur **Ouvrir le catalogue pour installer des plugins**. Sans connexion
-Internet, vous pouvez installer un plugin reçu d'un camarade avec **Installer depuis un fichier…** (fichier `.etabli-plugin`).
+Internet, vous pouvez installer un plugin reçu d'un camarade avec **Installer depuis un fichier…** (fichier `.etapl`).
 
 ## Le catalogue
 
