@@ -232,7 +232,8 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
           }
         }
         if (brut.schema !== undefined && !donneesValides(brut.schema)) return refus("schéma trop volumineux ou illisible");
-        return bon({ type, id: brut.id, instruction: brut.instruction, ...(images ? { images } : {}), ...(brut.schema !== undefined ? { schema: brut.schema } : {}) });
+        if (brut.recherche !== undefined && typeof brut.recherche !== "boolean") return refus("« recherche » doit valoir vrai ou faux");
+        return bon({ type, id: brut.id, instruction: brut.instruction, ...(images ? { images } : {}), ...(brut.schema !== undefined ? { schema: brut.schema } : {}), ...(brut.recherche === true ? { recherche: true } : {}) });
       }
       case "serviceCall": {
         if (!estTexte(brut.id, 64) || !ID_APPEL.test(brut.id)) return refus("identifiant d'appel invalide");

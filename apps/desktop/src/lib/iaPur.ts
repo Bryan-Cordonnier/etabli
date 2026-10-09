@@ -30,8 +30,9 @@ export function lireConfigIa(brut: unknown): ConfigIa {
 }
 
 /** Le corps de la requête Gemini : la consigne, les photos, et la réponse en JSON quand un schéma est donné. */
-export function construireRequete(options: { instruction: string; images?: readonly AiImage[]; schema?: unknown }): Record<string, unknown> {
+export function construireRequete(options: { instruction: string; images?: readonly AiImage[]; schema?: unknown; recherche?: boolean }): Record<string, unknown> {
   const avecSchema = options.schema !== undefined;
+  const recherche = options.recherche === true;
   const consigne = avecSchema
     ? `${options.instruction}\n\nRéponds UNIQUEMENT par un objet JSON valide, sans texte autour ni balises, conforme à ce schéma JSON :\n${JSON.stringify(options.schema)}`
     : options.instruction;
@@ -42,7 +43,9 @@ export function construireRequete(options: { instruction: string; images?: reado
         parts: [{ text: consigne }, ...(options.images ?? []).map((i) => ({ inline_data: { mime_type: i.mime, data: i.data } }))],
       },
     ],
-    generationConfig: { temperature: 0.1, ...(avecSchema ? { response_mime_type: "application/json" } : {}) },
+    // Avec la recherche sur internet, Gemini ne sait pas imposer le format JSON : on le demande seulement dans la consigne (déjà fait ci-dessus).
+    ...(recherche ? { tools: [{ google_search: {} }] } : {}),
+    generationConfig: { temperature: recherche ? 0.5 : 0.1, ...(avecSchema && !recherche ? { response_mime_type: "application/json" } : {}) },
   };
 }
 
