@@ -13,6 +13,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Changed
 
+- **The AI key is no longer checked for its shape.** Google's recent keys contain a dot (`AQ.…`) and were refused; now any printable key is accepted (quotes pasted with it are removed) and Google says whether it works (*Try* button).
 - **The home board is endless and easier to use.** There is no limit to the number of widgets, and the same widget can be posed several times (each one keeps its own settings). A widget you grab follows the mouse while the others close up, and the board scrolls when you drag near its edge. Every widget shows the icon and colour of its plugin. A last *Add a widget* cell ends the grid in Edit mode.
 - **The home board edits like a phone home screen.** In *Edit* mode, click a widget to select it, drag it to move it (the others close up), drag its edges or its corner to resize it (it snaps to the nearest size it supports), remove it with its cross.
 - **Quick preview settings moved into *Keyboard shortcuts*.** The quick preview shortcut and its favourites are no longer a separate tab in Settings.

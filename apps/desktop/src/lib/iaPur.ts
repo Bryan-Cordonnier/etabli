@@ -22,9 +22,11 @@ export const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 /** Lecture défensive de ce qui est enregistré : seuls une clé de texte et un nom de modèle propre sont gardés. */
 export function lireConfigIa(brut: unknown): ConfigIa {
   const o = typeof brut === "object" && brut !== null ? (brut as Record<string, unknown>) : {};
-  const cle = typeof o.cle === "string" ? o.cle.trim().slice(0, 200) : "";
+  // Le format des clés de Google change (« AIza… », puis « AQ.… » avec un point) : on ne vérifie que ce qui est sûr à mettre dans un en-tête,
+  // des caractères imprimables sans espace. C'est Google qui dit si la clé est bonne (bouton « Essayer »). Les guillemets collés avec elle sont retirés.
+  const cle = typeof o.cle === "string" ? o.cle.trim().replace(/^["'«»]+|["'«»]+$/g, "").trim().slice(0, 400) : "";
   const modele = typeof o.modele === "string" && /^[a-z0-9][a-z0-9._-]{1,60}$/.test(o.modele.trim()) ? o.modele.trim() : MODELE_DEFAUT;
-  return { fournisseur: "gemini", cle: /^[A-Za-z0-9_-]{10,200}$/.test(cle) ? cle : "", modele };
+  return { fournisseur: "gemini", cle: /^[\x21-\x7e]{10,400}$/.test(cle) ? cle : "", modele };
 }
 
 /** Le corps de la requête Gemini : la consigne, les photos, et la réponse en JSON quand un schéma est donné. */

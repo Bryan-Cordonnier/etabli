@@ -8,6 +8,11 @@ describe("lireConfigIa", () => {
 
   it("garde une clé plausible et un modèle propre, refuse le reste", () => {
     expect(lireConfigIa({ cle: " AIzaSyA-b_c1234567890 ", modele: "gemini-3.8-flash" })).toEqual({ fournisseur: "gemini", cle: "AIzaSyA-b_c1234567890", modele: "gemini-3.8-flash" });
+    // Les clés récentes de Google contiennent un point ; des guillemets collés avec la clé sont retirés.
+    expect(lireConfigIa({ cle: "AQ.Ab8RN6Jz-x_y12345678901234567890" }).cle).toBe("AQ.Ab8RN6Jz-x_y12345678901234567890");
+    expect(lireConfigIa({ cle: `"AIzaSyA-b_c1234567890"` }).cle).toBe("AIzaSyA-b_c1234567890");
+    expect(lireConfigIa({ cle: "avec\nretour1234567890" }).cle).toBe("");
+    expect(lireConfigIa({ cle: "é".repeat(20) }).cle).toBe("");
     expect(lireConfigIa({ cle: "trop court" }).cle).toBe("");
     expect(lireConfigIa({ cle: "abc def ghi jkl mno" }).cle).toBe("");
     expect(lireConfigIa({ modele: "../../x?key=1" }).modele).toBe(MODELE_DEFAUT);
