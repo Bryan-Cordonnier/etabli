@@ -14,7 +14,7 @@
 <header class="bar">
   <div class="drag-top" data-tauri-drag-region></div>
   {#if info}
-    <div class="page" data-tauri-drag-region>
+    <div class="courant" data-tauri-drag-region>
       <Tile color={info.color} icon={info.icon} size={24} />
       <span class="titre">{info.title}</span>
     </div>
@@ -50,7 +50,7 @@
     height: 4px;
     z-index: 2;
   }
-  .page {
+  .courant {
     display: flex;
     align-items: center;
     gap: 10px;
