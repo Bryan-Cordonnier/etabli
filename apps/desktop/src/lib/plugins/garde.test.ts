@@ -125,6 +125,9 @@ describe("autres messages", () => {
     expect(controler({ type: "shortcut", key: "t", code: "KeyT", ctrl: true, shift: false, alt: false }, strict()).ok).toBe(true);
     expect(controler({ type: "shortcut", key: "x".repeat(41), ctrl: true, shift: false, alt: false }, strict()).ok).toBe(false);
     expect(controler({ type: "openSettings", plugin: "../x" }, strict(["reglages"])).ok).toBe(false);
+    // openPage : sa propre page, aucune permission, mais un identifiant de page propre.
+    expect(controler({ type: "openPage", page: "liste" }, strict([])).ok).toBe(true);
+    for (const page of ["../x", "", "A B", 4, "x".repeat(70)]) expect(controler({ type: "openPage", page }, strict([])).ok, String(page)).toBe(false);
     expect(controler({ type: "openSettings", plugin: "machines", hash: "add=scie" }, strict(["reglages"])).ok).toBe(true);
     expect(controler({ type: "send", kind: "Pièce Plate", data: {} }, strict(["envoi"])).ok).toBe(false);
   });

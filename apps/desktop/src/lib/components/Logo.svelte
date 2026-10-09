@@ -5,16 +5,21 @@
   let { size = 32 }: { size?: number } = $props();
 </script>
 
-<span class="logo" style:--size="{size}px" aria-hidden="true">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-    {#if distribution.logo}
-      <!-- Dessin de la distribution, validé à la lecture (formes SVG simples seulement). -->
-      {@html distribution.logo}
-    {:else}
-      <path d="M4 18h16M6 18V9l6-4 6 4v9" />
-    {/if}
-  </svg>
-</span>
+{#if distribution.logo && distribution.logoPlein}
+  <!-- Logo à ses propres couleurs (celui de l'icône de l'application) : affiché tel quel. -->
+  <svg class="plein" viewBox={distribution.logoViewBox} width={size} height={size} aria-hidden="true">{@html distribution.logo}</svg>
+{:else}
+  <span class="logo" style:--size="{size}px" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      {#if distribution.logo}
+        <!-- Dessin de la distribution, validé à la lecture (formes SVG simples seulement). -->
+        {@html distribution.logo}
+      {:else}
+        <path d="M4 18h16M6 18V9l6-4 6 4v9" />
+      {/if}
+    </svg>
+  </span>
+{/if}
 
 <style>
   .logo {
@@ -27,8 +32,11 @@
     place-items: center;
     flex: none;
   }
-  svg {
+  .logo svg {
     width: 58%;
     height: 58%;
+  }
+  .plein {
+    flex: none;
   }
 </style>

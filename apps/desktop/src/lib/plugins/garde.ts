@@ -120,6 +120,7 @@ const PERMISSION_REQUISE: Record<string, string | null> = {
   saveFile: "fichiers",
   send: "envoi",
   openSettings: "reglages",
+  openPage: null,
   reminders: "notifications",
   // La permission `appelle:<service>:<accès>` dépend du service : contrôlée plus bas, puis par le routage.
   serviceCall: null,
@@ -183,6 +184,8 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
         if (!estTexte(brut.plugin, 64) || !/^[a-z0-9-]+$/.test(brut.plugin)) return refus("plugin invalide");
         if (brut.hash !== undefined && !estTexte(brut.hash, 200)) return refus("ancre invalide");
         return bon({ type, plugin: brut.plugin, ...(brut.hash !== undefined ? { hash: brut.hash as string } : {}) });
+      case "openPage":
+        return estTexte(brut.page, 64) && /^[a-z0-9][a-z0-9-]*$/.test(brut.page) ? bon({ type, page: brut.page }) : refus("page invalide");
       case "send":
         if (!estTexte(brut.kind, 64) || !/^[a-z0-9-]+$/.test(brut.kind)) return refus("type d'envoi invalide");
         return donneesValides(brut.data) ? bon({ type, kind: brut.kind, data: brut.data }) : refus("données trop volumineuses ou illisibles");

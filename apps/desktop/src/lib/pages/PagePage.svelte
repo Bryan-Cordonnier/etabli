@@ -8,6 +8,7 @@
   import { getPage, pluginProblems, pluginUrl } from "$lib/plugins/registry.svelte";
   import { sendToApp, takeIncoming } from "$lib/send";
   import { handleShortcut } from "$lib/shortcuts";
+  import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
 
   interface Props {
@@ -35,6 +36,7 @@
         () => ui.notify("Copie impossible"),
       );
     } else if (message.type === "openSettings") openPluginSettings(message.plugin, message.hash);
+    else if (message.type === "openPage" && getPage(pluginId, message.page)) tabs.navigate({ kind: "page", pluginId, pageId: message.page });
     else if (message.type === "send") sendToApp(message.kind, message.data, found?.page.title ?? "");
   }
 </script>

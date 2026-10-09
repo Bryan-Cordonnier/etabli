@@ -1,3 +1,4 @@
+import { distribution } from "$lib/distribution";
 import { load, save } from "$lib/storage";
 import type { Tab, View } from "$lib/types";
 import { ui } from "./ui.svelte";
@@ -55,7 +56,9 @@ class Tabs {
       const kind = v.kind as string;
       return kind === "catalogue" ? { kind: "plugins" } : kind === "plugin" || kind === "app" ? HOME : v;
     };
-    const views = session?.views.length ? session.views.map(ancien) : [HOME];
+    let views = session?.views.length ? session.views.map(ancien) : [HOME];
+    // Sans onglets : une seule page à la fois, celle qui était active.
+    if (!distribution.tabs) views = [views[Math.min(session?.active ?? 0, views.length - 1)] ?? HOME];
     for (const view of views) this.#create(fresh(view));
     const restored = this.list[Math.min(session?.active ?? 0, this.list.length - 1)];
     this.activeId = restored?.id ?? 0;
@@ -68,6 +71,11 @@ class Tabs {
 
   /** Ouvre un nouvel onglet ; renvoie son identifiant. */
   open(view: View, focus = true): number {
+    // Sans onglets, « ouvrir » remplace la page affichée.
+    if (!distribution.tabs && this.list.length > 0) {
+      this.navigate(view);
+      return this.activeId;
+    }
     const tab = this.#create(fresh(view));
     if (focus) this.activeId = tab.id;
     return tab.id;
@@ -124,7 +132,7 @@ class Tabs {
 
     const tab = this.active;
     // Une page enregistre ses données au fil de l'eau : changer de page dans l'onglet ne perd rien.
-    if (options.newTab || !tab) {
+    if ((options.newTab && distribution.tabs) || !tab) {
       this.open(view);
       return;
     }

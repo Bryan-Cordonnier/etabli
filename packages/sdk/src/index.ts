@@ -117,6 +117,8 @@ export interface Etabli<T> {
   };
   /** Ouvre la page de réglages d'un autre plugin (`hash` : intention transmise à sa page, « add=scie »). */
   openSettings(plugin: string, hash?: string): void;
+  /** Ouvre une page de ce plugin (son identifiant dans `pages` du manifeste), par exemple depuis un widget de l'accueil. */
+  openPage(page: string): void;
   /** Réglages du plugin (machines de l'atelier…), partagés par toutes ses mini-apps et enregistrés par le moteur. */
   readonly settings: {
     /** `null` tant que le plugin n'a rien enregistré. */
@@ -306,6 +308,9 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
     },
     openSettings(plugin, hash) {
       send({ type: "openSettings", plugin, hash });
+    },
+    openPage(page) {
+      send({ type: "openPage", page });
     },
     settings: {
       get data() {

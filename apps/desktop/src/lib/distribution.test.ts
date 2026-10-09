@@ -36,6 +36,13 @@ describe("lireDistribution", () => {
     expect(lireDistribution({ icons: "x" }).icons).toEqual({});
   });
 
+  it("lit les onglets et le logo en couleurs, avec des valeurs d'Établi par défaut", () => {
+    expect(lireDistribution({})).toMatchObject({ tabs: true, logoPlein: false, logoViewBox: "0 0 24 24" });
+    const d = lireDistribution({ tabs: false, logoPlein: true, logoViewBox: "0 0 1024 1024", logo: '<rect width="10" height="10" fill="#fff"/>' });
+    expect(d).toMatchObject({ tabs: false, logoPlein: true, logoViewBox: "0 0 1024 1024" });
+    expect(lireDistribution({ logoViewBox: "0 0 1e9 <x>" }).logoViewBox).toBe("0 0 24 24");
+  });
+
   it("la page Plugins reste visible tant qu'on ne la retire pas explicitement", () => {
     expect(lireDistribution({ pluginsPage: "non" }).pluginsPage).toBe(true);
     expect(lireDistribution({}).pluginsPage).toBe(true);

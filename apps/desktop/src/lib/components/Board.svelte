@@ -1,10 +1,11 @@
 <script lang="ts">
   // Le tableau de widgets de l'accueil (docs/28, section 4) : une grille de cases, des widgets de plugins (cadres isolés comme une
-  // mini-app) et le widget du moteur « Favoris ». Le mode « Modifier » permet d'ajouter, retirer, déplacer et redimensionner.
+  // mini-app) et le widget du moteur « Favoris ». Le mode « Modifier » marche comme l'écran d'accueil d'un téléphone : on sélectionne un
+  // widget en cliquant dessus, on le déplace à la souris, on le redimensionne en tirant ses bords, on le retire avec sa croix.
   import type { DocumentSnapshot, PluginToHost } from "@etabli/sdk/protocol";
-  import { ajouterWidget, colonnesPour, deplacer, dimensions, FAVORIS, largeurEffective, redimensionner, retirerWidget, TAILLES_FAVORIS } from "$lib/board";
+  import { ajouterWidget, colonnesPour, dimensions, FAVORIS, largeurEffective, plusProcheTaille, redimensionner, retirerWidget, TAILLES_FAVORIS } from "$lib/board";
   import { openPluginSettings } from "$lib/pluginSettings";
-  import { allWidgets, getPageByKey, getWidgetByKey, pageKey, pluginUrl, widgetKey, type PageRef } from "$lib/plugins/registry.svelte";
+  import { allWidgets, getPage, getPageByKey, getWidgetByKey, pageKey, pluginUrl, widgetKey, type PageRef } from "$lib/plugins/registry.svelte";
   import { settings } from "$lib/state/settings.svelte";
   import { tabs } from "$lib/state/tabs.svelte";
   import { ui } from "$lib/state/ui.svelte";
@@ -21,6 +22,8 @@
   let largeur = $state(1000);
   let edition = $state(false);
   let galerie = $state(false);
+  let selection = $state<string | null>(null);
+  let grille: HTMLElement;
 
   const colonnes = $derived(colonnesPour(largeur));
   const entrees = $derived(settings.widgets);
@@ -30,31 +33,106 @@
   );
 
   const pose = (cle: string): boolean => entrees.some((e) => e.key === cle);
-  const modifier = (suivant: BoardEntry[]): void => settings.setBoard(suivant);
+  const modifier = (suivant: BoardEntry[], enregistrer = true): void => settings.setBoard(suivant, enregistrer);
 
   function tailles(e: BoardEntry): readonly WidgetSize[] {
     return e.key === FAVORIS ? TAILLES_FAVORIS : (getWidgetByKey(e.key)?.widget.sizes ?? [e.size]);
-  }
-
-  function suivante(e: BoardEntry): WidgetSize {
-    const liste = tailles(e);
-    return liste[(liste.indexOf(e.size) + 1) % liste.length] ?? e.size;
   }
 
   function ouvrir(ref: PageRef, event: MouseEvent): void {
     tabs.navigate({ kind: "page", pluginId: ref.plugin.id, pageId: ref.page.id }, { newTab: event.ctrlKey || event.button === 1 });
   }
 
-  function onmessage(message: PluginToHost): void {
-    if (message.type === "notify") ui.notify(message.text);
-    else if (message.type === "openSettings") openPluginSettings(message.plugin, message.hash);
+  /** Messages d'un widget : une notification, les réglages de son plugin, ou l'ouverture d'une de ses pages (en grand). */
+  function messageDe(pluginId: string) {
+    return (message: PluginToHost): void => {
+      if (message.type === "notify") ui.notify(message.text);
+      else if (message.type === "openSettings") openPluginSettings(message.plugin, message.hash);
+      else if (message.type === "openPage" && getPage(pluginId, message.page)) tabs.navigate({ kind: "page", pluginId, pageId: message.page });
+    };
   }
 
   const style = (e: BoardEntry): string => {
     const { h } = dimensions(e.size);
     return `grid-column: span ${largeurEffective(e.size, colonnes)}; height: ${h * CASE + (h - 1) * ESPACE}px;`;
   };
+
+  // —— Déplacer : on attrape un widget et on le lâche sur un autre, les autres se serrent (comme sur un téléphone). ——
+  let deplacement = $state<{ cle: string; x: number; y: number; bouge: boolean } | null>(null);
+
+  function debutDeplacement(event: PointerEvent, cle: string): void {
+    if (event.button !== 0) return;
+    selection = cle;
+    deplacement = { cle, x: event.clientX, y: event.clientY, bouge: false };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  function pendantDeplacement(event: PointerEvent): void {
+    const d = deplacement;
+    if (!d) return;
+    if (!d.bouge && Math.hypot(event.clientX - d.x, event.clientY - d.y) < 6) return;
+    d.bouge = true;
+    const cibles = [...grille.querySelectorAll<HTMLElement>("[data-cle]")];
+    const sous = cibles.find((el) => {
+      if (el.dataset.cle === d.cle) return false;
+      const r = el.getBoundingClientRect();
+      return event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom;
+    });
+    if (!sous?.dataset.cle) return;
+    const liste = [...entrees];
+    const de = liste.findIndex((e) => e.key === d.cle);
+    const vers = liste.findIndex((e) => e.key === sous.dataset.cle);
+    if (de < 0 || vers < 0 || de === vers) return;
+    liste.splice(vers, 0, ...liste.splice(de, 1));
+    modifier(liste, false);
+  }
+
+  function finDeplacement(): void {
+    if (deplacement?.bouge) modifier([...entrees]);
+    deplacement = null;
+  }
+
+  // —— Redimensionner : on tire un bord ou le coin, la taille s'accroche à la plus proche de celles que le widget accepte. ——
+  let etirement = $state<{ cle: string; mode: "l" | "h" | "lh"; x: number; y: number; l0: number; h0: number } | null>(null);
+
+  function debutEtirement(event: PointerEvent, e: BoardEntry, mode: "l" | "h" | "lh"): void {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    const r = (event.currentTarget as HTMLElement).closest<HTMLElement>("[data-cle]")!.getBoundingClientRect();
+    etirement = { cle: e.key, mode, x: event.clientX, y: event.clientY, l0: r.width, h0: r.height };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  function pendantEtirement(event: PointerEvent): void {
+    const s = etirement;
+    if (!s) return;
+    const e = entrees.find((x) => x.key === s.cle);
+    if (!e) return;
+    const caseL = (grille.clientWidth - (colonnes - 1) * ESPACE) / colonnes;
+    const courant = dimensions(e.size);
+    const l = s.mode === "h" ? courant.l : Math.max(1, Math.round((s.l0 + event.clientX - s.x + ESPACE) / (caseL + ESPACE)));
+    const h = s.mode === "l" ? courant.h : Math.max(1, Math.round((s.h0 + event.clientY - s.y + ESPACE) / (CASE + ESPACE)));
+    const taille = plusProcheTaille(tailles(e), l, h);
+    if (taille !== e.size) modifier(redimensionner(entrees, e.key, taille), false);
+  }
+
+  function finEtirement(): void {
+    if (etirement) modifier([...entrees]);
+    etirement = null;
+  }
+
+  function terminer(): void {
+    edition = false;
+    galerie = false;
+    selection = null;
+  }
+
+  function clavier(event: KeyboardEvent): void {
+    if (edition && event.key === "Escape") selection ? (selection = null) : terminer();
+  }
 </script>
+
+<svelte:window onkeydown={clavier} />
 
 <section class="board" bind:clientWidth={largeur} aria-label="Tableau de l'accueil">
   <div class="barre">
@@ -63,7 +141,7 @@
       {#if edition}
         <button class="btn" onclick={() => (galerie = !galerie)} aria-expanded={galerie}><Icon name="plus" size={15} /> Ajouter un widget</button>
       {/if}
-      <button class="btn" class:primary={edition} onclick={() => ((edition = !edition), (galerie = false))}>
+      <button class="btn" class:primary={edition} onclick={() => (edition ? terminer() : (edition = true))}>
         {edition ? "Terminé" : "Modifier"}
       </button>
     </div>
@@ -71,8 +149,8 @@
 
   {#if edition && galerie}
     <div class="galerie" role="group" aria-label="Widgets disponibles">
-      {#each [{ key: FAVORIS, titre: "Favoris", de: "Établi", taille: "4x2" as WidgetSize }, ...disponibles.map((w) => ({ key: widgetKey(w.plugin.id, w.widget.id), titre: w.widget.title, de: w.plugin.name, taille: w.widget.default }))] as w (w.key)}
-        <button class="choix" disabled={pose(w.key)} onclick={() => modifier(ajouterWidget(entrees, w.key, w.taille))}>
+      {#each [{ key: FAVORIS, titre: "Favoris", de: "Moteur", taille: "4x2" as WidgetSize }, ...disponibles.map((w) => ({ key: widgetKey(w.plugin.id, w.widget.id), titre: w.widget.title, de: w.plugin.name, taille: w.widget.default }))] as w (w.key)}
+        <button class="choix" disabled={pose(w.key)} onclick={() => ((selection = w.key), modifier(ajouterWidget(entrees, w.key, w.taille)))}>
           <b>{w.titre}</b>
           <span>{w.de}{pose(w.key) ? " · déjà posé" : ""}</span>
         </button>
@@ -80,15 +158,17 @@
     </div>
   {/if}
 
+  {#if edition}<p class="aide">Cliquez sur un widget pour le sélectionner, glissez-le pour le déplacer, tirez ses bords pour changer sa taille.</p>{/if}
+
   {#if entrees.length === 0}
     <p class="vide">Le tableau est vide. {edition ? "Ajoutez un widget." : "Cliquez sur « Modifier » pour en ajouter."}</p>
   {/if}
 
-  <div class="grille" style:grid-template-columns={`repeat(${colonnes}, minmax(0, 1fr))`} style:gap="{ESPACE}px">
-    {#each entrees as e, i (e.key)}
+  <div bind:this={grille} class="grille" style:grid-template-columns={`repeat(${colonnes}, minmax(0, 1fr))`} style:gap="{ESPACE}px">
+    {#each entrees as e (e.key)}
       {@const w = getWidgetByKey(e.key)}
       {#if e.key === FAVORIS || w}
-        <div class="case" class:edition style={style(e)}>
+        <div class="case" class:edition class:choisi={edition && selection === e.key} class:deplace={deplacement?.bouge && deplacement.cle === e.key} data-cle={e.key} style={style(e)}>
           {#if e.key === FAVORIS}
             <div class="favoris">
               <h3>Favoris</h3>
@@ -103,20 +183,36 @@
               {/if}
             </div>
           {:else if w}
-            <MiniAppFrame fill src={`${pluginUrl(w.plugin.id, w.app.entry)}#widget`} title={w.widget.title} pluginId={w.plugin.id} appId={w.app.id} {initial} forward={false} {onmessage} />
+            <MiniAppFrame fill src={`${pluginUrl(w.plugin.id, w.app.entry)}#widget=${w.widget.id}`} title={w.widget.title} pluginId={w.plugin.id} appId={w.app.id} {initial} forward={false} onmessage={messageDe(w.plugin.id)} />
           {/if}
           {#if edition}
-            <div class="poignees" role="group" aria-label={`Réglages du widget ${w?.widget.title ?? "Favoris"}`}>
-              <button class="mini" onclick={() => modifier(deplacer(entrees, e.key, -1))} disabled={i === 0} aria-label="Avancer" title="Avancer">←</button>
-              <button class="mini" onclick={() => modifier(deplacer(entrees, e.key, 1))} disabled={i === entrees.length - 1} aria-label="Reculer" title="Reculer">→</button>
-              <button class="mini taille" onclick={() => modifier(redimensionner(entrees, e.key, suivante(e)))} disabled={tailles(e).length < 2} title="Changer la taille">{e.size}</button>
-              <button class="mini" onclick={() => modifier(retirerWidget(entrees, e.key))} aria-label="Retirer" title="Retirer">✕</button>
-            </div>
+            <!-- Couvre le widget (le cadre avale la souris) : un appui le sélectionne, un glissement le déplace. -->
+            <div
+              class="prise"
+              role="button"
+              tabindex="0"
+              aria-label={`Sélectionner ${w?.widget.title ?? "Favoris"}`}
+              onpointerdown={(ev) => debutDeplacement(ev, e.key)}
+              onpointermove={pendantDeplacement}
+              onpointerup={finDeplacement}
+              onpointercancel={finDeplacement}
+              onkeydown={(ev) => (ev.key === "Enter" || ev.key === " ") && (selection = e.key)}
+            ></div>
+            {#if selection === e.key}
+              <button class="retirer" onclick={() => ((selection = null), modifier(retirerWidget(entrees, e.key)))} aria-label="Retirer le widget" title="Retirer">
+                <Icon name="x" size={14} strokeWidth={2.6} />
+              </button>
+              {#if tailles(e).length > 1}
+                <div class="bord droit" onpointerdown={(ev) => debutEtirement(ev, e, "l")} onpointermove={pendantEtirement} onpointerup={finEtirement} onpointercancel={finEtirement} role="slider" aria-label="Largeur" aria-valuenow={dimensions(e.size).l} tabindex="-1"></div>
+                <div class="bord bas" onpointerdown={(ev) => debutEtirement(ev, e, "h")} onpointermove={pendantEtirement} onpointerup={finEtirement} onpointercancel={finEtirement} role="slider" aria-label="Hauteur" aria-valuenow={dimensions(e.size).h} tabindex="-1"></div>
+                <div class="bord coin" onpointerdown={(ev) => debutEtirement(ev, e, "lh")} onpointermove={pendantEtirement} onpointerup={finEtirement} onpointercancel={finEtirement} role="slider" aria-label="Taille" aria-valuenow={dimensions(e.size).l} tabindex="-1"></div>
+              {/if}
+            {/if}
           {/if}
         </div>
       {:else if edition}
         <!-- Widget d'un plugin désinstallé ou désactivé : on peut le retirer, il reste sinon pour son retour. -->
-        <div class="case absent" style={style(e)}>
+        <div class="case absent" data-cle={e.key} style={style(e)}>
           <p>Widget introuvable ({e.key})</p>
           <button class="btn" onclick={() => modifier(retirerWidget(entrees, e.key))}>Retirer</button>
         </div>
@@ -148,6 +244,11 @@
   .outils {
     display: flex;
     gap: 8px;
+  }
+  .aide {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12.5px;
   }
   .galerie {
     display: grid;
@@ -183,9 +284,19 @@
     overflow: hidden;
     min-width: 0;
   }
+  /* Les poignées dépassent un peu du cadre : on libère le débordement en édition. */
   .case.edition {
-    outline: 2px dashed var(--accent);
+    overflow: visible;
+    outline: 2px dashed color-mix(in srgb, var(--accent) 55%, transparent);
     outline-offset: -2px;
+  }
+  .case.choisi {
+    outline: 2px solid var(--accent);
+    z-index: 2;
+  }
+  .case.deplace {
+    opacity: 0.7;
+    box-shadow: var(--shadow);
   }
   .case.absent {
     display: grid;
@@ -213,31 +324,64 @@
     margin: 0;
     color: var(--faint);
   }
-  .poignees {
+  .prise {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    border-radius: var(--r-sm, 8px);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+    inset: 0;
+    z-index: 1;
+    cursor: grab;
+    border-radius: var(--r-md);
+    touch-action: none;
   }
-  .mini {
-    min-width: 28px;
-    height: 28px;
-    border: 0;
-    border-radius: var(--r-xs);
-    background: var(--field);
-    color: inherit;
+  .prise:active {
+    cursor: grabbing;
   }
-  .mini:disabled {
-    opacity: 0.4;
+  .retirer {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    z-index: 4;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--surface);
+    border-radius: 50%;
+    background: var(--err, #d64545);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    padding: 0;
   }
-  .taille {
-    font-size: 11px;
-    padding: 0 6px;
+  /* Bords et coin à tirer : de petites poignées arrondies, posées sur le cadre du widget choisi. */
+  .bord {
+    position: absolute;
+    z-index: 3;
+    background: var(--accent);
+    border: 2px solid var(--surface);
+    touch-action: none;
+  }
+  .bord.droit {
+    top: 50%;
+    right: -7px;
+    width: 12px;
+    height: 36px;
+    margin-top: -18px;
+    border-radius: 6px;
+    cursor: ew-resize;
+  }
+  .bord.bas {
+    left: 50%;
+    bottom: -7px;
+    width: 36px;
+    height: 12px;
+    margin-left: -18px;
+    border-radius: 6px;
+    cursor: ns-resize;
+  }
+  .bord.coin {
+    right: -8px;
+    bottom: -8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    cursor: nwse-resize;
   }
 </style>

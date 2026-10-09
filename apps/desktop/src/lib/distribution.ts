@@ -9,13 +9,19 @@ export interface Distribution {
   pluginsPage: boolean;
   /** Thèmes fixes de la distribution (ni import, ni copie) ; `null` : les thèmes d'Établi, que l'utilisateur peut importer. */
   themes: Theme[] | null;
-  /** Dessin du logo (contenu d'un SVG 24x24, trait `currentColor`), ou `null` : celui d'Établi. */
+  /** Dessin du logo (contenu d'un SVG, formes simples), ou `null` : celui d'Établi. Par défaut en trait `currentColor` sur un carré de la couleur d'accent. */
   logo: string | null;
+  /** Le logo a ses propres couleurs et son propre fond (comme l'icône de l'application) : il est affiché tel quel, sans carré d'accent. */
+  logoPlein: boolean;
+  /** Repère du dessin du logo (« 0 0 24 24 » par défaut). */
+  logoViewBox: string;
+  /** Barre d'onglets : faux, l'application n'a qu'une page à la fois et la barre ne montre que le titre de la page. */
+  tabs: boolean;
   /** Icônes propres à la distribution, par nom (« calendrier ») : un plugin de la distribution peut les donner à ses pages. Même forme que le logo, mais remplies (`currentColor`). */
   icons: Record<string, string>;
 }
 
-export const DISTRIBUTION_DEFAUT: Distribution = { name: "Établi", pluginsPage: true, themes: null, logo: null, icons: {} };
+export const DISTRIBUTION_DEFAUT: Distribution = { name: "Établi", pluginsPage: true, themes: null, logo: null, logoPlein: false, logoViewBox: "0 0 24 24", tabs: true, icons: {} };
 
 const objet = (v: unknown): Record<string, unknown> | null => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
 const COULEUR = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i;
@@ -58,6 +64,9 @@ export function lireDistribution(brut: unknown): Distribution {
     // Au moins un thème clair ou sombre valable, sans doublon d'identifiant ; sinon les thèmes d'Établi.
     themes: themes.length > 0 && ids.size === themes.length ? themes : null,
     logo: typeof o.logo === "string" && o.logo.length <= 2000 && LOGO.test(o.logo) ? o.logo.trim() : null,
+    logoPlein: o.logoPlein === true,
+    logoViewBox: typeof o.logoViewBox === "string" && /^0 0 \d{1,4} \d{1,4}$/.test(o.logoViewBox) ? o.logoViewBox : DISTRIBUTION_DEFAUT.logoViewBox,
+    tabs: o.tabs !== false,
     icons: lireIcones(o.icons),
   };
 }

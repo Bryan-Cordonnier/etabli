@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ajouterWidget, BOARD_MAX, colonnesPour, deplacer, dimensions, largeurEffective, lireBoard, redimensionner, retirerWidget } from "./board";
+import { ajouterWidget, BOARD_MAX, colonnesPour, deplacer, dimensions, largeurEffective, lireBoard, plusProcheTaille, redimensionner, retirerWidget } from "./board";
 import type { BoardEntry } from "./types";
 
 const b: BoardEntry[] = [
@@ -57,5 +57,18 @@ describe("grille", () => {
     expect([1000, 700, 400].map(colonnesPour)).toEqual([4, 2, 1]);
     expect(largeurEffective("4x2", 2)).toBe(2);
     expect(largeurEffective("1x1", 2)).toBe(1);
+  });
+});
+
+describe("plusProcheTaille", () => {
+  const acceptees = ["1x1", "2x1", "2x2"] as const;
+  it("s'accroche à la taille acceptée la plus proche", () => {
+    expect(plusProcheTaille(acceptees, 1, 1)).toBe("1x1");
+    expect(plusProcheTaille(acceptees, 3, 1)).toBe("2x1");
+    expect(plusProcheTaille(acceptees, 4, 4)).toBe("2x2");
+    expect(plusProcheTaille(acceptees, 2, 2)).toBe("2x2");
+  });
+  it("à égalité, prend la plus petite", () => {
+    expect(plusProcheTaille(["1x2", "2x1"], 2, 2)).toBe("1x2");
   });
 });

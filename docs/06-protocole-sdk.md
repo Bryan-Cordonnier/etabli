@@ -38,6 +38,7 @@ facultatifs, nouveaux messages) ne changent pas la version ; le SDK tolère un c
 | `pluginData` `{ data }` | enregistre les réglages du plugin |
 | `provide` `{ name, data }` | publie les données du service `name` (à déclarer dans `provides` du manifeste) ; le moteur les garde et les relaie aux plugins qui en dépendent |
 | `openSettings` `{ plugin, hash? }` | ouvre la page de réglages d'un autre plugin, avec une intention dans l'adresse (`#nouveau`) ; le catalogue s'ouvre si le plugin manque |
+| `openPage` `{ page }` | ouvre une page **de ce plugin** (son identifiant dans `pages`) ; aucune permission. Un widget de l'accueil s'ouvre ainsi en grand |
 | `send` `{ kind, data }` | ouvre une mini-app qui accepte ce type, dans un nouvel onglet, avec ces données |
 | `serviceCall` `{ id, service, fn, args, timeoutMs? }` | appelle la fonction `fn` du service `service` d'un autre plugin (permission `appelle:<service>:<accès>`, voir « Appeler la fonction d'un autre plugin » ci-dessous) ; le moteur répond toujours par un `serviceReply` |
 | `serviceReady` | **page `serviceEntry` seulement** : les gestionnaires sont enregistrés (`services.handle`), le moteur peut envoyer l'appel |
