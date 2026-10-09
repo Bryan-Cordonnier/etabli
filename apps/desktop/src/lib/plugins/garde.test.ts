@@ -63,6 +63,7 @@ describe("permissions", () => {
     ["send", { type: "send", kind: "piece-plate", data: {} }, "envoi"],
     ["openSettings", { type: "openSettings", plugin: "machines" }, "reglages"],
     ["reminders", { type: "reminders", id: "r1", op: "state" }, "notifications"],
+    ["ai", { type: "ai", id: "a1", instruction: "Lis ce ticket" }, "ia"],
   ];
 
   it.each(exigences)("%s exige la permission en contrat strict", (_nom, message, permission) => {
@@ -125,6 +126,20 @@ describe("autres messages", () => {
     expect(controler({ type: "shortcut", key: "t", code: "KeyT", ctrl: true, shift: false, alt: false }, strict()).ok).toBe(true);
     expect(controler({ type: "shortcut", key: "x".repeat(41), ctrl: true, shift: false, alt: false }, strict()).ok).toBe(false);
     expect(controler({ type: "openSettings", plugin: "../x" }, strict(["reglages"])).ok).toBe(false);
+    // ai : une consigne, des photos bornées, un schéma ; tout le reste est refusé.
+    const ia = strict(["ia"]);
+    expect(controler({ type: "ai", id: "a1", instruction: "Lis ce ticket", images: [{ mime: "image/jpeg", data: "QUJD" }], schema: { type: "object" } }, ia).ok).toBe(true);
+    expect(controler({ type: "ai", id: "a1", instruction: "x" }, strict([])).ok).toBe(false);
+    for (const brut of [
+      { type: "ai", id: "a1", instruction: "" },
+      { type: "ai", id: "a1", instruction: "x".repeat(8001) },
+      { type: "ai", id: "a 1", instruction: "x" },
+      { type: "ai", id: "a1", instruction: "x", images: Array.from({ length: 5 }, () => ({ mime: "image/png", data: "QUJD" })) },
+      { type: "ai", id: "a1", instruction: "x", images: [{ mime: "image/gif", data: "QUJD" }] },
+      { type: "ai", id: "a1", instruction: "x", images: [{ mime: "image/png", data: "pas du base64 !" }] },
+      { type: "ai", id: "a1", instruction: "x", images: [{ mime: "image/png", data: "A".repeat(5_500_001) }] },
+      { type: "ai", id: "a1", instruction: "x", images: "oui" },
+    ]) expect(controler(brut, ia).ok, JSON.stringify(brut).slice(0, 60)).toBe(false);
     // openPage : sa propre page, aucune permission, mais un identifiant de page propre.
     expect(controler({ type: "openPage", page: "liste" }, strict([])).ok).toBe(true);
     for (const page of ["../x", "", "A B", 4, "x".repeat(70)]) expect(controler({ type: "openPage", page }, strict([])).ok, String(page)).toBe(false);

@@ -134,6 +134,7 @@ Déclarées dans `permissions` du manifeste ; un plugin de contrat `"apiVersion"
 | `presse-papiers` | copier du texte | `copy` |
 | `envoi` | envoyer des données à une autre mini-app | `send` |
 | `reglages` | ouvrir les réglages d'un autre plugin | `openSettings` |
+| `ia` | demander à l'IA de l'utilisateur de lire une photo ou de rédiger un texte | `ai` |
 | `notifications` | programmer des rappels (notifications) sur le téléphone | `reminders` |
 | `appelle:<service>:lecture` | appeler les fonctions de **lecture** d'un service offert par un autre plugin | `serviceCall` |
 | `appelle:<service>:ecriture` | appeler les fonctions d'**écriture** (ajouter, modifier) de ce service ; ne donne pas la lecture | `serviceCall` |

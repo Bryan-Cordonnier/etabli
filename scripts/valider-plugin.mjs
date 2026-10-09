@@ -55,6 +55,7 @@ const APPELS_PERMISSION = [
   [/\bsendTo\b|\betabli\??\.send\s*\(/, "envoi"],
   [/\bopenSettings\b/, "reglages"],
   [/\breminders\s*\??\.\s*(set|clear|state)\b/, "notifications"],
+  [/\bai\s*\??\.\s*extraire\b/, "ia"],
 ];
 
 /** Permissions connues : celles de apps/desktop/src/lib/plugins/permissions.ts (une seule source). */

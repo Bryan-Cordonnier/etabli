@@ -73,6 +73,8 @@ defensively (`lib/distribution.ts`, tested): a missing or invalid field keeps Et
 | `logo` | Shapes of the logo (`path`, `circle`, `rect`, `line`, `polyline`, `polygon`, `ellipse`, stroke `currentColor`, 24x24). Anything else is refused |
 | `logoPlein` / `logoViewBox` | `logoPlein: true` : le logo a ses propres couleurs et son propre fond (celui de l'icône de l'application) et s'affiche tel quel, dans le repère `logoViewBox` (`0 0 1024 1024`), sans carré d'accent |
 | `tabs` | `false` : pas d'onglets, une seule page à la fois ; la barre de titre montre le titre de la page, la recherche et les boutons de la fenêtre |
+| `ia` | `true` : *Settings → Artificial intelligence* appears (the user's own Gemini key, kept on the machine and never given to a plugin) and plugins with the `ia` permission can call `etabli.ai.extraire`. The host window does the call, so the distribution must allow `https://generativelanguage.googleapis.com` in `connect-src` of its Tauri CSP (plugin frames keep their own CSP and can never reach the network) |
+| `apercu` | `\"widgets\"`: the quick preview shows the home board (read-only; a click opens the page in the main window) instead of the favourite pages |
 | `accueilCouleur` | Colour of the *Home* tile (`#4d3d99`); with it, the tile is solid like the other pages, and a distribution icon named `home` (see `icons`) replaces the house |
 | `icons` | Icons of the distribution by name (`calendrier`…), same shapes as the logo but filled (`currentColor`). A plugin of the distribution can then give a page `icon: "calendrier"`; the validator accepts these names when `ETABLE_DISTRIBUTION` is set |
 

@@ -37,6 +37,7 @@ etabli.ui.notify("Calcul terminé");
 | `services.provide(nom, data)` | Publie vos données pour les autres plugins (à déclarer dans `provides`) |
 | `openSettings(plugin, hash?)` | Ouvre la page de réglages d'un autre plugin |
 | `openPage(page)` | Ouvre une page de ce plugin (par exemple depuis un widget de l'accueil), sans permission |
+| `ai.extraire({ instruction, images?, schema? })` | Demande à l'IA configurée par l'utilisateur (permission `ia`) ; rend `{ ok: true, texte }` ou `{ ok: false, code, message }`, sans jamais jeter |
 | `settings.data` / `update()` / `onChange()` | Réglages du plugin, partagés par ses mini-apps |
 | `print(fiche)` | Imprime une fiche d'atelier (A4 ou PDF) |
 | `send(kind, data)` / `incoming` | Envoie des données à une autre mini-app / données reçues à l'ouverture |

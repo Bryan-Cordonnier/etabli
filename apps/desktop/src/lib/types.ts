@@ -9,6 +9,7 @@ export type SettingsSection =
   | "apparence"
   | "plugins"
   | "raccourcis"
+  | "ia"
   | "serveur"
   | "administration"
   | "alarmes"

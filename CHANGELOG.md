@@ -19,6 +19,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Added
 
+- **Artificial intelligence for plugins.** A distribution can turn on *Settings → Artificial intelligence*: the user enters a personal Gemini key (kept on the machine), and plugins that declare the new `ia` permission call `etabli.ai.extraire({ instruction, images, schema })` to read a photo or write a text. The plugin never sees the key; the engine validates the request (size, photo types) and answers with the text or a French error. The distribution must allow Google's address in its CSP (docs/27).
+- **The quick preview can show the home widgets** (`apercu: `"widgets`"` in `distribution.json`), read-only: a click on a widget opens its page in the main window.
 - **A distribution can colour the Home tile** (`accueilCouleur`) and give it its own icon (a distribution icon named `home`).
 - **A widget can open one of its plugin's pages** (`etabli.openPage(page)`, no permission needed), for example to open a list full screen from the home page.
 - **A distribution can remove the tab bar** (`tabs: false`): one page at a time, the title bar shows the page title. It can also show its logo in its own colours (`logoPlein`).

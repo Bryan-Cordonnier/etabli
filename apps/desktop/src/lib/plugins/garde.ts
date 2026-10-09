@@ -2,10 +2,14 @@
 // est un code qu'on ne maîtrise pas (un jour, celui d'un tiers) : on ne lui fait confiance ni sur la forme, ni sur la
 // taille, ni sur ce qu'elle a le droit de demander.
 import {
+  AI_IMAGE_CARACTERES_MAX,
+  AI_IMAGES_MAX,
+  AI_INSTRUCTION_MAX,
   REMINDERS_MAX,
   SERVICE_PROVIDER_CODES,
   SERVICE_TIMEOUT_MAX_MS,
   SERVICE_TIMEOUT_MIN_MS,
+  type AiImage,
   type PluginToHost,
   type Reminder,
   type SavedFile,
@@ -122,6 +126,7 @@ const PERMISSION_REQUISE: Record<string, string | null> = {
   openSettings: "reglages",
   openPage: null,
   reminders: "notifications",
+  ai: "ia",
   // La permission `appelle:<service>:<accès>` dépend du service : contrôlée plus bas, puis par le routage.
   serviceCall: null,
   serviceReady: null,
@@ -212,6 +217,22 @@ export function controler(brut: unknown, ctx: Contexte): Verdict {
           items.push({ id: r.id, at: r.at, title: r.title, ...(r.text !== undefined ? { text: r.text as string } : {}) });
         }
         return bon({ type, id: brut.id, op: "set", items });
+      }
+      case "ai": {
+        if (!estTexte(brut.id, 64) || !ID_APPEL.test(brut.id)) return refus("identifiant de demande invalide");
+        if (!estTexte(brut.instruction, AI_INSTRUCTION_MAX) || brut.instruction.trim() === "") return refus("consigne vide ou trop longue");
+        let images: AiImage[] | undefined;
+        if (brut.images !== undefined) {
+          if (!Array.isArray(brut.images) || brut.images.length > AI_IMAGES_MAX) return refus(`au plus ${AI_IMAGES_MAX} photos`);
+          images = [];
+          for (const img of brut.images) {
+            if (!estObjet(img) || (img.mime !== "image/jpeg" && img.mime !== "image/png" && img.mime !== "image/webp")) return refus("type de photo non pris en charge");
+            if (typeof img.data !== "string" || img.data.length === 0 || img.data.length > AI_IMAGE_CARACTERES_MAX || !/^[A-Za-z0-9+/]+={0,2}$/.test(img.data)) return refus("photo illisible ou trop lourde");
+            images.push({ mime: img.mime, data: img.data });
+          }
+        }
+        if (brut.schema !== undefined && !donneesValides(brut.schema)) return refus("schéma trop volumineux ou illisible");
+        return bon({ type, id: brut.id, instruction: brut.instruction, ...(images ? { images } : {}), ...(brut.schema !== undefined ? { schema: brut.schema } : {}) });
       }
       case "serviceCall": {
         if (!estTexte(brut.id, 64) || !ID_APPEL.test(brut.id)) return refus("identifiant d'appel invalide");

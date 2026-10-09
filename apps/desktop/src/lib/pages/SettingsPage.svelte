@@ -15,6 +15,7 @@
   import { estNatif } from "$lib/mobile/alarmes";
   import ShortcutRecorder from "$lib/components/ShortcutRecorder.svelte";
   import Switch from "$lib/components/Switch.svelte";
+  import IaSection from "./IaSection.svelte";
   import Tile from "$lib/components/Tile.svelte";
   import { PLUGINS, getPageByKey, pluginUrl } from "$lib/plugins/registry.svelte";
   import { openPluginSettings, pluginSection } from "$lib/pluginSettings";
@@ -44,6 +45,11 @@
       label: "Apparence",
       title: "Apparence",
       lead: "Couleurs, taille du texte et animations. Les mini-apps des plugins suivent ces réglages.",
+    },
+    ia: {
+      label: "Intelligence artificielle",
+      title: "Intelligence artificielle",
+      lead: "Votre clé Gemini : lire un ticket en photo, proposer une liste de courses. Elle reste sur ce poste.",
     },
     raccourcis: {
       label: "Raccourcis clavier",
@@ -82,7 +88,7 @@
   const estAdmin = api.id === "serveur" && connexion?.mode === "serveur" && connexion.utilisateur.role === "admin";
 
   const GROUPS: { title: string; sections: FixedSection[] }[] = [
-    { title: "Application", sections: api.capacites.fenetresNatives ? ["general", "apparence", "raccourcis"] : ["general", "apparence"] },
+    { title: "Application", sections: [...(api.capacites.fenetresNatives ? (["general", "apparence", "raccourcis"] as const) : (["general", "apparence"] as const)), ...(distribution.ia ? (["ia"] as const) : [])] },
     { title: "Serveur", sections: estAdmin ? ["serveur", "administration"] : ["serveur"] },
     ...(estNatif() ? [{ title: "Téléphone", sections: ["alarmes" as const] }] : []),
     { title: "Plugins", sections: ["plugins"] },
@@ -449,6 +455,8 @@
           </div>
           <p class="hint">Pour changer l'ordre des pages, faites-les glisser dans la colonne de gauche.</p>
         </div>
+      {:else if active === "ia"}
+        <IaSection />
       {:else if active === "raccourcis"}
         <div class="box">
           <h3>Aperçu rapide : raccourci global</h3>
