@@ -157,11 +157,12 @@ export interface Etabli<T> {
   };
   /**
    * Intelligence artificielle (permission `ia`) : l'utilisateur a configuré son service dans les Paramètres du moteur, la clé reste chez lui.
-   * `extraire` envoie une consigne (et des photos) et rend le texte de la réponse ; avec `schema`, la réponse est du JSON de cette forme.
+   * `extraire` envoie une consigne (et des photos) et rend le texte de la réponse ; avec `schema`, la réponse est du JSON de cette forme ;
+   * avec `recherche: true`, l'IA peut chercher sur internet (recettes, prix) avant de répondre.
    * Ne jette jamais : `{ ok: true, texte }` ou `{ ok: false, code, message }` (service non configuré, clé refusée, limite atteinte…).
    */
   readonly ai: {
-    extraire(options: { instruction: string; images?: AiImage[]; schema?: unknown }): Promise<AiResult>;
+    extraire(options: { instruction: string; images?: AiImage[]; schema?: unknown; recherche?: boolean }): Promise<AiResult>;
   };
   /** Données reçues d'une autre mini-app à l'ouverture, ou `null`. */
   readonly incoming: Incoming | null;
@@ -224,7 +225,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
   const pendingAi = new Map<string, (result: AiResult) => void>();
   let aiCounter = 0;
   /** Envoie une demande à l'IA et attend la réponse (jamais d'exception ; au plus 90 s). */
-  const askAi = (options: { instruction: string; images?: AiImage[]; schema?: unknown }): Promise<AiResult> =>
+  const askAi = (options: { instruction: string; images?: AiImage[]; schema?: unknown; recherche?: boolean }): Promise<AiResult> =>
     new Promise((resolve) => {
       const id = `a${++aiCounter}`;
       const timer = setTimeout(() => {
@@ -235,7 +236,7 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         clearTimeout(timer);
         resolve(result);
       });
-      send({ type: "ai", id, instruction: options.instruction, ...(options.images ? { images: options.images } : {}), ...(options.schema !== undefined ? { schema: options.schema } : {}) } as PluginToHost);
+      send({ type: "ai", id, instruction: options.instruction, ...(options.images ? { images: options.images } : {}), ...(options.schema !== undefined ? { schema: options.schema } : {}), ...(options.recherche ? { recherche: true } : {}) } as PluginToHost);
     });
 
   const api: Etabli<unknown> = {

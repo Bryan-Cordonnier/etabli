@@ -142,7 +142,7 @@
         case "ai": {
           // Permission « ia » déjà contrôlée par la garde ; seul l'hôte connaît la clé et parle au service.
           const id = message.id;
-          const demande = { instruction: message.instruction, images: message.images, schema: message.schema };
+          const demande = { instruction: message.instruction, images: message.images, schema: message.schema, recherche: message.recherche };
           const reponse = distribution.ia
             ? demander(demande)
             : Promise.resolve<AiResult>({ ok: false, code: "non_configure", message: "L'IA n'est pas disponible dans cette application." });

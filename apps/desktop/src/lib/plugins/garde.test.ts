@@ -130,6 +130,7 @@ describe("autres messages", () => {
     const ia = strict(["ia"]);
     expect(controler({ type: "ai", id: "a1", instruction: "Lis ce ticket", images: [{ mime: "image/jpeg", data: "QUJD" }], schema: { type: "object" } }, ia).ok).toBe(true);
     expect(controler({ type: "ai", id: "a1", instruction: "x" }, strict([])).ok).toBe(false);
+    expect(controler({ type: "ai", id: "a1", instruction: "x", recherche: true }, ia).ok).toBe(true);
     for (const brut of [
       { type: "ai", id: "a1", instruction: "" },
       { type: "ai", id: "a1", instruction: "x".repeat(8001) },
@@ -139,6 +140,7 @@ describe("autres messages", () => {
       { type: "ai", id: "a1", instruction: "x", images: [{ mime: "image/png", data: "pas du base64 !" }] },
       { type: "ai", id: "a1", instruction: "x", images: [{ mime: "image/png", data: "A".repeat(5_500_001) }] },
       { type: "ai", id: "a1", instruction: "x", images: "oui" },
+      { type: "ai", id: "a1", instruction: "x", recherche: "oui" },
     ]) expect(controler(brut, ia).ok, JSON.stringify(brut).slice(0, 60)).toBe(false);
     // openPage : sa propre page, aucune permission, mais un identifiant de page propre.
     expect(controler({ type: "openPage", page: "liste" }, strict([])).ok).toBe(true);

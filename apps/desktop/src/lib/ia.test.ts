@@ -27,6 +27,13 @@ describe("construireRequete", () => {
     expect(r.generationConfig.response_mime_type).toBeUndefined();
   });
 
+  it("avec la recherche sur internet : l'outil de recherche, et le JSON demandé dans la consigne seulement", () => {
+    const r = construireRequete({ instruction: "Propose des menus.", schema: { type: "object" }, recherche: true }) as any;
+    expect(r.tools).toEqual([{ google_search: {} }]);
+    expect(r.generationConfig.response_mime_type).toBeUndefined();
+    expect(r.contents[0].parts[0].text).toContain("UNIQUEMENT");
+    expect((construireRequete({ instruction: "x", schema: { type: "object" } }) as any).tools).toBeUndefined();
+  });
   it("demande du JSON conforme au schéma quand il y en a un", () => {
     const r = construireRequete({ instruction: "Lis ce ticket.", schema: { type: "object", properties: { total: { type: "number" } } } }) as any;
     expect(r.generationConfig.response_mime_type).toBe("application/json");

@@ -168,7 +168,7 @@ export type PluginToHost =
   | { type: "reminders"; id: string; op: "set"; items: Reminder[] }
   | { type: "reminders"; id: string; op: "state" }
   /** Demande à l'IA configurée par l'utilisateur (permission `ia`) : une consigne, éventuellement des photos, et la forme attendue de la réponse. */
-  | { type: "ai"; id: string; instruction: string; images?: AiImage[]; schema?: unknown };
+  | { type: "ai"; id: string; instruction: string; images?: AiImage[]; schema?: unknown; recherche?: boolean };
 
 /** Une photo envoyée à l'IA : le type de l'image et son contenu en base64 (sans « data: »). */
 export interface AiImage {
