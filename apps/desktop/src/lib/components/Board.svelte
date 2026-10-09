@@ -16,6 +16,14 @@
   import MiniAppFrame from "./MiniAppFrame.svelte";
   import Tile from "./Tile.svelte";
 
+  interface Props {
+    /** Lecture seule (aperçu rapide) : ni « Modifier », ni titre. */
+    lecture?: boolean;
+    /** Ouvre une page (aperçu rapide : dans la fenêtre principale) ; sinon on navigue dans cette fenêtre. */
+    onouvrir?: (pluginId: string, pageId: string) => void;
+  }
+  let { lecture = false, onouvrir }: Props = $props();
+
   /** Hauteur d'une case (px) ; un widget de n cases de haut fait n cases plus les espaces entre elles. */
   const CASE = 128;
   const ESPACE = 12;
@@ -42,6 +50,7 @@
   }
 
   function ouvrir(ref: PageRef, event: MouseEvent): void {
+    if (onouvrir) return onouvrir(ref.plugin.id, ref.page.id);
     tabs.navigate({ kind: "page", pluginId: ref.plugin.id, pageId: ref.page.id }, { newTab: event.ctrlKey || event.button === 1 });
   }
 
@@ -50,7 +59,10 @@
     return (message: PluginToHost): void => {
       if (message.type === "notify") ui.notify(message.text);
       else if (message.type === "openSettings") openPluginSettings(message.plugin, message.hash);
-      else if (message.type === "openPage" && getPage(pluginId, message.page)) tabs.navigate({ kind: "page", pluginId, pageId: message.page });
+      else if (message.type === "openPage" && getPage(pluginId, message.page)) {
+        if (onouvrir) onouvrir(pluginId, message.page);
+        else tabs.navigate({ kind: "page", pluginId, pageId: message.page });
+      }
     };
   }
 
@@ -197,6 +209,7 @@
 <svelte:window onkeydown={clavier} />
 
 <section class="board" bind:clientWidth={largeur} aria-label="Tableau de l'accueil">
+  {#if !lecture}
   <div class="barre">
     <h2>Mon tableau</h2>
     <div class="outils">
@@ -208,6 +221,7 @@
       </button>
     </div>
   </div>
+  {/if}
 
   {#if edition && galerie}
     <div class="galerie" role="group" aria-label="Widgets disponibles">
@@ -224,7 +238,7 @@
   {#if edition}<p class="aide">Cliquez sur un widget pour le sélectionner, attrapez-le pour le déplacer, tirez ses bords pour changer sa taille. Ajoutez-en autant que vous voulez : l'accueil s'allonge.</p>{/if}
 
   {#if entrees.length === 0 && !edition}
-    <p class="vide">Le tableau est vide. Cliquez sur « Modifier » pour ajouter des widgets.</p>
+    <p class="vide">{lecture ? "Le tableau est vide. Ajoutez des widgets depuis l'accueil de l'application." : "Le tableau est vide. Cliquez sur « Modifier » pour ajouter des widgets."}</p>
   {/if}
 
   <div bind:this={grille} class="grille" style:grid-template-columns={`repeat(${colonnes}, minmax(0, 1fr))`} style:gap="{ESPACE}px">

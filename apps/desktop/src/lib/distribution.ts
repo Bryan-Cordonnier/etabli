@@ -17,13 +17,15 @@ export interface Distribution {
   logoViewBox: string;
   /** Couleur de la pastille de la page Accueil (`null` : la pastille neutre d'Établi). */
   accueilCouleur: string | null;
+  /** Ce que montre l'aperçu rapide : « favoris » (les pages favorites, comme une mini-app) ou « widgets » (le tableau de l'accueil, en lecture). */
+  apercu: "favoris" | "widgets";
   /** Barre d'onglets : faux, l'application n'a qu'une page à la fois et la barre ne montre que le titre de la page. */
   tabs: boolean;
   /** Icônes propres à la distribution, par nom (« calendrier ») : un plugin de la distribution peut les donner à ses pages. Même forme que le logo, mais remplies (`currentColor`). */
   icons: Record<string, string>;
 }
 
-export const DISTRIBUTION_DEFAUT: Distribution = { name: "Établi", pluginsPage: true, themes: null, logo: null, logoPlein: false, logoViewBox: "0 0 24 24", accueilCouleur: null, tabs: true, icons: {} };
+export const DISTRIBUTION_DEFAUT: Distribution = { name: "Établi", pluginsPage: true, themes: null, logo: null, logoPlein: false, logoViewBox: "0 0 24 24", accueilCouleur: null, apercu: "favoris", tabs: true, icons: {} };
 
 const objet = (v: unknown): Record<string, unknown> | null => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
 const COULEUR = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\))$/i;
@@ -69,6 +71,7 @@ export function lireDistribution(brut: unknown): Distribution {
     logoPlein: o.logoPlein === true,
     logoViewBox: typeof o.logoViewBox === "string" && /^0 0 \d{1,4} \d{1,4}$/.test(o.logoViewBox) ? o.logoViewBox : DISTRIBUTION_DEFAUT.logoViewBox,
     accueilCouleur: typeof o.accueilCouleur === "string" && COULEUR.test(o.accueilCouleur.trim()) ? o.accueilCouleur.trim() : null,
+    apercu: o.apercu === "widgets" ? "widgets" : "favoris",
     tabs: o.tabs !== false,
     icons: lireIcones(o.icons),
   };

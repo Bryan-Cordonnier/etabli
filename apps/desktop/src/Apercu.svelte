@@ -5,7 +5,9 @@
   import { onMount, tick } from "svelte";
   import { api, system } from "$lib/api";
   import { applyAppearance } from "$lib/appearance";
+  import Board from "$lib/components/Board.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import { distribution } from "$lib/distribution";
   import MiniAppFrame from "$lib/components/MiniAppFrame.svelte";
   import Tile from "$lib/components/Tile.svelte";
   import ServiceHost from "$lib/components/ServiceHost.svelte";
@@ -92,6 +94,13 @@
     focusSelected();
   }
 
+  /** Aperçu à widgets : un clic sur un widget ouvre sa page dans la fenêtre principale. */
+  async function ouvrirDansEtabli(pluginId: string, pageId: string): Promise<void> {
+    await system.openInMain({ kind: "page", pluginId, pageId });
+    shown = false;
+    await system.showMain();
+  }
+
   /** Ouvre l'application complète, avec la page en cours dans un nouvel onglet s'il y en a une. */
   async function openInEtabli(): Promise<void> {
     if (current) await system.openInMain({ kind: "page", pluginId: current.plugin.id, pageId: current.page.id });
@@ -122,7 +131,7 @@
       onEscape();
       return;
     }
-    if (current || !favorites.length) return;
+    if (current || !favorites.length || distribution.apercu === "widgets") return;
 
     const count = favorites.length;
     const moves: Record<string, number> = {
@@ -203,6 +212,8 @@
             forward={false}
             {onmessage}
           />
+        {:else if distribution.apercu === "widgets"}
+          <div class="tableau"><Board lecture onouvrir={(plugin, page) => void ouvrirDansEtabli(plugin, page)} /></div>
         {:else if favorites.length}
           <div class="grid" bind:this={grid}>
             {#each favorites as ref, i (pageKey(ref.plugin.id, ref.page.id))}
@@ -232,6 +243,9 @@
           <span><kbd>Tab</kbd> champ suivant</span>
           <span><kbd>Clic</kbd> sur un résultat : copier</span>
           <span><kbd>Échap</kbd> retour aux favoris</span>
+        {:else if distribution.apercu === "widgets"}
+          <span><kbd>Clic</kbd> sur un widget : ouvrir sa page</span>
+          <span><kbd>Échap</kbd> fermer</span>
         {:else}
           <span><kbd>← ↑ → ↓</kbd> choisir</span>
           <span><kbd>Entrée</kbd> ouvrir</span>
@@ -319,6 +333,9 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px;
+  }
+  .tableau {
+    padding: 2px;
   }
   .grid {
     display: grid;
