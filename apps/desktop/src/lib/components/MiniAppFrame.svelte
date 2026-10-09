@@ -4,6 +4,7 @@
   import {
     CONNECT,
     PROTOCOL_VERSION,
+    type AiResult,
     type DocumentSnapshot,
     type HostToPlugin,
     type Incoming,
@@ -11,6 +12,8 @@
     type PluginToHost,
   } from "@etabli/sdk/protocol";
   import { api } from "$lib/api";
+  import { distribution } from "$lib/distribution";
+  import { demander } from "$lib/ia";
   import { traiterRappels } from "$lib/mobile/rappelsHote";
   import { frameShortcuts } from "$lib/shortcuts";
   import { sandboxDe, lireTheme } from "$lib/plugins/cadre";
@@ -134,6 +137,16 @@
           void routeur
             .appeler(pluginId, { service: message.service, fn: message.fn, args: message.args, timeoutMs: message.timeoutMs })
             .then((result) => send({ type: "serviceReply", id, result }));
+          break;
+        }
+        case "ai": {
+          // Permission « ia » déjà contrôlée par la garde ; seul l'hôte connaît la clé et parle au service.
+          const id = message.id;
+          const demande = { instruction: message.instruction, images: message.images, schema: message.schema };
+          const reponse = distribution.ia
+            ? demander(demande)
+            : Promise.resolve<AiResult>({ ok: false, code: "non_configure", message: "L'IA n'est pas disponible dans cette application." });
+          void reponse.then((result) => send({ type: "aiResult", id, result }));
           break;
         }
         case "reminders": {

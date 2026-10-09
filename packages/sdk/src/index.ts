@@ -17,6 +17,8 @@ import {
   type Incoming,
   type Parameters,
   type PluginToHost,
+  type AiImage,
+  type AiResult,
   type Reminder,
   type RemindersResult,
   type SavedFile,
@@ -51,6 +53,9 @@ export type {
   Parameters,
   Reminder,
   RemindersErrorCode,
+  AiErrorCode,
+  AiImage,
+  AiResult,
   RemindersResult,
   RemindersState,
   SavedFile,
@@ -150,6 +155,14 @@ export interface Etabli<T> {
     clear(): Promise<RemindersResult>;
     state(): Promise<RemindersResult>;
   };
+  /**
+   * Intelligence artificielle (permission `ia`) : l'utilisateur a configuré son service dans les Paramètres du moteur, la clé reste chez lui.
+   * `extraire` envoie une consigne (et des photos) et rend le texte de la réponse ; avec `schema`, la réponse est du JSON de cette forme.
+   * Ne jette jamais : `{ ok: true, texte }` ou `{ ok: false, code, message }` (service non configuré, clé refusée, limite atteinte…).
+   */
+  readonly ai: {
+    extraire(options: { instruction: string; images?: AiImage[]; schema?: unknown }): Promise<AiResult>;
+  };
   /** Données reçues d'une autre mini-app à l'ouverture, ou `null`. */
   readonly incoming: Incoming | null;
   /** Appelé quand l'utilisateur change de thème. Renvoie une fonction pour se désabonner. */
@@ -206,6 +219,23 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
         resolve(result);
       });
       send({ type: "reminders", id, ...request } as PluginToHost);
+    });
+
+  const pendingAi = new Map<string, (result: AiResult) => void>();
+  let aiCounter = 0;
+  /** Envoie une demande à l'IA et attend la réponse (jamais d'exception ; au plus 90 s). */
+  const askAi = (options: { instruction: string; images?: AiImage[]; schema?: unknown }): Promise<AiResult> =>
+    new Promise((resolve) => {
+      const id = `a${++aiCounter}`;
+      const timer = setTimeout(() => {
+        pendingAi.delete(id);
+        resolve({ ok: false, code: "erreur", message: "L'IA n'a pas répondu à temps." });
+      }, 90_000);
+      pendingAi.set(id, (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      });
+      send({ type: "ai", id, instruction: options.instruction, ...(options.images ? { images: options.images } : {}), ...(options.schema !== undefined ? { schema: options.schema } : {}) } as PluginToHost);
     });
 
   const api: Etabli<unknown> = {
@@ -345,6 +375,9 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       clear: () => askReminders({ op: "set", items: [] }),
       state: () => askReminders({ op: "state" }),
     },
+    ai: {
+      extraire: (options) => askAi({ ...options, schema: options.schema === undefined ? undefined : JSON.parse(JSON.stringify(options.schema)) }),
+    },
     get incoming() {
       return incoming;
     },
@@ -397,6 +430,12 @@ function start(port: MessagePort, resolve: (api: Etabli<unknown>) => void): void
       case "serviceInvoke":
         void answerInvoke(message);
         break;
+      case "aiResult": {
+        const done = pendingAi.get(message.id);
+        pendingAi.delete(message.id);
+        done?.(message.result);
+        break;
+      }
       case "remindersResult": {
         const done = pendingReminders.get(message.id);
         pendingReminders.delete(message.id);

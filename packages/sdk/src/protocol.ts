@@ -135,7 +135,9 @@ export type HostToPlugin =
   /** Appel d'une fonction de service reçu par la page `serviceEntry` du fournisseur ; `caller` est écrit par le moteur. */
   | { type: "serviceInvoke"; id: string; service: string; fn: string; args: unknown; caller: string }
   /** Réponse du moteur à un message `reminders` de cette mini-app (ou de sa page `serviceEntry`). */
-  | { type: "remindersResult"; id: string; result: RemindersResult };
+  | { type: "remindersResult"; id: string; result: RemindersResult }
+  /** Réponse du moteur à un message `ai` de cette mini-app. */
+  | { type: "aiResult"; id: string; result: AiResult };
 
 export type PluginToHost =
   | { type: "update"; data: unknown }
@@ -164,7 +166,25 @@ export type PluginToHost =
   | { type: "serviceResult"; id: string; result: ServiceResult }
   /** Rappels sur le téléphone (permission `notifications`) : `set` remplace TOUS les rappels de ce plugin, `state` lit l'état. */
   | { type: "reminders"; id: string; op: "set"; items: Reminder[] }
-  | { type: "reminders"; id: string; op: "state" };
+  | { type: "reminders"; id: string; op: "state" }
+  /** Demande à l'IA configurée par l'utilisateur (permission `ia`) : une consigne, éventuellement des photos, et la forme attendue de la réponse. */
+  | { type: "ai"; id: string; instruction: string; images?: AiImage[]; schema?: unknown };
+
+/** Une photo envoyée à l'IA : le type de l'image et son contenu en base64 (sans « data: »). */
+export interface AiImage {
+  mime: "image/jpeg" | "image/png" | "image/webp";
+  data: string;
+}
+
+export const AI_IMAGES_MAX = 4;
+/** Taille maximale d'une photo en base64 (caractères) : environ 4 Mo d'image. */
+export const AI_IMAGE_CARACTERES_MAX = 5_500_000;
+export const AI_INSTRUCTION_MAX = 8000;
+
+export type AiErrorCode = "non_configure" | "refuse" | "limite" | "reseau" | "bloque" | "erreur";
+
+/** Réponse de l'IA : le texte (du JSON quand un schéma est donné), ou la raison de l'échec en français. */
+export type AiResult = { ok: true; texte: string } | { ok: false; code: AiErrorCode; message: string };
 
 /** Un rappel : une notification du téléphone à un instant précis (docs/24, A.1.5). Pas d'alarme : une notification seulement. */
 export interface Reminder {

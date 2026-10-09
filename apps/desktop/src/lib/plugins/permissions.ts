@@ -14,6 +14,7 @@ export const PERMISSIONS: PermissionInfo[] = [
   { id: "envoi", label: "Envoyer des données à une autre mini-app" },
   { id: "reglages", label: "Ouvrir les réglages d'un autre plugin" },
   { id: "notifications", label: "Programmer des rappels (notifications) sur le téléphone" },
+  { id: "ia", label: "Envoyer des textes ou des photos au service d'intelligence artificielle que vous avez configuré (Paramètres)" },
 ];
 
 export const PERMISSION_IDS: ReadonlySet<string> = new Set(PERMISSIONS.map((p) => p.id));
