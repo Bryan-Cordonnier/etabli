@@ -116,16 +116,7 @@
   const ROLES = { admin: "administrateur", utilisateur: "utilisateur" } as const;
 </script>
 
-{#if api.id === "tauri"}
-  <div class="box">
-    <h3>Serveur</h3>
-    <p>
-
-      le navigateur) ; sur téléphone aussi. Cette version Windows garde tout sur l'ordinateur, comme avant.
-    </p>
-    <p class="hint">Le serveur est facultatif : sans lui, rien ne change.</p>
-  </div>
-{:else if api.id === "web"}
+{#if api.id === "web" || (api.id === "tauri" && !clientServeur)}
   <div class="box">
 
 
@@ -144,7 +135,7 @@
       {/if}
       {#if erreur}<p class="erreur" role="alert">{erreur}</p>{/if}
     </form>
-    <p class="hint">Vos données actuelles restent sur cet appareil ; vous pourrez les importer dans votre compte après la connexion.</p>
+    {#if api.id === "web"}<p class="hint">Vos données actuelles restent sur cet appareil ; vous pourrez les importer dans votre compte après la connexion.</p>{/if}
   </div>
 {:else if utilisateur}
   <div class="box">
