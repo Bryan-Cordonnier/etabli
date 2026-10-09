@@ -12,7 +12,8 @@ export const enregistrerConfigIa = (c: ConfigIa): void => save("ia", lireConfigI
 export const iaConfiguree = (): boolean => configIa().cle !== "";
 
 /** Appelle Gemini avec la configuration enregistrée. Ne jette jamais. */
-export async function demander(options: { instruction: string; images?: readonly AiImage[]; schema?: unknown }, config: ConfigIa = configIa()): Promise<AiResult> {
+export async function demander(options: { instruction: string; images?: readonly AiImage[]; schema?: unknown }, brute: ConfigIa = configIa()): Promise<AiResult> {
+  const config = lireConfigIa(brute);
   if (config.cle === "") return { ok: false, code: "non_configure", message: "L'IA n'est pas configurée : ajoutez votre clé dans Paramètres → Intelligence artificielle." };
   try {
     const reponse = await fetch(`${BASE}/${encodeURIComponent(config.modele)}:generateContent`, {

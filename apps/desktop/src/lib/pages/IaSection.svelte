@@ -20,7 +20,7 @@
     enregistree = apres.cle !== "";
     cle = "";
     reussi = enregistree;
-    message = enregistree ? "Enregistré sur ce poste." : "Cette clé n'a pas la forme d'une clé Gemini (lettres, chiffres, tirets, au moins 10 caractères).";
+    message = enregistree ? "Enregistré sur ce poste." : "Cette clé est trop courte ou contient des espaces : collez-la telle quelle, sans rien autour.";
   }
 
   async function essayer(): Promise<void> {
