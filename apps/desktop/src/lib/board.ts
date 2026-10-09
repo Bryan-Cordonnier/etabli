@@ -46,6 +46,21 @@ export function deplacer(b: readonly BoardEntry[], key: string, delta: -1 | 1): 
   return liste;
 }
 
+/** Parmi les tailles que le widget accepte, la plus proche de « l cases de large, h de haut » (à égalité, la plus petite). */
+export function plusProcheTaille(tailles: readonly WidgetSize[], l: number, h: number): WidgetSize {
+  let meilleure = tailles[0]!;
+  let score = Infinity;
+  for (const t of tailles) {
+    const d = dimensions(t);
+    const s = Math.abs(d.l - l) + Math.abs(d.h - h) + (d.l * d.h) / 1000;
+    if (s < score) {
+      score = s;
+      meilleure = t;
+    }
+  }
+  return meilleure;
+}
+
 /** « 2x1 » → { l: 2, h: 1 } (nombre de cases). */
 export function dimensions(size: WidgetSize): { l: number; h: number } {
   return { l: Number(size[0]), h: Number(size[2]) };

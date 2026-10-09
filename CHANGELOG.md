@@ -13,10 +13,14 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Changed
 
+- **The home board edits like a phone home screen.** In *Edit* mode, click a widget to select it, drag it to move it (the others close up), drag its edges or its corner to resize it (it snaps to the nearest size it supports), remove it with its cross.
 - **Quick preview settings moved into *Keyboard shortcuts*.** The quick preview shortcut and its favourites are no longer a separate tab in Settings.
 
 ### Added
 
+- **A widget can open one of its plugin's pages** (`etabli.openPage(page)`, no permission needed), for example to open a list full screen from the home page.
+- **A distribution can remove the tab bar** (`tabs: false`): one page at a time, the title bar shows the page title. It can also show its logo in its own colours (`logoPlein`).
+- **More icons in the kit**: minus, check, arrows, expand and pencil, drawn with the same stroke as plus and cross.
 - **A distribution can bring its own page icons.** distribution.json can define filled icons by name; the plugins of that distribution can use them for their pages and widgets.
 - **A distribution can set its own interface.** A distribution.json can change the name in the sidebar, remove the *Plugins* entry (plugins stay manageable in Settings), impose fixed themes (no importing; *Like Windows* picks the light or the dark one) and draw its own logo. See docs/27.
 - **Categories in the sidebar.** A new appearance setting, *Sort pages into categories*, groups the left column by category (for example *Argent*, *Temps*). A page can propose its category in the manifest (`category` on a page); the user drags a page into another category, folds a category, and moves a whole category with its arrows; the user's choices win. Off by default: the column stays a flat list. `valider-plugin` checks `category`.

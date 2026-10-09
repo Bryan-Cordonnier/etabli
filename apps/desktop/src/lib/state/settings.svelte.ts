@@ -236,9 +236,10 @@ class Settings {
     this.#save();
   }
 
-  setBoard(entries: BoardEntry[]): void {
+  /** Remplace le tableau ; `enregistrer: false` pendant un glissement (on enregistre à la fin). */
+  setBoard(entries: BoardEntry[], enregistrer = true): void {
     this.board = entries;
-    this.#save();
+    if (enregistrer) this.#save();
   }
 
   /** Ajoute ou remplace un thème importé, puis l'applique. */

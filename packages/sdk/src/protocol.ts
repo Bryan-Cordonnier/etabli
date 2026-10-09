@@ -152,6 +152,8 @@ export type PluginToHost =
   | { type: "provide"; name: string; data: unknown }
   /** Ouvre la page de réglages d'un autre plugin (`hash` : intention transmise à sa page, « add=scie »). */
   | { type: "openSettings"; plugin: string; hash?: string }
+  /** Ouvre une page de ce plugin (par son identifiant dans `pages`) : un widget de l'accueil s'ouvre ainsi en grand. Aucune permission : c'est sa propre page. */
+  | { type: "openPage"; page: string }
   | { type: "send"; kind: string; data: unknown }
   | { type: "saveFile"; file: SavedFile }
   /** Appelle la fonction `fn` du service `service` d'un autre plugin (permission `appelle:<service>:<accès>`). */

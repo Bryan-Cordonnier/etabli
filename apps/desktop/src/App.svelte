@@ -5,6 +5,8 @@
   import SynchroBanner from "$lib/components/SynchroBanner.svelte";
   import Sidebar from "$lib/components/Sidebar.svelte";
   import TabBar from "$lib/components/TabBar.svelte";
+  import TitleBar from "$lib/components/TitleBar.svelte";
+  import { distribution } from "$lib/distribution";
   import ServiceHost from "$lib/components/ServiceHost.svelte";
   import Toast from "$lib/components/Toast.svelte";
   import UpdateBanner from "$lib/components/UpdateBanner.svelte";
@@ -98,7 +100,7 @@
     <div class="voile" onclick={() => (ui.menuOpen = false)}></div>
   {/if}
   <section class="main">
-    {#if ui.compact}<MobileBar />{:else}<TabBar />{/if}
+    {#if ui.compact}<MobileBar />{:else if distribution.tabs}<TabBar />{:else}<TitleBar />{/if}
     <UpdateBanner />
     <SynchroBanner />
     <main class="content">
