@@ -2,6 +2,7 @@
   // Fenêtre centrée sur un simple voile en fondu (comme l'aperçu rapide) : ni plein écran, ni flou, ni zoom. Échap ou un clic à côté la ferme.
   // Une page de plugin remplit toute la zone visible : la fenêtre se centre dans ce que l'utilisateur voit.
   import type { Snippet } from "svelte";
+  import Icon from "./Icon.svelte";
 
   interface Props {
     open: boolean;
@@ -34,7 +35,7 @@
     <div class="fenetre" role="dialog" aria-modal="true" aria-label={titre} style:max-width="{largeur}px">
       <header>
         <h2>{titre}</h2>
-        <button class="btn sm" onclick={onclose}>Fermer</button>
+        <button class="fermer" onclick={onclose} aria-label="Fermer" title="Fermer"><Icon name="x" size={20} /></button>
       </header>
       <div class="corps">{@render children()}</div>
       {#if pied}<footer>{@render pied()}</footer>{/if}
@@ -70,6 +71,26 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+  }
+  .fermer {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    background: var(--field);
+    color: var(--text);
+  }
+  .fermer:hover {
+    background: var(--border);
+  }
+  @media (max-width: 640px) {
+    .fermer {
+      width: 44px;
+      height: 44px;
+    }
   }
   h2 {
     margin: 0;

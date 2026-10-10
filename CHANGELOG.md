@@ -23,6 +23,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Changed
 
+- **Phone: settings are a list, then a full-screen section**; the home is a list of cards; every button is at least 44 px tall; dialogs close with a round cross; icons fill their tile better.
 - **The page title is centred** (page header of the UI kit, and the title bar on PC); the title-bar search button is gone (the shortcut still works).
 - **Plugin packages now always end in `.etapl`** (was `.etabli-plugin`): file dialogs, the administration page, the packaging script, the signed fixtures and the docs. Packages built with the old extension must be rebuilt.
 - **The application name comes from the distribution everywhere**: sign-in, settings, update banner, home, quick preview, browser tab title, installable web app name (manifest) and its icons.
