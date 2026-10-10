@@ -16,7 +16,7 @@
 </script>
 
 <span class="tile {variant}" style:--c={color} style:--size="{size}px" aria-hidden="true">
-  <Icon name={icon} size={Math.round(size * 0.5)} />
+  <Icon name={icon} size={Math.round(size * 0.62)} />
 </span>
 
 <style>

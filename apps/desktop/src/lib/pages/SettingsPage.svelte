@@ -30,7 +30,10 @@
   import { SYSTEM_THEME, THEMES, currentColors, parseTheme, themeToJson, type Theme } from "$lib/themes";
   import type { SettingsSection } from "$lib/types";
 
-  let { section = "general", hash }: { section?: SettingsSection; hash?: string } = $props();
+  let { section: sectionDemandee, hash }: { section?: SettingsSection; hash?: string } = $props();
+  const section = $derived(sectionDemandee ?? "general");
+  /** Téléphone : sans section choisie, les réglages sont la liste des sections ; en choisir une l'ouvre en plein écran. */
+  const listeMobile = $derived(ui.compact && sectionDemandee === undefined);
 
   type FixedSection = Exclude<SettingsSection, `plugin:${string}`>;
   /** Identifiant de la page « paramètres » que le moteur fait pour chaque plugin qui en déclare. */
@@ -278,23 +281,23 @@
 {/snippet}
 
 <div class="page">
-  <h1>Paramètres</h1>
+  {#if !ui.compact}<h1>Paramètres</h1>{/if}
   <div class="layout">
-    <nav class="sections" aria-label="Sections">
+    <nav class="sections" class:cache={ui.compact && !listeMobile} aria-label="Sections">
       {#each GROUPS as group (group.title)}
         <p class="group">{group.title}</p>
         {#each group.sections as id (id)}
-          <button class:on={active === id} onclick={() => goto(id)}>{SECTION_INFO[id].label}</button>
+          <button class:on={active === id && !listeMobile} onclick={() => goto(id)}>{SECTION_INFO[id].label}</button>
         {/each}
         {#if group.title === "Plugins"}
           {#each PAGES as entry (entry.section)}
-            <button class:on={active === entry.section} onclick={() => goto(entry.section)}>{entry.title}</button>
+            <button class:on={active === entry.section && !listeMobile} onclick={() => goto(entry.section)}>{entry.title}</button>
           {/each}
         {/if}
       {/each}
     </nav>
 
-    <div class="body" class:wide={!!pluginPage}>
+    <div class="body" class:wide={!!pluginPage} class:cache={listeMobile}>
       <header class="section-head">
         <h2>{head.title}</h2>
         <p>{head.lead}</p>
@@ -649,6 +652,34 @@
   }
   .sections .group:first-child {
     margin-top: 0;
+  }
+  .cache {
+    display: none !important;
+  }
+  /* Téléphone : la liste des sections est une vraie liste, les boutons sont grands et la page occupe la largeur. */
+  @media (max-width: 760px) {
+    .layout {
+      display: block;
+    }
+    .sections {
+      gap: 8px;
+    }
+    .sections button {
+      min-height: 52px;
+      padding: 0 16px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .sections .group {
+      margin: 18px 0 2px;
+      padding: 0 4px;
+    }
+    .section-head h2 {
+      font-size: 18px;
+    }
   }
   .section-head h2 {
     margin: 0 0 4px;

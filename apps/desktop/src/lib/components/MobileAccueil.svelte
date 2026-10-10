@@ -29,38 +29,43 @@
     ),
   );
 
+  const dateDuJour = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   const ouvrir = (ref: PageRef): void => tabs.navigate({ kind: "page", pluginId: ref.plugin.id, pageId: ref.page.id });
 </script>
 
 <div class="accueil">
   <header>
-    <Logo size={30} />
+    <Logo size={64} />
     <h1>{distribution.name}</h1>
+    <p>{dateDuJour}</p>
   </header>
 
   <nav aria-label="Pages">
     {#if !pages.length}<p class="vide">Aucune page : installez un plugin.</p>{/if}
-    {#snippet ligne(ref: PageRef)}
-      <button class="ligne" onclick={() => ouvrir(ref)}>
-        <Tile color={ref.plugin.color} icon={ref.page.icon} size={44} />
-        <span class="nom">{ref.page.title}</span>
+    {#snippet carte(ref: PageRef)}
+      <button class="carte" onclick={() => ouvrir(ref)}>
+        <Tile color={ref.plugin.color} icon={ref.page.icon} size={48} />
+        <span class="texte">
+          <span class="nom">{ref.page.title}</span>
+          <span class="sous">{ref.plugin.name}</span>
+        </span>
         <Icon name="next" size={18} />
       </button>
     {/snippet}
     {#if settings.sidebarCategories}
       {#each groupes as g (g.name)}
         <div class="categorie">{g.name}</div>
-        {#each g.items as { ref, key } (key)}{@render ligne(ref)}{/each}
+        {#each g.items as { ref, key } (key)}{@render carte(ref)}{/each}
       {/each}
     {:else}
-      {#each pages as { ref, key } (key)}{@render ligne(ref)}{/each}
+      {#each pages as { ref, key } (key)}{@render carte(ref)}{/each}
     {/if}
   </nav>
 
   <footer>
-    <button class="ligne reglages" onclick={() => tabs.navigate({ kind: "settings" })}>
-      <Icon name="settings" size={22} />
-      <span class="nom">Paramètres</span>
+    <button class="carte" onclick={() => tabs.navigate({ kind: "settings" })}>
+      <Tile color="var(--muted)" icon="settings" variant="plain" size={48} />
+      <span class="texte"><span class="nom">Paramètres</span><span class="sous">Apparence, serveur, plugins…</span></span>
       <Icon name="next" size={18} />
     </button>
   </footer>
@@ -76,46 +81,75 @@
   header {
     flex: none;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface-2);
+    gap: 4px;
+    padding: calc(22px + env(safe-area-inset-top, 0px)) 16px 18px;
+    text-align: center;
+  }
+  header :global(svg),
+  header :global(img) {
+    display: block;
+    margin: 0 auto;
   }
   h1 {
+    margin: 8px 0 0;
+    font-size: 26px;
+    letter-spacing: -0.03em;
+  }
+  header p {
     margin: 0;
-    font-size: 20px;
-    letter-spacing: -0.02em;
+    font-size: 13.5px;
+    color: var(--muted);
+    text-transform: capitalize;
   }
   nav {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 16px 16px;
   }
-  .ligne {
+  .carte {
     width: 100%;
+    flex: none;
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 12px 18px;
-    border: 0;
-    border-bottom: 1px solid var(--border);
-    background: none;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface-2);
     color: var(--text);
     text-align: left;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
   }
-  .ligne:active {
+  .carte:active {
     background: var(--field);
+    transform: scale(0.99);
   }
-  .nom {
+  .carte > :global(svg) {
+    color: var(--faint);
+  }
+  .texte {
     flex: 1;
     min-width: 0;
-    font-size: 16px;
-    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .nom {
+    font-size: 16.5px;
+    font-weight: 700;
+  }
+  .sous {
+    font-size: 12.5px;
+    color: var(--muted);
   }
   .categorie {
-    padding: 14px 18px 6px;
+    padding: 8px 6px 0;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -129,12 +163,6 @@
   }
   footer {
     flex: none;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    border-top: 1px solid var(--border);
-    background: var(--surface-2);
-  }
-  .reglages {
-    border-bottom: 0;
-    color: var(--muted);
+    padding: 8px 16px calc(14px + env(safe-area-inset-bottom, 0px));
   }
 </style>

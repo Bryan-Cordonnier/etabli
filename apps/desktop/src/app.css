@@ -178,6 +178,18 @@ button {
   cursor: default;
 }
 
+/* Téléphone : cibles tactiles d'au moins 44 px, marges réduites. */
+@media (max-width: 760px) {
+  .btn {
+    min-height: 44px;
+    padding: 0 16px;
+  }
+  .page {
+    padding: 16px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+    gap: 18px;
+  }
+}
+
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
