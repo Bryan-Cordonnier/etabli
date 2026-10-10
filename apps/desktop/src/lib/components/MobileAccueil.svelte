@@ -35,7 +35,7 @@
 
 <div class="accueil">
   <header>
-    <Logo size={64} />
+    <Logo size={44} />
     <h1>{distribution.name}</h1>
     <p>{dateDuJour}</p>
   </header>
@@ -44,7 +44,7 @@
     {#if !pages.length}<p class="vide">Aucune page : installez un plugin.</p>{/if}
     {#snippet carte(ref: PageRef)}
       <button class="carte" onclick={() => ouvrir(ref)}>
-        <Tile color={ref.plugin.color} icon={ref.page.icon} size={48} />
+        <Tile color={ref.plugin.color} icon={ref.page.icon} size={44} />
         <span class="texte">
           <span class="nom">{ref.page.title}</span>
           <span class="sous">{ref.plugin.name}</span>
@@ -64,7 +64,7 @@
 
   <footer>
     <button class="carte" onclick={() => tabs.navigate({ kind: "settings" })}>
-      <Tile color="var(--muted)" icon="settings" variant="plain" size={48} />
+      <Tile color="var(--muted)" icon="settings" variant="plain" size={44} />
       <span class="texte"><span class="nom">Paramètres</span><span class="sous">Apparence, serveur, plugins…</span></span>
       <Icon name="next" size={18} />
     </button>
@@ -83,8 +83,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: calc(22px + env(safe-area-inset-top, 0px)) 16px 18px;
+    gap: 2px;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 8px;
     text-align: center;
   }
   header :global(svg),
@@ -93,8 +93,8 @@
     margin: 0 auto;
   }
   h1 {
-    margin: 8px 0 0;
-    font-size: 26px;
+    margin: 4px 0 0;
+    font-size: 22px;
     letter-spacing: -0.03em;
   }
   header p {
@@ -109,8 +109,8 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 4px 16px 16px;
+    gap: 8px;
+    padding: 4px 16px 12px;
   }
   .carte {
     width: 100%;
@@ -118,7 +118,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 12px 14px;
+    padding: 10px 14px;
     border: 1px solid var(--border);
     border-radius: 18px;
     background: var(--surface-2);
@@ -163,6 +163,6 @@
   }
   footer {
     flex: none;
-    padding: 8px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    padding: 4px 16px calc(10px + env(safe-area-inset-bottom, 0px));
   }
 </style>

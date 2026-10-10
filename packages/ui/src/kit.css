@@ -24,6 +24,10 @@
   color: var(--err);
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Page : colonne centrée, espacée. */
 .page-plugin {
   display: flex;

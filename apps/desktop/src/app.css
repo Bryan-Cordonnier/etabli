@@ -78,6 +78,10 @@ select {
   user-select: text;
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button {
   font: inherit;
   color: inherit;
