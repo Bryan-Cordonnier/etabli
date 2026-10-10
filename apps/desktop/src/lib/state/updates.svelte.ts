@@ -57,24 +57,28 @@ class Updates {
     }
   }
 
-  /** Android : pas d'installateur intégré. On lit le latest.json de la distribution ; l'installation ouvre le téléchargement de l'APK. */
+  /**
+   * Android : pas d'installateur intégré. On lit la dernière Release GitHub de la distribution (API publique, qui accepte les
+   * appels du navigateur, contrairement au téléchargement d'un fichier de Release) ; l'installation ouvre le téléchargement de l'APK.
+   */
   async #verifierAndroid(): Promise<void> {
     const adresse = distribution.androidUpdateUrl;
     if (!adresse) throw new Error("Aucune adresse de mise à jour pour Android.");
-    const reponse = await fetch(adresse, { cache: "no-store" });
+    const reponse = await fetch(adresse, { cache: "no-store", headers: { accept: "application/vnd.github+json" } });
     if (!reponse.ok) throw new Error(`Recherche de mise à jour impossible (${reponse.status}).`);
-    const donnees = (await reponse.json()) as { version?: unknown; notes?: unknown; android?: { url?: unknown } };
+    const release = (await reponse.json()) as { tag_name?: unknown; body?: unknown; assets?: { name?: unknown; browser_download_url?: unknown }[] };
     const actuelle = (await system.appInfo()).version;
     this.lastCheck = new Date();
-    const url = donnees.android?.url;
-    if (typeof donnees.version === "string" && typeof url === "string" && url.startsWith("https://") && versionPlusRecente(donnees.version, actuelle)) {
-      this.version = donnees.version;
-      this.notes = typeof donnees.notes === "string" ? donnees.notes.trim() : "";
+    const apk = (release.assets ?? []).find((a) => typeof a.name === "string" && a.name.endsWith(".apk"));
+    const url = apk?.browser_download_url;
+    const version = typeof release.tag_name === "string" ? release.tag_name.replace(/^v/, "") : "";
+    if (version && typeof url === "string" && url.startsWith("https://") && versionPlusRecente(version, actuelle)) {
+      this.version = version;
+      this.notes = typeof release.body === "string" ? release.body.trim() : "";
       this.#apk = url;
       this.status = "available";
     } else this.status = "uptodate";
   }
-
   /** Télécharge et installe la version proposée, puis relance Établi. */
   async install(): Promise<void> {
     if (estAndroid) {
