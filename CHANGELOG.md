@@ -13,12 +13,13 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Added
 
-- **Update check on Android.** A distribution can set `androidUpdateUrl` (its `latest.json`) in `distribution.json`; the Android app then looks for a newer version at start and *Settings → About*, and the banner opens the APK download. The file's `android.url` gives the APK.
+- **Update check on Android.** A distribution can set `androidUpdateUrl` (the GitHub API address of its latest Release) in `distribution.json`; the Android app then looks for a newer version at start and *Settings → About*, and the banner opens the APK download. The Release's `.apk` file is the download.
 - **A phone-first interface.** On a phone the home is a list of pages, like a messaging app (app name on top, pages in the middle, Settings at the bottom); a page opens full screen and the Android back gesture or the back button returns to the list. No side drawer, no widgets, no search button, and dialogs fill the screen.
 - **The Windows and Android apps can connect to the server.** *Settings → Server* now has the sign-in form in the apps too. Once connected, calculations and plugin data are stored on the server (with an offline copy that is sent back on reconnection); plugins, device settings (AI key, shortcuts…) and windows stay on the device.
 
 ### Fixed
 
+- **Android update check no longer fails with *cannot reach GitHub*.** Release files cannot be read from the app (no cross-origin access); it now asks the GitHub API.
 - **The title bar without tabs was broken**: the page icon sat above its title and was cut off, because its class clashed with the global page class. Both are now on one line.
 
 ### Changed
