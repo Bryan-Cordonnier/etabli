@@ -15,7 +15,9 @@
   import PagePage from "$lib/pages/PagePage.svelte";
   import PluginsPage from "$lib/pages/PluginsPage.svelte";
   import SettingsPage from "$lib/pages/SettingsPage.svelte";
-  import { api, system } from "$lib/api";
+  import { api, clientServeur, system } from "$lib/api";
+  import { ecouter } from "$lib/serveur/evenements";
+  import { pluginData } from "$lib/state/pluginData.svelte";
   import { preparerPluginsHorsLigne } from "$lib/serveur/horsLigne";
   import { applyAppearance } from "$lib/appearance";
   import { openPluginSettings } from "$lib/pluginSettings";
@@ -28,6 +30,18 @@
   import { updates } from "$lib/state/updates.svelte";
   import { retourMobile } from "$lib/state/retour";
   import type { View } from "$lib/types";
+
+  // Changements faits sur un autre appareil du même compte : la donnée est relue, la page ouverte se met à jour toute seule.
+  $effect(() => {
+    if (!clientServeur) return;
+    const relireTout = () => Object.keys(pluginData.data).forEach((id) => void pluginData.load(id));
+    return ecouter(clientServeur, {
+      surOuverture: relireTout,
+      surChangement: (c) => {
+        if (c.type === "donnees" && c.nom.startsWith("plugin.")) void pluginData.load(c.nom.slice("plugin.".length));
+      },
+    });
+  });
 
   $effect(() => applyAppearance());
   // Mode serveur avec origine dédiée aux plugins : garde les mini-apps pour le hors ligne.
