@@ -19,6 +19,7 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Fixed
 
+- **Android: the *Download* button of the update banner works** (the app was not allowed to open web addresses) and shows an error if it still fails.
 - ***Back* returns where you were**, also from a Settings section or a plugin's settings, when the app has no tab bar (it used to jump to the home).
 - **No more blue flash when tapping a button** on Android, and the alarm test buttons use the common button style.
 - **Phone home is more compact**: logo, name and date take less room, so all pages fit without scrolling.
