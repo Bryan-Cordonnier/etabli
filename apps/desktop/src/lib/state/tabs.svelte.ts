@@ -112,8 +112,8 @@ class Tabs {
 
   /** Règles de navigation du cahier des charges (section 5.7). */
   navigate(view: View, options: { newTab?: boolean } = {}): void {
-    // Une page de plugin déjà ouverte : on bascule sur son onglet.
-    if (view.kind === "page") {
+    // Une page de plugin déjà ouverte : on bascule sur son onglet. (Sans barre d'onglets, il n'y en a qu'un : la navigation passe par l'historique, pour que « retour » revienne où l'on était.)
+    if (distribution.tabs && view.kind === "page") {
       const open = this.list.find((t) => sameView(t.view, view));
       if (open) {
         this.activeId = open.id;
@@ -121,7 +121,7 @@ class Tabs {
       }
     }
     // Un seul onglet Paramètres, un seul onglet Plugins.
-    if (view.kind === "settings" || view.kind === "plugins") {
+    if (distribution.tabs && (view.kind === "settings" || view.kind === "plugins")) {
       const open = this.list.find((t) => t.view.kind === view.kind);
       if (open) {
         if (view.kind === "settings" && view.section) open.view = fresh(view);

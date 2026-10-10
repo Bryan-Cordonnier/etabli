@@ -40,7 +40,7 @@
   {:else}
     <p>Lecture des autorisations…</p>
   {/if}
-  <button disabled={!plugin} onclick={() => agir(async () => void (etat = await autoriser(plugin!)))}>Autoriser</button>
+  <button class="btn primary" disabled={!plugin} onclick={() => agir(async () => void (etat = await autoriser(plugin!)))}>Autoriser</button>
 </div>
 
 <div class="box">
@@ -49,9 +49,9 @@
     Programmez une alarme, <strong>fermez complètement l'application</strong> (retirez-la des applications récentes), verrouillez le
     téléphone et attendez : la notification doit arriver à l'heure prévue.
   </p>
-  <label>Dans <input type="number" min="1" max="1440" bind:value={minutes} /> minute(s)</label>
-  <button disabled={!plugin} onclick={() => agir(async () => void (prevue = await programmerEssai(plugin!, minutes)))}>Programmer</button>
-  <button disabled={!plugin || !prevue} onclick={() => agir(() => annulerEssai(plugin!))}>Annuler</button>
+  <label>Dans <input class="text-input" type="number" min="1" max="1440" bind:value={minutes} /> minute(s)</label>
+  <button class="btn primary" disabled={!plugin} onclick={() => agir(async () => void (prevue = await programmerEssai(plugin!, minutes)))}>Programmer</button>
+  <button class="btn" disabled={!plugin || !prevue} onclick={() => agir(() => annulerEssai(plugin!))}>Annuler</button>
   {#if prevue}
     <p>Prévue à <strong>{prevue.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</strong>.</p>
   {/if}
