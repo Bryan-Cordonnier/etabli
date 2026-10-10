@@ -82,7 +82,12 @@ class Updates {
   /** Télécharge et installe la version proposée, puis relance Établi. */
   async install(): Promise<void> {
     if (estAndroid) {
-      if (this.#apk) await openUrl(this.#apk);
+      try {
+        if (this.#apk) await openUrl(this.#apk);
+      } catch (err) {
+        this.status = "error";
+        this.error = err instanceof Error ? err.message : String(err);
+      }
       return;
     }
     const update = this.#update;
