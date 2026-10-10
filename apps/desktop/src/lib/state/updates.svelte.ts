@@ -83,7 +83,10 @@ class Updates {
   async install(): Promise<void> {
     if (estAndroid) {
       try {
-        if (this.#apk) await openUrl(this.#apk);
+        // Pont natif de l'application (MainActivity.kt) : téléchargement par Android puis installateur. Sinon, le navigateur.
+        const natif = (window as unknown as { etabliInstaller?: { postMessage(adresse: string): void } }).etabliInstaller;
+        if (this.#apk && natif) natif.postMessage(this.#apk);
+        else if (this.#apk) await openUrl(this.#apk);
       } catch (err) {
         this.status = "error";
         this.error = err instanceof Error ? err.message : String(err);

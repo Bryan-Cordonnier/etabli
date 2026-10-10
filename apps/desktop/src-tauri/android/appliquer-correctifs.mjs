@@ -33,12 +33,12 @@ if (!paquet) echec("paquet de MainActivity.kt illisible.");
 const source = readFileSync(join(ici, "MainActivity.kt"), "utf8").replace("__PACKAGE__", paquet);
 writeFileSync(cible, source);
 
-// 2. Permissions d'alarme exacte (USE_EXACT_ALARM est accordée d'office hors Play Store ; SCHEDULE_EXACT_ALARM couvre Android 12 et 13).
+// 2. Permissions d'alarme exacte et d'installation des mises à jour (REQUEST_INSTALL_PACKAGES) (USE_EXACT_ALARM est accordée d'office hors Play Store ; SCHEDULE_EXACT_ALARM couvre Android 12 et 13).
 const manifeste = join(principal, "AndroidManifest.xml");
 let xml = readFileSync(manifeste, "utf8");
 const internet = '<uses-permission android:name="android.permission.INTERNET" />';
 if (!xml.includes(internet)) echec("ligne INTERNET introuvable dans le manifeste : le gabarit de Tauri a changé.");
-for (const permission of ["SCHEDULE_EXACT_ALARM", "USE_EXACT_ALARM"]) {
+for (const permission of ["SCHEDULE_EXACT_ALARM", "USE_EXACT_ALARM", "REQUEST_INSTALL_PACKAGES"]) {
   if (!xml.includes(`android.permission.${permission}`)) {
     xml = xml.replace(internet, `${internet}\n    <uses-permission android:name="android.permission.${permission}" />`);
   }

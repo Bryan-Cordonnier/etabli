@@ -27,8 +27,19 @@ pub struct Config {
     pub url_plugins: Option<String>,
 }
 
+/// Un changement fait par un utilisateur : ses autres appareils en sont prévenus (flux /api/evenements).
+#[derive(Clone, Debug)]
+pub struct Evenement {
+    pub utilisateur_id: String,
+    /// Type de changement : "donnees" (une donnée de plugin).
+    pub genre: &'static str,
+    pub nom: String,
+}
+
 pub struct Interne {
     pub config: Config,
+    /// Diffusion des changements aux appareils connectés.
+    pub evenements: tokio::sync::broadcast::Sender<Evenement>,
     pub base: Base,
     /// Essais de connexion par identifiant.
     pub limite_nom: Limiteur,
@@ -44,6 +55,7 @@ impl Interne {
     pub fn nouveau(config: Config, base: Base) -> Etat {
         Arc::new(Self {
             config,
+            evenements: tokio::sync::broadcast::channel(256).0,
             base,
             limite_nom: Limiteur::new(5, Duration::from_secs(600), Duration::from_secs(600)),
             limite_ip: Limiteur::new(30, Duration::from_secs(600), Duration::from_secs(600)),

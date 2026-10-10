@@ -19,6 +19,7 @@ const CLE_ESSAI: &str = include_str!("../../../apps/desktop/src-tauri/fixtures/c
 const MDP: &str = "une phrase de passe";
 
 struct Banc {
+    etat: etabli_serveur::etat::Etat,
     app: Router,
     plugins: Router,
     dossier: PathBuf,
@@ -64,6 +65,7 @@ impl Banc {
             .expect("code d'installation");
         Self {
             app: application(etat.clone()),
+            etat: etat.clone(),
             plugins: application_plugins(etat),
             dossier,
             code,
@@ -1659,4 +1661,31 @@ async fn sans_origine_dediee_les_cadres_restent_sur_l_origine_principale() {
         .to_string();
     assert!(csp.contains("frame-src 'self';"), "{csp}");
     let _ = std::fs::remove_dir_all(dossier_app);
+}
+
+#[tokio::test]
+async fn un_changement_de_donnee_est_diffuse_au_meme_utilisateur_seulement() {
+    let b = Banc::nouveau().await;
+    let admin = b.installer().await;
+    // Le flux demande une session.
+    assert_eq!(
+        b.get("/api/evenements", None).await.statut,
+        StatusCode::UNAUTHORIZED
+    );
+    let mut ecoute = b.etat.evenements.subscribe();
+    assert_eq!(
+        b.put(
+            "/api/donnees/plugin.courses",
+            Some(&admin),
+            json!({ "a": 1 })
+        )
+        .await
+        .statut,
+        StatusCode::OK
+    );
+    let e = tokio::time::timeout(std::time::Duration::from_secs(2), ecoute.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!((e.genre, e.nom.as_str()), ("donnees", "plugin.courses"));
 }

@@ -1,6 +1,16 @@
 package __PACKAGE__
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import android.view.View
 import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
@@ -33,6 +43,38 @@ class MainActivity : TauriActivity() {
     }
   }
 
+  private fun telechargerEtInstaller(adresse: String) {
+    val uri = Uri.parse(adresse)
+    if (uri.scheme != "https" || uri.host.isNullOrEmpty() || !(uri.path ?: "").endsWith(".apk")) return
+    if (!packageManager.canRequestPackageInstalls()) {
+      // Première fois : Android demande d'autoriser l'application à installer des mises à jour.
+      startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
+      Toast.makeText(this, "Autorisez l'application à installer ses mises à jour, puis appuyez de nouveau sur Télécharger.", Toast.LENGTH_LONG).show()
+      return
+    }
+    val gestionnaire = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    val demande = DownloadManager.Request(uri)
+      .setTitle("Mise à jour de l'application")
+      .setMimeType("application/vnd.android.package-archive")
+      .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+      .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "mise-a-jour.apk")
+    val numero = gestionnaire.enqueue(demande)
+    val recepteur = object : BroadcastReceiver() {
+      override fun onReceive(contexte: Context, intention: Intent) {
+        if (intention.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) != numero) return
+        unregisterReceiver(this)
+        val fichier = gestionnaire.getUriForDownloadedFile(numero) ?: return
+        startActivity(
+          Intent(Intent.ACTION_VIEW)
+            .setDataAndType(fichier, "application/vnd.android.package-archive")
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        )
+      }
+    }
+    ContextCompat.registerReceiver(this, recepteur, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), ContextCompat.RECEIVER_EXPORTED)
+    Toast.makeText(this, "Téléchargement de la mise à jour…", Toast.LENGTH_SHORT).show()
+  }
+
   override fun onWebViewCreate(webView: WebView) {
     super.onWebViewCreate(webView)
     // Échec fermé : sans ce mécanisme, on refuse de démarrer plutôt que de laisser le pont ouvert.
@@ -47,6 +89,12 @@ class MainActivity : TauriActivity() {
         if (isMainFrame && data != null) {
           Rust.ipc(rust.id, sourceOrigin.toString(), data)
         }
+      }
+      // Mise à jour de l'application : l'interface demande de télécharger l'APK (adresse https) ; Android le télécharge (barre de
+      // progression dans la notification) puis ouvre l'installateur. Même règle que le pont : seule l'origine de l'application peut le demander.
+      WebViewCompat.addWebMessageListener(webView, "etabliInstaller", setOf("http://tauri.localhost")) { _, message, _, isMainFrame, _ ->
+        val adresse = message.data
+        if (isMainFrame && adresse != null) telechargerEtInstaller(adresse)
       }
       // Le premier document a été chargé avec l'ancienne interface : on recharge pour que l'application utilise la nouvelle.
       webView.reload()

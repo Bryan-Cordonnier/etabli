@@ -65,6 +65,7 @@ pub async fn ecrire(
         return Err(Erreur::requete("Nom de données invalide."));
     }
     let texte = controler_taille(&valeur)?;
+    let (prevenu, nom_diffuse) = (session.utilisateur_id.clone(), nom.clone());
     let version = etat
         .base
         .executer(move |c| {
@@ -97,6 +98,12 @@ pub async fn ecrire(
             Ok(version)
         })
         .await?;
+    // Les autres appareils de l'utilisateur relisent cette donnée tout de suite (personne n'écoute : l'envoi est ignoré).
+    let _ = etat.evenements.send(crate::etat::Evenement {
+        utilisateur_id: prevenu,
+        genre: "donnees",
+        nom: nom_diffuse,
+    });
     Ok(Json(json!({ "version": version })))
 }
 

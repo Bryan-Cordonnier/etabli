@@ -13,6 +13,8 @@ Release GitHub et le message de mise à jour affiché dans l'application (voir
 
 ### Added
 
+- **Android updates download and install from the app.** *Download* now asks Android to download the APK (progress in the notification) and opens the installer when it is done; the first time, Android asks to allow the app to install updates. Android always asks you to confirm the installation.
+- **Live sync between devices.** The server tells your other devices when a plugin's data changes (/api/evenements, server-sent events); the open page updates without leaving it.
 - **UI kit: camera and image icons** for the mini-apps.
 - **Update check on Android.** A distribution can set `androidUpdateUrl` (the GitHub API address of its latest Release) in `distribution.json`; the Android app then looks for a newer version at start and *Settings → About*, and the banner opens the APK download. The Release's `.apk` file is the download.
 - **A phone-first interface.** On a phone the home is a list of pages, like a messaging app (app name on top, pages in the middle, Settings at the bottom); a page opens full screen and the Android back gesture or the back button returns to the list. No side drawer, no widgets, no search button, and dialogs fill the screen.
